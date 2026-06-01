@@ -37,6 +37,8 @@ async function request(method, path, body, opts = {}) {
     const message = data?.error?.message || `Request failed: ${res.status}`;
     const err = new Error(message);
     err.status = res.status;
+    err.code = data?.error?.code;
+    err.details = data?.error?.details ?? [];
     throw err;
   }
 
