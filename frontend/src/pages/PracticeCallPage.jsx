@@ -6,7 +6,7 @@ import { Badge } from '../components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/ui/dialog';
 import { AudioWaveform } from '../components/AudioWaveform';
-import { BookOpen, ChevronUp, FileText, Headphones, Loader2, Phone, Sparkles, Users } from 'lucide-react';
+import { BookOpen, CheckCircle2, ChevronUp, Copy, FileText, Headphones, Loader2, Phone, Sparkles, Users } from 'lucide-react';
 
 const CONTEXT_LABELS = {
   inbound_call: 'Inbound call',
@@ -195,6 +195,7 @@ const TRAINING_GUIDES = {
 
 const SELECTED_SCENARIO_STORAGE_KEY = 'dojo:selected-practice-scenario';
 const SELECTED_DIFFICULTY_STORAGE_KEY = 'dojo:selected-practice-difficulty';
+const CALL_IN_PHONE_NUMBER = '+17275134280';
 
 function normalizeScenarioId(value) {
   if (!value) return null;
@@ -304,6 +305,7 @@ export function PracticeCallPage() {
   const { data: scenarios, isLoading } = useScenarios();
   const [scriptScenario, setScriptScenario] = useState(null);
   const [callStatus, setCallStatus] = useState('idle');
+  const [phoneCopied, setPhoneCopied] = useState(false);
   const [selectedScenarioId, setSelectedScenarioId] = useState(() => (
     window.localStorage.getItem(SELECTED_SCENARIO_STORAGE_KEY)
   ));
@@ -348,6 +350,11 @@ export function PracticeCallPage() {
   const handleCallButton = () => {
     if (callStatus === 'active') endPractice();
     else if (!callConnecting) startPractice();
+  };
+  const copyPhoneNumber = async () => {
+    await navigator.clipboard.writeText(CALL_IN_PHONE_NUMBER);
+    setPhoneCopied(true);
+    window.setTimeout(() => setPhoneCopied(false), 1600);
   };
 
   useEffect(() => {
@@ -470,6 +477,33 @@ export function PracticeCallPage() {
                   {callConnecting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Phone className="h-4 w-4" />}
                   <span className="truncate">{callButtonLabel}</span>
                 </Button>
+              </div>
+              <div className="flex items-center gap-4">
+                <div className="h-px flex-1 bg-border" />
+                <span className="text-xs text-muted-foreground">or</span>
+                <div className="h-px flex-1 bg-border" />
+              </div>
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Phone className="h-4 w-4" />
+                  <span>Call from your phone</span>
+                </div>
+                <div className="flex items-center justify-between gap-3 rounded-xl border border-border bg-secondary/40 px-4 py-3">
+                  <a href={`tel:${CALL_IN_PHONE_NUMBER}`} className="font-medium tracking-wide text-foreground">
+                    {CALL_IN_PHONE_NUMBER}
+                  </a>
+                  <button
+                    type="button"
+                    onClick={copyPhoneNumber}
+                    className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-background hover:text-foreground"
+                    aria-label="Copy phone number"
+                  >
+                    {phoneCopied ? <CheckCircle2 className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
+                  </button>
+                </div>
+                <p className="text-xs leading-5 text-muted-foreground">
+                  Phone calls use the phone number saved in your profile to match you to your school.
+                </p>
               </div>
               <div className="space-y-2">
                 <p className="text-sm font-medium">Voice roleplay session</p>
