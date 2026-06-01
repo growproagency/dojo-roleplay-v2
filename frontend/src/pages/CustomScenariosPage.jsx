@@ -50,10 +50,29 @@ const DEFAULT_FORM = {
   openingLine: '', voiceId: 'Elliot', voiceProvider: 'vapi', scoringPrompt: '', isActive: true,
 };
 
+const REQUIRED_FIELDS = {
+  title: 'Title',
+  characterName: 'Character name',
+  description: 'Description',
+  openingLine: 'Opening line',
+  characterPrompt: 'Character prompt',
+  voiceId: 'Voice',
+};
+
+function validateScenarioForm(form) {
+  return Object.entries(REQUIRED_FIELDS).reduce((errors, [field, label]) => {
+    if (!String(form[field] ?? '').trim()) {
+      errors[field] = `${label} is required.`;
+    }
+    return errors;
+  }, {});
+}
+
 export function CustomScenariosPage() {
   const { isGlobalAdmin, profile } = useAuth();
   const [editingScenario, setEditingScenario] = useState(null);
   const [form, setForm] = useState(DEFAULT_FORM);
+  const [fieldErrors, setFieldErrors] = useState({});
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const [showScoringPrompt, setShowScoringPrompt] = useState(false);
@@ -76,7 +95,17 @@ export function CustomScenariosPage() {
     setTopicInput('');
   };
 
-  const openCreate = () => { setForm(DEFAULT_FORM); setShowScoringPrompt(false); setTopicInput(''); setEditingScenario({}); };
+  const setField = (field, value) => {
+    setForm((f) => ({ ...f, [field]: value }));
+    setFieldErrors((errors) => {
+      if (!errors[field]) return errors;
+      const next = { ...errors };
+      delete next[field];
+      return next;
+    });
+  };
+
+  const openCreate = () => { setForm(DEFAULT_FORM); setFieldErrors({}); setShowScoringPrompt(false); setTopicInput(''); setEditingScenario({}); };
   const openEdit = (s) => {
     setForm({
       title: s.title, description: s.description, contextType: s.contextType, characterName: s.characterName,
@@ -84,6 +113,7 @@ export function CustomScenariosPage() {
       schoolId: s.schoolId ?? null, characterPrompt: s.characterPrompt, openingLine: s.openingLine || '',
       voiceId: s.voiceId, voiceProvider: s.voiceProvider || 'vapi', scoringPrompt: s.scoringPrompt || '', isActive: s.isActive,
     });
+    setFieldErrors({});
     setShowScoringPrompt(!!s.scoringPrompt);
     setTopicInput('');
     setEditingScenario(s);
@@ -91,11 +121,37 @@ export function CustomScenariosPage() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    const data = { ...form, characterBlurb: form.characterBlurb?.trim() || null, topics: form.topics.length > 0 ? form.topics : null, openingLine: form.openingLine || null, scoringPrompt: form.scoringPrompt || null };
+    const errors = validateScenarioForm(form);
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      toast.error(`Please complete: ${Object.keys(errors).map((field) => REQUIRED_FIELDS[field] ?? field).join(', ')}`);
+      return;
+    }
+
+    const data = {
+      ...form,
+      title: form.title.trim(),
+      description: form.description.trim(),
+      characterName: form.characterName.trim(),
+      characterPrompt: form.characterPrompt.trim(),
+      characterBlurb: form.characterBlurb?.trim() || null,
+      topics: form.topics.length > 0 ? form.topics : null,
+      openingLine: form.openingLine.trim(),
+      scoringPrompt: form.scoringPrompt?.trim() || null,
+    };
+    const handleError = (err) => {
+      if (err.details?.length) {
+        const nextErrors = Object.fromEntries(err.details.map((detail) => [detail.field, detail.message]));
+        setFieldErrors(nextErrors);
+        toast.error(`Please fix: ${err.details.map((detail) => detail.field).join(', ')}`);
+        return;
+      }
+      toast.error(err.message);
+    };
     if (editingScenario?.id) {
-      updateMutation.mutate({ id: editingScenario.id, data }, { onSuccess: () => { setEditingScenario(null); toast.success('Scenario updated'); }, onError: (err) => toast.error(err.message) });
+      updateMutation.mutate({ id: editingScenario.id, data }, { onSuccess: () => { setEditingScenario(null); toast.success('Scenario updated'); }, onError: handleError });
     } else {
-      createMutation.mutate(data, { onSuccess: () => { setEditingScenario(null); toast.success('Scenario created'); }, onError: (err) => toast.error(err.message) });
+      createMutation.mutate(data, { onSuccess: () => { setEditingScenario(null); toast.success('Scenario created'); }, onError: handleError });
     }
   };
 
@@ -202,21 +258,24 @@ export function CustomScenariosPage() {
           <DialogHeader>
             <DialogTitle>{editingScenario?.id ? 'Edit scenario' : 'Create scenario'}</DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4" noValidate>
             <div className="grid sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label htmlFor="title">Title *</Label>
-                <Input id="title" value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} placeholder="e.g. Birthday Party Inquiry" required />
+                <Input id="title" value={form.title} onChange={(e) => setField('title', e.target.value)} placeholder="e.g. Birthday Party Inquiry" aria-invalid={!!fieldErrors.title} required />
+                {fieldErrors.title && <p className="text-xs text-destructive">{fieldErrors.title}</p>}
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="characterName">Character name *</Label>
-                <Input id="characterName" value={form.characterName} onChange={(e) => setForm((f) => ({ ...f, characterName: e.target.value }))} placeholder="e.g. Jessica" required />
+                <Input id="characterName" value={form.characterName} onChange={(e) => setField('characterName', e.target.value)} placeholder="e.g. Jessica" aria-invalid={!!fieldErrors.characterName} required />
+                {fieldErrors.characterName && <p className="text-xs text-destructive">{fieldErrors.characterName}</p>}
               </div>
             </div>
 
             <div className="space-y-1.5">
               <Label htmlFor="description">Description *</Label>
-              <Textarea id="description" value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} rows={2} required />
+              <Textarea id="description" value={form.description} onChange={(e) => setField('description', e.target.value)} rows={2} aria-invalid={!!fieldErrors.description} required />
+              {fieldErrors.description && <p className="text-xs text-destructive">{fieldErrors.description}</p>}
             </div>
 
             <div className="space-y-1.5">
@@ -253,7 +312,7 @@ export function CustomScenariosPage() {
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="voiceId">Voice</Label>
-                <Select value={form.voiceId} onValueChange={(val) => setForm((f) => ({ ...f, voiceId: val }))}>
+                <Select value={form.voiceId} onValueChange={(val) => setField('voiceId', val)}>
                   <SelectTrigger id="voiceId"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {VOICE_OPTIONS.map((v) => <SelectItem key={v.id} value={v.id}>{v.label}</SelectItem>)}
@@ -284,16 +343,18 @@ export function CustomScenariosPage() {
             )}
 
             <div className="space-y-1.5">
-              <Label htmlFor="openingLine">Opening line</Label>
-              <Input id="openingLine" value={form.openingLine} onChange={(e) => setForm((f) => ({ ...f, openingLine: e.target.value }))}
-                placeholder="What the AI character says first" />
+              <Label htmlFor="openingLine">Opening line *</Label>
+              <Input id="openingLine" value={form.openingLine} onChange={(e) => setField('openingLine', e.target.value)}
+                placeholder="What the AI character says first" aria-invalid={!!fieldErrors.openingLine} required />
+              {fieldErrors.openingLine && <p className="text-xs text-destructive">{fieldErrors.openingLine}</p>}
             </div>
 
             <div className="space-y-1.5">
               <Label htmlFor="characterPrompt">Character prompt *</Label>
               <Textarea id="characterPrompt" value={form.characterPrompt}
-                onChange={(e) => setForm((f) => ({ ...f, characterPrompt: e.target.value }))}
-                rows={10} className="font-mono text-xs" required />
+                onChange={(e) => setField('characterPrompt', e.target.value)}
+                rows={10} className="font-mono text-xs" aria-invalid={!!fieldErrors.characterPrompt} required />
+              {fieldErrors.characterPrompt && <p className="text-xs text-destructive">{fieldErrors.characterPrompt}</p>}
             </div>
 
             <div className="border-t pt-4">
