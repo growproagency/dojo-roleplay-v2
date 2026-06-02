@@ -40,6 +40,12 @@ export function MembersPage() {
   const memberLimit = planDetails?.memberLimit;
   const reservedMemberCount = members.length + invites.length;
   const memberLimitReached = Number.isInteger(memberLimit) && reservedMemberCount >= memberLimit;
+  const invitesRemaining = Number.isInteger(memberLimit)
+    ? Math.max(memberLimit - reservedMemberCount, 0)
+    : null;
+  const memberUsagePercent = Number.isInteger(memberLimit)
+    ? Math.min((reservedMemberCount / memberLimit) * 100, 100)
+    : 0;
 
   const copyInviteLink = async (invite) => {
     const acceptUrl = `${window.location.origin}/invite/${invite.token}`;
@@ -257,6 +263,42 @@ export function MembersPage() {
           </CardHeader>
           <CardContent>
             <form onSubmit={submit} className="space-y-4">
+              <div className="rounded-lg border border-border bg-muted/30 px-3 py-2.5">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex min-w-0 items-center gap-2.5">
+                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary/10">
+                      <Users className="h-4 w-4 text-primary" />
+                    </span>
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-foreground">Member seats</p>
+                      <p className="text-xs leading-5 text-muted-foreground">
+                        {members.length} active + {invites.length} pending
+                        {Number.isInteger(memberLimit) ? ` / ${memberLimit} total` : ' / unlimited'}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between gap-3 sm:justify-end">
+                    <span className="text-xs text-muted-foreground">Remaining</span>
+                    <span className="text-xl font-semibold tracking-tight">
+                      {Number.isInteger(memberLimit) ? invitesRemaining : 'Unlimited'}
+                    </span>
+                  </div>
+                </div>
+                {Number.isInteger(memberLimit) ? (
+                  <>
+                    <div className="mt-2.5 h-1.5 overflow-hidden rounded-full bg-background">
+                      <div className="h-full rounded-full bg-primary" style={{ width: `${memberUsagePercent}%` }} />
+                    </div>
+                    <p className="mt-1.5 text-[11px] leading-4 text-muted-foreground">
+                      {reservedMemberCount} of {memberLimit} seats reserved on {planDetails.label}
+                    </p>
+                  </>
+                ) : (
+                  <p className="mt-1.5 text-[11px] leading-4 text-muted-foreground">
+                    No member cap on {planDetails.label}
+                  </p>
+                )}
+              </div>
               {memberLimitReached && (
                 <div className="flex items-center gap-2 rounded-lg border border-primary/15 bg-primary/5 px-3 py-2 text-sm text-muted-foreground">
                   <AlertCircle className="h-4 w-4 shrink-0 text-primary" />

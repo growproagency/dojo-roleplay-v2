@@ -25,7 +25,6 @@ import {
   Drama,
   Settings2,
   BarChart3,
-  CreditCard,
   LineChart,
   LogOut,
   MoreVertical,
@@ -177,10 +176,6 @@ function UserFooter({ onNavigate, collapsed }) {
           >
             <User className="mr-2 h-4 w-4" />
             Account
-          </DropdownMenuItem>
-          <DropdownMenuItem className="cursor-pointer">
-            <CreditCard className="mr-2 h-4 w-4" />
-            Billing
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={signOut} className="cursor-pointer text-destructive focus:text-destructive">
