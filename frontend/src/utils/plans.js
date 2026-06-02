@@ -29,3 +29,8 @@ export function getEffectivePlanDetails(school) {
     monthlyRoleplayMinutes: school.monthlyRoleplayMinutes ?? details.monthlyRoleplayMinutes,
   };
 }
+
+export function canUseCustomScenarios(schoolOrPlan) {
+  const plan = typeof schoolOrPlan === 'object' ? schoolOrPlan?.plan : schoolOrPlan;
+  return normalizePlan(plan) === 'aios';
+}

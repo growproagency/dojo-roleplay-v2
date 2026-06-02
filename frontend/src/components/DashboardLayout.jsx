@@ -3,7 +3,7 @@ import { Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useUIStore } from '../store/ui.store';
 import { MaintenanceBanner } from './MaintenanceBanner';
-import { getEffectivePlanDetails } from '../utils/plans';
+import { canUseCustomScenarios, getEffectivePlanDetails } from '../utils/plans';
 import { Button } from './ui/button';
 import { Avatar, AvatarFallback } from './ui/avatar';
 import { Sheet, SheetContent, SheetTrigger } from './ui/sheet';
@@ -51,11 +51,13 @@ const menuItems = [
 ];
 
 function NavItems({ onNavigate, collapsed }) {
-  const { isGlobalAdmin, isSchoolAdmin } = useAuth();
+  const { isGlobalAdmin, isSchoolAdmin, profile } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const customScenariosEnabled = isGlobalAdmin || canUseCustomScenarios(profile?.school);
 
   const visible = menuItems.filter((item) => {
+    if (item.path === '/admin/scenarios' && !customScenariosEnabled) return false;
     if (!item.requires) return true;
     if (item.requires === 'globalAdmin') return isGlobalAdmin;
     if (item.requires === 'schoolAdmin') return isSchoolAdmin;

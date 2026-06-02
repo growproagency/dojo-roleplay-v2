@@ -11,12 +11,19 @@ import { SCENARIOS, getScenarioSystemPrompt } from '../data/scenarios.js';
 import { logger } from '../utils/logger.js';
 import { config } from '../config/env.js';
 import { countWords, isScoreableTranscriptTurns } from '../utils/transcriptQuality.js';
+import { canUseCustomScenarios } from '../utils/plans.js';
 
 const callContextCache = new Map();
 
 function setCtx(id, ctx) { if (id && ctx) callContextCache.set(id, ctx); }
 function getCtx(id) { return id ? (callContextCache.get(id) || null) : null; }
 function clearCtx(id) { if (id) callContextCache.delete(id); }
+
+async function schoolCanUseCustomScenarios(schoolId) {
+  if (!schoolId) return false;
+  const school = await findSchoolById(schoolId).catch(() => null);
+  return canUseCustomScenarios(school);
+}
 
 function isGlobalAdmin(user) {
   return user?.role === 'global_admin' || user?.role === 'admin';
@@ -211,7 +218,10 @@ async function handleAssistantRequest(message) {
 }
 
 async function buildReceptionistAssistant(userName, webhookUrl, schoolId = null, options = {}) {
-  const customScenarios = await findCustomScenarios(schoolId).catch(() => []);
+  const customScenariosAllowed = await schoolCanUseCustomScenarios(schoolId);
+  const customScenarios = customScenariosAllowed
+    ? await findCustomScenarios(schoolId).catch(() => [])
+    : [];
   const allScenarios = [
     ...Object.values(SCENARIOS).map(s => ({ id: s.id, title: s.title, description: s.description })),
     ...customScenarios.map(s => ({ id: s.slug, title: s.title, description: s.description })),
@@ -340,7 +350,10 @@ async function resolveScenarioForCall(scenarioSlug, schoolId) {
     };
   }
 
-  const custom = await findCustomScenarioBySlug(scenarioSlug, schoolId).catch(() => null);
+  const customScenariosAllowed = await schoolCanUseCustomScenarios(schoolId);
+  const custom = customScenariosAllowed
+    ? await findCustomScenarioBySlug(scenarioSlug, schoolId).catch(() => null)
+    : null;
   if (!custom) return null;
 
   return {
@@ -687,7 +700,7 @@ async function backgroundScore(callId, transcript, scenario, schoolId = null) {
     await updateCall(callId, { status: 'scoring' });
     let scenarioTitle = SCENARIOS[scenario]?.title || scenario;
     let customScoringPrompt = null;
-    if (!SCENARIOS[scenario]) {
+    if (!SCENARIOS[scenario] && await schoolCanUseCustomScenarios(schoolId)) {
       const custom = await findCustomScenarioBySlug(scenario, schoolId).catch(() => null);
       if (custom) {
         scenarioTitle = custom.title;
