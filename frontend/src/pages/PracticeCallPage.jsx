@@ -62,15 +62,24 @@ const SCENARIO_IMAGES = {
   cancellation_save: '/scenario-cancellation-save.png',
 };
 
+const PRACTICE_SCENARIO_LABELS = {
+  new_student: 'Inbound Lead - Adult Inquiry',
+  parent_enrollment: 'Inbound Lead - Parent Inquiry',
+  web_lead_callback: 'Outbound Lead Callback',
+};
+
 const SCENARIO_ALIASES = {
   'new adult student inquiry': 'new_student',
   'adult student inquiry': 'new_student',
   'current enrollment': 'new_student',
+  'inbound lead adult inquiry': 'new_student',
   'new student': 'new_student',
   'parent enrolling a child': 'parent_enrollment',
   'parent enrollment': 'parent_enrollment',
+  'inbound lead parent inquiry': 'parent_enrollment',
   'outbound web lead callback': 'web_lead_callback',
   'web lead callback': 'web_lead_callback',
+  'outbound lead callback': 'web_lead_callback',
   'sales enrollment conference': 'sales_enrollment',
   'sales enrollment': 'sales_enrollment',
   'renewal conference': 'renewal_conference',
@@ -210,6 +219,11 @@ function getScenarioKey(scenario) {
   return normalizeScenarioId(scenario.slug) ?? normalizeScenarioId(scenario.id) ?? normalizeScenarioId(scenario.title);
 }
 
+function getPracticeScenarioTitle(scenario) {
+  const key = getScenarioKey(scenario);
+  return PRACTICE_SCENARIO_LABELS[key] ?? scenario?.title ?? 'Training scenario';
+}
+
 function scenarioMeta(scenario) {
   const builtIn = BUILT_IN_DETAILS[scenario.id] ?? {};
   return {
@@ -235,6 +249,7 @@ function getTrainingGuide(scenario) {
 function ScenarioCard({ scenario, isLocked, isSelected, onSelect, onViewScript }) {
   const meta = scenarioMeta(scenario);
   const ContextIcon = meta.contextType === 'in_person' ? Users : Phone;
+  const title = getPracticeScenarioTitle(scenario);
 
   return (
     <div
@@ -261,16 +276,23 @@ function ScenarioCard({ scenario, isLocked, isSelected, onSelect, onViewScript }
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1 space-y-1.5">
-          <div className="min-w-0">
-            <h3 className="truncate font-heading text-sm font-medium leading-5">{scenario.title}</h3>
-            <div className="mt-0.5 flex min-w-0 items-center gap-2 text-xs text-muted-foreground">
-            <span className="inline-flex items-center gap-1.5">
-              <ContextIcon className="h-3.5 w-3.5" />
-              {CONTEXT_LABELS[meta.contextType] ?? 'Training call'}
-            </span>
-            {meta.characterName && <span className="truncate">{meta.characterName}{meta.characterBlurb ? ` - ${meta.characterBlurb}` : ''}</span>}
-            {!scenario.isBuiltIn && <Badge variant="secondary">Custom</Badge>}
+          <div className="min-w-0 space-y-1">
+            <div className="flex min-w-0 items-start gap-1.5">
+              <h3 className="min-w-0 flex-1 font-heading text-sm font-medium leading-5">{title}</h3>
+              <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-secondary px-1.5 py-0.5 text-[10px] font-medium leading-4 text-muted-foreground">
+                <ContextIcon className="h-2.5 w-2.5 text-primary" />
+                {CONTEXT_LABELS[meta.contextType] ?? 'Training call'}
+              </span>
+              {!scenario.isBuiltIn && <Badge variant="secondary">Custom</Badge>}
             </div>
+            {meta.characterName && (
+              <p
+                className="overflow-hidden pr-10 text-xs leading-5 text-muted-foreground"
+                style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}
+              >
+                {meta.characterName}{meta.characterBlurb ? ` - ${meta.characterBlurb}` : ''}
+              </p>
+            )}
           </div>
 
           {meta.topics.length > 0 && (
@@ -291,7 +313,7 @@ function ScenarioCard({ scenario, isLocked, isSelected, onSelect, onViewScript }
             onViewScript(scenario);
           }}
           className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-lg px-2 text-xs font-medium text-primary hover:bg-primary/10"
-          aria-label={`View ${scenario.title} training script`}
+          aria-label={`View ${title} training script`}
         >
           <FileText className="h-3.5 w-3.5" />
           Script
@@ -316,13 +338,14 @@ export function PracticeCallPage() {
     const ids = [getScenarioKey(scenario), normalizeScenarioId(scenario.id), normalizeScenarioId(scenario.slug), normalizeScenarioId(scenario.title)];
     return ids.includes(selectedScenarioId);
   });
+  const selectedScenarioTitle = getPracticeScenarioTitle(selectedScenario);
   const startPractice = () => {
     if (!selectedScenario) return;
     const scenarioKey = getScenarioKey(selectedScenario);
     window.dispatchEvent(new CustomEvent('dojo:start-call', {
       detail: {
         scenario: scenarioKey,
-        scenarioTitle: selectedScenario.title,
+        scenarioTitle: selectedScenarioTitle,
         difficulty: selectedDifficulty,
       },
     }));
@@ -342,7 +365,7 @@ export function PracticeCallPage() {
     : callConnecting
       ? 'Connecting...'
       : selectedScenario
-        ? `Start ${selectedScenario.title} (${selectedDifficulty})`
+        ? `Start ${selectedScenarioTitle} (${selectedDifficulty})`
         : 'Choose a scenario';
   const selectedScenarioKey = getScenarioKey(selectedScenario) ?? selectedScenarioId ?? normalizeScenarioId(selectedScenario?.id);
   const selectedImage = SCENARIO_IMAGES[selectedScenarioKey] ?? '/ai-caller-room.png';
@@ -442,14 +465,14 @@ export function PracticeCallPage() {
               <div className="relative min-h-[560px] overflow-hidden rounded-2xl border border-border/70 bg-secondary/30">
                 <img
                   src={selectedImage}
-                  alt={selectedScenario ? `${selectedScenario.title} practice caller` : 'AI caller ready for a practice roleplay session'}
+                  alt={selectedScenario ? `${selectedScenarioTitle} practice caller` : 'AI caller ready for a practice roleplay session'}
                   className="absolute inset-0 h-full w-full object-cover object-center"
                 />
                 <div className="absolute inset-x-5 bottom-5 rounded-2xl border border-white/35 bg-background/88 p-5 shadow-sm backdrop-blur-md dark:border-white/10 dark:bg-background/78">
                   <div className="flex items-center justify-between gap-3">
                     <div>
                       <p className="text-sm font-medium">
-                        {selectedScenario ? selectedScenario.title : 'AI Receptionist'}
+                        {selectedScenario ? selectedScenarioTitle : 'AI Receptionist'}
                       </p>
                       <p className="text-xs text-muted-foreground">
                         {selectedMeta?.characterName
@@ -509,7 +532,7 @@ export function PracticeCallPage() {
                 <p className="text-sm font-medium">Voice roleplay session</p>
                 <p className="text-sm leading-6 text-muted-foreground">
                   {selectedScenario
-                    ? `Selected scenario: ${selectedScenario.title}. Difficulty: ${selectedDifficulty}. The call will hand off directly to the practice caller.`
+                    ? `Selected scenario: ${selectedScenarioTitle}. Difficulty: ${selectedDifficulty}. The call will hand off directly to the practice caller.`
                     : 'Choose a scenario on the right before starting your web call. Phone callers can still choose by voice.'}
                 </p>
               </div>
@@ -593,7 +616,7 @@ export function PracticeCallPage() {
       <Dialog open={!!scriptScenario} onOpenChange={(open) => { if (!open) setScriptScenario(null); }}>
         <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-3xl">
           <DialogHeader>
-            <DialogTitle>{scriptScenario?.title ?? 'Training script'}</DialogTitle>
+            <DialogTitle>{scriptScenario ? getPracticeScenarioTitle(scriptScenario) : 'Training script'}</DialogTitle>
           </DialogHeader>
           {scriptGuide && (
             <div className="space-y-5 text-sm">
