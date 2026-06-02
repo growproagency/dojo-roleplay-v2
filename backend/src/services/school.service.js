@@ -1,5 +1,5 @@
 import { findSchoolById, updateSchool as updateSchoolDB } from '../db/schools.queries.js';
-import { findUsersBySchool, updateUser, removeUserFromSchool } from '../db/users.queries.js';
+import { findUserById, findUsersBySchool, updateUser, removeUserFromSchool } from '../db/users.queries.js';
 import { findInvitesBySchool, insertInvite, revokeInvite } from '../db/invites.queries.js';
 import { hasReachedMemberLimit } from '../utils/plans.js';
 
@@ -22,6 +22,8 @@ export async function getSchoolMembers(schoolId) {
 
 export async function removeMember(userId, schoolId, requesterId, isGlobalAdmin) {
   if (!isGlobalAdmin && userId === requesterId) throw new Error('FORBIDDEN');
+  const user = await findUserById(userId);
+  if (!user || user.schoolId !== schoolId) throw new Error('NOT_FOUND');
   await removeUserFromSchool(userId);
 }
 

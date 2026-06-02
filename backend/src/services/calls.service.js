@@ -1,8 +1,10 @@
 import { findCallsByUser, findCallsBySchool, findCallsBySchoolAndUser, findCallById, updateCall } from '../db/calls.queries.js';
 import { findScorecardByCallId, insertScorecard } from '../db/scorecards.queries.js';
 import { findCustomScenarioBySlug } from '../db/scenarios.queries.js';
+import { findSchoolById } from '../db/schools.queries.js';
 import { scoreCallTranscript } from './scoring.service.js';
 import { SCENARIOS } from '../data/scenarios.js';
+import { canUseCustomScenarios } from '../utils/plans.js';
 import { isScoreableTranscriptTurns, parseTranscriptTurns } from '../utils/transcriptQuality.js';
 function isGlobalAdmin(user) { return user?.role === 'global_admin' || user?.role === 'admin'; }
 function isSchoolAdmin(user) { return user?.role === 'school_admin'; }
@@ -12,6 +14,12 @@ function canAccessCall(user, call) {
   if (isGlobalAdmin(user)) return true;
   if (isSchoolAdmin(user)) return call.schoolId === user.schoolId;
   return call.userId === user.id;
+}
+
+async function schoolCanUseCustomScenarios(schoolId) {
+  if (!schoolId) return false;
+  const school = await findSchoolById(schoolId).catch(() => null);
+  return canUseCustomScenarios(school);
 }
 
 export async function listCalls({ user, schoolId, scope = 'school', userId = null }) {
@@ -49,7 +57,7 @@ export async function triggerScoring(callId, user) {
   let scenarioTitle = SCENARIOS[call.scenario]?.title || call.scenario;
   let customScoringPrompt = null;
 
-  if (!SCENARIOS[call.scenario]) {
+  if (!SCENARIOS[call.scenario] && await schoolCanUseCustomScenarios(call.schoolId ?? null)) {
     const custom = await findCustomScenarioBySlug(call.scenario, call.schoolId ?? null).catch(() => null);
     if (custom) {
       scenarioTitle = custom.title;

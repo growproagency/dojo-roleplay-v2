@@ -1,5 +1,10 @@
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { listSchools, createSchool, editSchool, removeSchool, restoreSchool, getSchoolDetail, getUsageOverview, getPlatformSettings, updatePlatformSettings, changeUserRole, unassignUserFromSchool, removeUser, getSchoolInvites, createSchoolInvite, readdUserToSchool, revokeSchoolInvite, getPlatformAdmins, createPlatformAdminInvite, revokePlatformAdminInvite, revokePlatformAdmin, createPasswordResetLink } from '../services/admin.service.js';
+import { config } from '../config/env.js';
+
+function buildInviteUrl(token) {
+  return `${config.frontendUrl.replace(/\/$/, '')}/invite/${token}`;
+}
 
 export const listSchoolsHandler = asyncHandler(async (req, res) => {
   const data = await listSchools({ status: req.query.status });
@@ -85,9 +90,8 @@ export const getSchoolInvitesHandler = asyncHandler(async (req, res) => {
 export const createSchoolInviteHandler = asyncHandler(async (req, res) => {
   const schoolId = parseInt(req.params.schoolId, 10);
   if (isNaN(schoolId)) throw Object.assign(new Error('VALIDATION'), { message: 'Invalid school ID' });
-  const origin = req.headers.origin || `https://${req.headers.host}`;
   const invite = await createSchoolInvite(schoolId, req.body, req.user.id);
-  const acceptUrl = `${origin}/invite/${invite.token}`;
+  const acceptUrl = buildInviteUrl(invite.token);
   res.status(201).json({ data: { ...invite, acceptUrl } });
 });
 
@@ -113,8 +117,7 @@ export const getPlatformAdminsHandler = asyncHandler(async (_req, res) => {
 
 export const createPlatformAdminInviteHandler = asyncHandler(async (req, res) => {
   const invite = await createPlatformAdminInvite(req.body, req.user.id);
-  const origin = req.headers.origin || `https://${req.headers.host}`;
-  const acceptUrl = `${origin}/invite/${invite.token}`;
+  const acceptUrl = buildInviteUrl(invite.token);
   res.status(201).json({ data: { ...invite, acceptUrl } });
 });
 

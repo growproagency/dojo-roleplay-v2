@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { scenariosApi } from '../api/scenarios.api';
+import { useAuthStore } from '../store/auth.store';
 
 export const scenarioKeys = {
   all: ['scenarios'],
@@ -8,20 +9,26 @@ export const scenarioKeys = {
 };
 
 export function useScenarios() {
+  const userId = useAuthStore((s) => s.user?.id ?? null);
+  const schoolId = useAuthStore((s) => s.profile?.schoolId ?? s.profile?.school?.id ?? null);
   return useQuery({
-    queryKey: scenarioKeys.list,
+    queryKey: [...scenarioKeys.list, userId, schoolId],
     queryFn: async () => {
       const r = await scenariosApi.list();
       const { builtIn = [], custom = [] } = r.data ?? {};
       return [...builtIn, ...custom];
     },
+    enabled: !!userId,
   });
 }
 
-export function useAllCustomScenarios() {
+export function useAllCustomScenarios(enabled = true) {
+  const userId = useAuthStore((s) => s.user?.id ?? null);
+  const schoolId = useAuthStore((s) => s.profile?.schoolId ?? s.profile?.school?.id ?? null);
   return useQuery({
-    queryKey: scenarioKeys.custom,
+    queryKey: [...scenarioKeys.custom, userId, schoolId],
     queryFn: () => scenariosApi.listManagedCustom().then(r => r.data),
+    enabled: enabled && !!userId,
   });
 }
 

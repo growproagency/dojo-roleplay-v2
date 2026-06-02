@@ -1,6 +1,8 @@
 import { findCustomScenarios, findManagedCustomScenarios, findAllCustomScenarios, findCustomScenarioById, insertCustomScenario, updateCustomScenario, deleteCustomScenario } from '../db/scenarios.queries.js';
+import { findSchoolById } from '../db/schools.queries.js';
 import { SCENARIOS, BUILT_IN_SCENARIO_IDS } from '../data/scenarios.js';
 import { effectiveSchoolId } from '../middleware/auth.middleware.js';
+import { canUseCustomScenarios } from '../utils/plans.js';
 
 function isGlobalAdmin(user) {
   return user?.role === 'global_admin' || user?.role === 'admin';
@@ -17,6 +19,18 @@ function canManageScenario(req, scenario) {
   return scenario.schoolId != null && scenario.schoolId === req.user?.schoolId;
 }
 
+async function assertCustomScenariosAllowedForSchool(schoolId) {
+  if (!schoolId) return;
+  const school = await findSchoolById(schoolId);
+  if (!canUseCustomScenarios(school)) throw new Error('CUSTOM_SCENARIOS_PLAN_REQUIRED');
+}
+
+async function hasCustomScenarioAccess(schoolId) {
+  if (!schoolId) return false;
+  const school = await findSchoolById(schoolId);
+  return canUseCustomScenarios(school);
+}
+
 function slugify(value) {
   return String(value || '')
     .trim()
@@ -28,7 +42,9 @@ function slugify(value) {
 
 export async function listScenarios(req) {
   const schoolId = effectiveSchoolId(req);
-  const customScenarios = await findCustomScenarios(schoolId);
+  const customScenarios = (await hasCustomScenarioAccess(schoolId))
+    ? await findCustomScenarios(schoolId)
+    : [];
   const builtIn = Object.values(SCENARIOS).map(s => ({
     ...s,
     isBuiltIn: true,
@@ -46,6 +62,7 @@ export async function listAllCustomScenarios() {
 
 export async function listManagedCustomScenarios(req) {
   if (!isGlobalAdmin(req.user) && !req.user?.schoolId) throw new Error('FORBIDDEN');
+  if (!isGlobalAdmin(req.user)) await assertCustomScenariosAllowedForSchool(req.user.schoolId);
   return findManagedCustomScenarios(req.user?.schoolId ?? null, isGlobalAdmin(req.user));
 }
 
@@ -54,6 +71,7 @@ export async function createCustomScenario(req, data) {
   if (!slug) throw new Error('VALIDATION');
   if (BUILT_IN_SCENARIO_IDS.includes(slug)) throw new Error('CONFLICT');
   const schoolId = scopedScenarioSchoolId(req, data.schoolId);
+  await assertCustomScenariosAllowedForSchool(schoolId);
   return insertCustomScenario({ ...data, slug, schoolId, createdBy: req.user.id });
 }
 
@@ -65,6 +83,7 @@ export async function editCustomScenario(id, req, data) {
   if (data.schoolId !== undefined) {
     next.schoolId = scopedScenarioSchoolId(req, data.schoolId);
   }
+  await assertCustomScenariosAllowedForSchool(next.schoolId ?? existing.schoolId);
   await updateCustomScenario(id, next);
   return findCustomScenarioById(id);
 }
@@ -73,5 +92,6 @@ export async function removeCustomScenario(id, req) {
   const existing = await findCustomScenarioById(id);
   if (!existing) throw new Error('NOT_FOUND');
   if (!canManageScenario(req, existing)) throw new Error('FORBIDDEN');
+  if (!isGlobalAdmin(req.user)) await assertCustomScenariosAllowedForSchool(existing.schoolId);
   await deleteCustomScenario(id);
 }

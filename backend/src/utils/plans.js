@@ -36,3 +36,8 @@ export function hasReachedMemberLimit(schoolOrPlan, memberCount) {
     : getPlanDetails(schoolOrPlan);
   return Number.isInteger(details?.memberLimit) && memberCount >= details.memberLimit;
 }
+
+export function canUseCustomScenarios(schoolOrPlan) {
+  const plan = typeof schoolOrPlan === 'object' ? schoolOrPlan?.plan : schoolOrPlan;
+  return normalizePlan(plan) === 'aios';
+}

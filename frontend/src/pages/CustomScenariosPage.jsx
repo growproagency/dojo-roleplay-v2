@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useAllCustomScenarios, useCreateCustomScenario, useUpdateCustomScenario, useDeleteCustomScenario, useToggleCustomScenario } from '../hooks/useScenarios';
 import { useAdminSchools } from '../hooks/useAdmin';
 import { useAuth } from '../hooks/useAuth';
+import { canUseCustomScenarios } from '../utils/plans';
 import DashboardLayout from '../components/DashboardLayout';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
@@ -11,7 +12,7 @@ import { Textarea } from '../components/ui/textarea';
 import { Badge } from '../components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../components/ui/dialog';
-import { BookOpen, CheckCircle2, Loader2, Plus, Pencil, Trash2, Drama, ToggleLeft, ToggleRight, X } from 'lucide-react';
+import { BookOpen, CheckCircle2, Loader2, Lock, Plus, Pencil, Trash2, Drama, ToggleLeft, ToggleRight, X } from 'lucide-react';
 import { toast } from 'sonner';
 
 const VOICE_OPTIONS = [
@@ -70,6 +71,7 @@ function validateScenarioForm(form) {
 
 export function CustomScenariosPage() {
   const { isGlobalAdmin, profile } = useAuth();
+  const customScenariosEnabled = isGlobalAdmin || canUseCustomScenarios(profile?.school);
   const [editingScenario, setEditingScenario] = useState(null);
   const [form, setForm] = useState(DEFAULT_FORM);
   const [fieldErrors, setFieldErrors] = useState({});
@@ -79,7 +81,7 @@ export function CustomScenariosPage() {
   const [guideOpen, setGuideOpen] = useState(false);
   const [topicInput, setTopicInput] = useState('');
 
-  const { data: scenarios, isLoading } = useAllCustomScenarios();
+  const { data: scenarios, isLoading } = useAllCustomScenarios(customScenariosEnabled);
   const { data: schools } = useAdminSchools(isGlobalAdmin);
 
   const createMutation = useCreateCustomScenario();
@@ -105,7 +107,13 @@ export function CustomScenariosPage() {
     });
   };
 
-  const openCreate = () => { setForm(DEFAULT_FORM); setFieldErrors({}); setShowScoringPrompt(false); setTopicInput(''); setEditingScenario({}); };
+  const openCreate = () => {
+    if (!customScenariosEnabled) {
+      toast.error('Custom scenarios are available on the AIOS plan.');
+      return;
+    }
+    setForm(DEFAULT_FORM); setFieldErrors({}); setShowScoringPrompt(false); setTopicInput(''); setEditingScenario({});
+  };
   const openEdit = (s) => {
     setForm({
       title: s.title, description: s.description, contextType: s.contextType, characterName: s.characterName,
@@ -160,6 +168,20 @@ export function CustomScenariosPage() {
   return (
     <DashboardLayout>
       <div className="max-w-5xl mx-auto space-y-6 py-2">
+        {!customScenariosEnabled ? (
+          <Card>
+            <CardContent className="flex flex-col items-center justify-center py-14 text-center">
+              <span className="mb-4 flex h-11 w-11 items-center justify-center rounded-lg bg-primary/10">
+                <Lock className="h-5 w-5 text-primary" />
+              </span>
+              <h2 className="text-lg font-semibold">Custom scenarios are available on AIOS</h2>
+              <p className="mt-2 max-w-md text-sm text-muted-foreground">
+                Your school can still use the built-in scenario library. Upgrade to AIOS to create, edit, and practice custom roleplay scenarios.
+              </p>
+            </CardContent>
+          </Card>
+        ) : (
+          <>
         <div className="flex items-center justify-between">
           <p className="text-muted-foreground">
             {isGlobalAdmin
@@ -250,6 +272,8 @@ export function CustomScenariosPage() {
             )}
           </CardContent>
         </Card>
+          </>
+        )}
       </div>
 
       {/* Create/Edit modal */}
