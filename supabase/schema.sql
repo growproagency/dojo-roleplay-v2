@@ -33,6 +33,8 @@ CREATE TABLE IF NOT EXISTS schools (
   usage_cap_usd         NUMERIC(10, 2),
   member_limit          INTEGER,
   monthly_roleplay_minutes INTEGER,
+  usage_period_start    TIMESTAMPTZ,
+  usage_period_end      TIMESTAMPTZ,
   archived_at           TIMESTAMPTZ,
   subscription_status   VARCHAR(20) NOT NULL DEFAULT 'active'
                            CHECK (subscription_status IN ('active', 'trialing', 'past_due', 'suspended', 'canceled')),
@@ -179,6 +181,7 @@ CREATE INDEX IF NOT EXISTS idx_calls_school_created    ON calls(school_id, creat
 CREATE INDEX IF NOT EXISTS idx_calls_vapi_call_id      ON calls(vapi_call_id);
 CREATE INDEX IF NOT EXISTS idx_schools_archived_at     ON schools(archived_at);
 CREATE INDEX IF NOT EXISTS idx_schools_subscription_status ON schools(subscription_status);
+CREATE INDEX IF NOT EXISTS idx_schools_usage_period_start ON schools(usage_period_start);
 CREATE INDEX IF NOT EXISTS idx_scorecards_call_id      ON scorecards(call_id);
 CREATE INDEX IF NOT EXISTS idx_school_invites_token    ON school_invites(token);
 CREATE INDEX IF NOT EXISTS idx_custom_scenarios_school ON custom_scenarios(school_id);

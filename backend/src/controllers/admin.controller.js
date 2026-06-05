@@ -1,5 +1,5 @@
 import { asyncHandler } from '../utils/asyncHandler.js';
-import { listSchools, createSchool, editSchool, removeSchool, restoreSchool, getSchoolDetail, getUsageOverview, getPlatformSettings, updatePlatformSettings, changeUserRole, unassignUserFromSchool, removeUser, getSchoolInvites, createSchoolInvite, readdUserToSchool, revokeSchoolInvite, getPlatformAdmins, createPlatformAdminInvite, revokePlatformAdminInvite, revokePlatformAdmin, createPasswordResetLink } from '../services/admin.service.js';
+import { listSchools, createSchool, editSchool, removeSchool, restoreSchool, getSchoolDetail, resetSchoolUsagePeriod, getUsageOverview, getPlatformSettings, updatePlatformSettings, changeUserRole, unassignUserFromSchool, removeUser, getSchoolInvites, createSchoolInvite, readdUserToSchool, revokeSchoolInvite, getPlatformAdmins, createPlatformAdminInvite, revokePlatformAdminInvite, revokePlatformAdmin, createPasswordResetLink } from '../services/admin.service.js';
 import { config } from '../config/env.js';
 
 function buildInviteUrl(token) {
@@ -57,6 +57,13 @@ export const restoreSchoolHandler = asyncHandler(async (req, res) => {
   if (isNaN(schoolId)) throw Object.assign(new Error('VALIDATION'), { message: 'Invalid school ID' });
   await restoreSchool(schoolId);
   res.json({ data: { ok: true } });
+});
+
+export const resetSchoolUsagePeriodHandler = asyncHandler(async (req, res) => {
+  const schoolId = parseInt(req.params.schoolId, 10);
+  if (isNaN(schoolId)) throw Object.assign(new Error('VALIDATION'), { message: 'Invalid school ID' });
+  const data = await resetSchoolUsagePeriod(schoolId);
+  res.json({ data });
 });
 
 export const changeUserRoleHandler = asyncHandler(async (req, res) => {

@@ -4,6 +4,7 @@ import {
   useAdminSchool,
   useAdminSchoolInvites,
   useUpdateAdminSchool,
+  useResetSchoolUsagePeriod,
   useChangeUserRole,
   useRemoveUserFromSchool,
   useCreatePasswordResetLink,
@@ -20,7 +21,7 @@ import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../components/ui/dialog';
-import { Loader2, School, Users, ArrowLeft, Trash2, AlertTriangle, Mail, UserPlus, Copy, CheckCircle2, Save, SlidersHorizontal, KeyRound } from 'lucide-react';
+import { Loader2, School, Users, ArrowLeft, Trash2, AlertTriangle, Mail, UserPlus, Copy, CheckCircle2, Save, SlidersHorizontal, KeyRound, Clock, RotateCcw } from 'lucide-react';
 import { toast } from 'sonner';
 import { getEffectivePlanDetails, getPlanDetails } from '../utils/plans';
 
@@ -38,6 +39,12 @@ function RoleBadge({ role }) {
 function formatDate(date) {
   if (!date) return '—';
   return new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+function formatMinutes(value) {
+  if (value == null) return '0m';
+  const minutes = Math.round(Number(value || 0) * 10) / 10;
+  return `${Number.isInteger(minutes) ? minutes : minutes.toFixed(1)}m`;
 }
 
 const ACCESS_STATUS_META = {
@@ -85,11 +92,13 @@ export function AdminSchoolDetailPage() {
   const readdUserMutation = useReaddSchoolUser(schoolId);
   const revokeInviteMutation = useRevokeSchoolInvite(schoolId);
   const updateSchoolMutation = useUpdateAdminSchool();
+  const resetUsagePeriodMutation = useResetSchoolUsagePeriod();
   const createPasswordResetLink = useCreatePasswordResetLink();
 
   const school = data?.school;
   const members = data?.members ?? [];
   const invites = invitesData ?? [];
+  const monthlyUsage = data?.usage?.monthly;
 
   useEffect(() => {
     if (!school) return;
@@ -126,6 +135,10 @@ export function AdminSchoolDetailPage() {
 
   const effectivePlan = getEffectivePlanDetails(school);
   const planDefaults = getPlanDetails(planForm.plan);
+  const monthlyMinuteLimit = monthlyUsage?.limit ?? effectivePlan?.monthlyRoleplayMinutes ?? null;
+  const usagePercent = monthlyMinuteLimit
+    ? Math.min(100, Math.round((Number(monthlyUsage?.usedMinutes || 0) / monthlyMinuteLimit) * 100))
+    : null;
 
   const handleLimitsSave = (event) => {
     event.preventDefault();
@@ -294,6 +307,67 @@ export function AdminSchoolDetailPage() {
               </CardContent>
             </Card>
           </div>
+
+          <Card>
+            <CardHeader className="pb-3">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-primary" />Usage period
+                  </CardTitle>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Controls which calls count against this school's current monthly minute limit.
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="gap-2"
+                  disabled={resetUsagePeriodMutation.isPending}
+                  onClick={() => {
+                    if (!confirm(`Start a new usage period for ${school.name}? Past calls and scorecards will stay in history.`)) return;
+                    resetUsagePeriodMutation.mutate(school.id, {
+                      onSuccess: () => toast.success('New usage period started'),
+                      onError: (err) => toast.error(err.message || 'Failed to reset usage period'),
+                    });
+                  }}
+                >
+                  {resetUsagePeriodMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <RotateCcw className="w-4 h-4" />}
+                  Start new period
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-3 md:grid-cols-3">
+                <div className="rounded-lg border border-border bg-secondary/20 p-3">
+                  <p className="text-xs text-muted-foreground">Period start</p>
+                  <p className="mt-1 text-sm font-medium">{formatDate(monthlyUsage?.periodStart)}</p>
+                </div>
+                <div className="rounded-lg border border-border bg-secondary/20 p-3">
+                  <p className="text-xs text-muted-foreground">Period end</p>
+                  <p className="mt-1 text-sm font-medium">{formatDate(monthlyUsage?.periodEnd)}</p>
+                </div>
+                <div className="rounded-lg border border-border bg-secondary/20 p-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-xs text-muted-foreground">Minutes used</p>
+                    <p className="text-sm font-semibold">
+                      {formatMinutes(monthlyUsage?.usedMinutes)}
+                      {monthlyMinuteLimit != null ? ` / ${monthlyMinuteLimit}m` : ' / unlimited'}
+                    </p>
+                  </div>
+                  {usagePercent != null && (
+                    <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-secondary">
+                      <div className="h-full rounded-full bg-primary" style={{ width: `${usagePercent}%` }} />
+                    </div>
+                  )}
+                </div>
+              </div>
+              <p className="mt-3 text-xs leading-5 text-muted-foreground">
+                Starting a new period resets the current counter only. Historical calls, scorecards, and analytics are not deleted.
+              </p>
+            </CardContent>
+          </Card>
 
           <div className="flex justify-end">
             <Button type="submit" disabled={updateSchoolMutation.isPending} className="gap-2 sm:min-w-36">

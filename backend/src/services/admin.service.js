@@ -4,6 +4,7 @@ import { findInvitesBySchool, findOpenPlatformInviteByEmail, findPlatformInvites
 import { findPlatformSettings, updatePlatformSettings as updatePlatformSettingsDB } from '../db/platform.queries.js';
 import { generateRecoveryLink } from '../db/authAdmin.queries.js';
 import { findUsageCalls } from '../db/calls.queries.js';
+import { getSchoolMonthlyMinutesUsage } from './usageLimits.service.js';
 import { hasReachedMemberLimit } from '../utils/plans.js';
 import { config } from '../config/env.js';
 
@@ -34,13 +35,27 @@ export async function editSchool(schoolId, data) {
 }
 
 export async function getSchoolDetail(schoolId) {
-  const [school, members] = await Promise.all([
+  const [school, members, monthlyUsage] = await Promise.all([
     findSchoolById(schoolId),
     findUsersBySchool(schoolId),
+    getSchoolMonthlyMinutesUsage(schoolId),
   ]);
   if (!school) throw new Error('NOT_FOUND');
   const usage = await getSchoolUsageTotals(schoolId);
-  return { school, members, usage };
+  return { school, members, usage: { ...usage, monthly: monthlyUsage } };
+}
+
+export async function resetSchoolUsagePeriod(schoolId) {
+  const school = await findSchoolById(schoolId);
+  if (!school) throw new Error('NOT_FOUND');
+  const start = new Date();
+  const end = new Date(start);
+  end.setUTCMonth(end.getUTCMonth() + 1);
+  await updateSchoolDB(schoolId, {
+    usagePeriodStart: start.toISOString(),
+    usagePeriodEnd: end.toISOString(),
+  });
+  return getSchoolDetail(schoolId);
 }
 
 export async function getUsageOverview() {
