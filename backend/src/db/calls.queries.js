@@ -62,16 +62,19 @@ export async function findCallsBySchoolAndUser(schoolId, userId) {
   return (data || []).map(toCall);
 }
 
-export async function getSchoolCallDurationSecondsSince(schoolId, since) {
+export async function getSchoolCallUsageSince(schoolId, since) {
   const { data, error } = await supabase
     .from('calls')
-    .select('duration_seconds')
+    .select('id, duration_seconds')
     .eq('school_id', schoolId)
     .gte('created_at', since.toISOString())
-    .not('duration_seconds', 'is', null)
     .limit(10000);
   if (error) throw error;
-  return (data || []).reduce((sum, row) => sum + Number(row.duration_seconds || 0), 0);
+  const rows = data || [];
+  return {
+    calls: rows.length,
+    durationSeconds: rows.reduce((sum, row) => sum + Number(row.duration_seconds || 0), 0),
+  };
 }
 
 export async function findUsageCalls() {

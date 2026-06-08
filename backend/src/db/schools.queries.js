@@ -126,11 +126,16 @@ export async function restoreSchool(id) {
 export async function getSchoolUsageTotals(schoolId) {
   const { data, error } = await supabase
     .from('calls')
-    .select('cost_usd')
+    .select('id, duration_seconds, cost_usd')
     .eq('school_id', schoolId)
-    .not('cost_usd', 'is', null)
     .limit(10000);
   if (error) throw error;
-  const total = (data || []).reduce((sum, r) => sum + Number(r.cost_usd || 0), 0);
-  return { totalUsd: Math.round(total * 10000) / 10000 };
+  const rows = data || [];
+  const total = rows.reduce((sum, r) => sum + Number(r.cost_usd || 0), 0);
+  const totalSeconds = rows.reduce((sum, r) => sum + Number(r.duration_seconds || 0), 0);
+  return {
+    totalCalls: rows.length,
+    totalMinutes: Math.round((totalSeconds / 60) * 10) / 10,
+    totalUsd: Math.round(total * 10000) / 10000,
+  };
 }

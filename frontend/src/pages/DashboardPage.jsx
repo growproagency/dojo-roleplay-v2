@@ -4,10 +4,12 @@ import DashboardLayout from '../components/DashboardLayout';
 import { DashboardCharts } from '../components/DashboardCharts';
 import { useCalls } from '../hooks/useCalls';
 import { useLeaderboard } from '../hooks/useLeaderboard';
+import { useSchool } from '../hooks/useSchool';
 import { useVapiConfig } from '../hooks/useVapi';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Phone, Clock, TrendingUp, Loader2, ChevronRight, Trophy, Medal, Star, Sparkles, Users, Gauge } from 'lucide-react';
+import { getEffectivePlanDetails } from '../utils/plans';
 
 const SCENARIO_LABELS = {
   new_student: 'New Student',
@@ -96,19 +98,19 @@ function SchoolSnapshotCard({ schoolName, totalCalls, totalMinutes, minuteLimit 
       <CardContent className="space-y-5">
         <div className="space-y-1">
           <p className="text-sm font-medium leading-5">{schoolName}</p>
-          <p className="text-xs leading-4 text-muted-foreground">Usage and team activity at a glance.</p>
+          <p className="text-xs leading-4 text-muted-foreground">Current usage period at a glance.</p>
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div className="rounded-lg border border-border/70 p-3">
             <div className="flex items-center justify-between text-xs text-muted-foreground">
-              <span>Calls</span>
+              <span>Current calls</span>
               <Users className="h-3.5 w-3.5" />
             </div>
             <p className="mt-1 text-xl font-semibold">{totalCalls}</p>
           </div>
           <div className="rounded-lg border border-border/70 p-3">
             <div className="flex items-center justify-between text-xs text-muted-foreground">
-              <span>Minutes</span>
+              <span>Current minutes</span>
               <Gauge className="h-3.5 w-3.5" />
             </div>
             <div className="mt-1 flex min-w-0 items-baseline gap-1">
@@ -281,13 +283,29 @@ export function DashboardPage() {
   const { data: calls, isLoading } = useCalls({ scope: 'mine' });
   const { data: schoolCalls } = useCalls({ scope: 'school' });
   const { data: leaderboard, isLoading: leaderboardLoading } = useLeaderboard({ range: '30d' });
+  const { data: schoolDetail } = useSchool(!!user);
   const { data: vapiConfig } = useVapiConfig(!!user);
 
   const recentCalls = calls?.slice(0, 5) ?? [];
   const schoolCallList = schoolCalls ?? [];
-  const schoolTotalCalls = schoolCallList.length;
-  const schoolTotalMinutes = Math.round(schoolCallList.reduce((sum, call) => sum + (call.durationSeconds ?? 0), 0) / 60);
-  const monthlyMinuteLimit = profile?.school?.planDetails?.monthlyRoleplayMinutes ?? null;
+  const currentSchool = schoolDetail ?? profile?.school;
+  const currentPlanDetails = currentSchool?.planDetails ?? getEffectivePlanDetails(currentSchool);
+  const monthlyMinuteLimit = currentPlanDetails?.monthlyRoleplayMinutes ?? null;
+  const currentUsage = currentSchool?.usage?.monthly;
+  const periodStart = currentUsage?.periodStart ?? currentSchool?.usagePeriodStart;
+  const periodEnd = currentUsage?.periodEnd ?? currentSchool?.usagePeriodEnd;
+  const periodStartTime = periodStart ? new Date(periodStart).getTime() : null;
+  const periodEndTime = periodEnd ? new Date(periodEnd).getTime() : null;
+  const currentPeriodCalls = schoolCallList.filter((call) => {
+    const callTime = call.createdAt ? new Date(call.createdAt).getTime() : null;
+    if (!callTime) return false;
+    if (periodStartTime && callTime < periodStartTime) return false;
+    if (periodEndTime && callTime >= periodEndTime) return false;
+    return true;
+  });
+  const currentPeriodMinutes = Math.round((currentPeriodCalls.reduce((sum, call) => sum + (call.durationSeconds ?? 0), 0) / 60) * 10) / 10;
+  const schoolCurrentCalls = currentUsage?.usedCalls ?? currentPeriodCalls.length;
+  const schoolCurrentMinutes = currentUsage?.usedMinutes ?? currentPeriodMinutes;
   const startPractice = () => navigate('/practice');
 
   return (
@@ -342,9 +360,9 @@ export function DashboardPage() {
           />
           {isSchoolAdmin ? (
             <SchoolSnapshotCard
-              schoolName={profile?.school?.name ?? 'Your school'}
-              totalCalls={schoolTotalCalls}
-              totalMinutes={schoolTotalMinutes}
+              schoolName={currentSchool?.name ?? 'Your school'}
+              totalCalls={schoolCurrentCalls}
+              totalMinutes={schoolCurrentMinutes}
               minuteLimit={monthlyMinuteLimit}
             />
           ) : (

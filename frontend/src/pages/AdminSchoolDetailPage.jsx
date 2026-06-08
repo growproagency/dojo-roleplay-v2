@@ -73,6 +73,7 @@ export function AdminSchoolDetailPage() {
   const [lastInviteUrl, setLastInviteUrl] = useState(null);
   const [copiedToken, setCopiedToken] = useState(null);
   const [unassignTarget, setUnassignTarget] = useState(null);
+  const [usageResetOpen, setUsageResetOpen] = useState(false);
   const [resettingEmail, setResettingEmail] = useState(null);
   const [generatingResetLinkEmail, setGeneratingResetLinkEmail] = useState(null);
   const [planForm, setPlanForm] = useState({
@@ -98,6 +99,7 @@ export function AdminSchoolDetailPage() {
   const school = data?.school;
   const members = data?.members ?? [];
   const invites = invitesData ?? [];
+  const totalUsage = data?.usage;
   const monthlyUsage = data?.usage?.monthly;
 
   useEffect(() => {
@@ -308,38 +310,24 @@ export function AdminSchoolDetailPage() {
             </Card>
           </div>
 
+          <div className="flex justify-end">
+            <Button type="submit" disabled={updateSchoolMutation.isPending} className="gap-2 sm:min-w-36">
+              {updateSchoolMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+              Save changes
+            </Button>
+          </div>
+
           <Card>
             <CardHeader className="pb-3">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                <div>
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <Clock className="w-4 h-4 text-primary" />Usage period
-                  </CardTitle>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    Controls which calls count against this school's current monthly minute limit.
-                  </p>
-                </div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="gap-2"
-                  disabled={resetUsagePeriodMutation.isPending}
-                  onClick={() => {
-                    if (!confirm(`Start a new usage period for ${school.name}? Past calls and scorecards will stay in history.`)) return;
-                    resetUsagePeriodMutation.mutate(school.id, {
-                      onSuccess: () => toast.success('New usage period started'),
-                      onError: (err) => toast.error(err.message || 'Failed to reset usage period'),
-                    });
-                  }}
-                >
-                  {resetUsagePeriodMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <RotateCcw className="w-4 h-4" />}
-                  Start new period
-                </Button>
-              </div>
+              <CardTitle className="text-base flex items-center gap-2">
+                <Clock className="w-4 h-4 text-primary" />Usage period
+              </CardTitle>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Controls which calls count against this school's current monthly minute limit.
+              </p>
             </CardHeader>
             <CardContent>
-              <div className="grid gap-3 md:grid-cols-3">
+              <div className="grid gap-3 md:grid-cols-2">
                 <div className="rounded-lg border border-border bg-secondary/20 p-3">
                   <p className="text-xs text-muted-foreground">Period start</p>
                   <p className="mt-1 text-sm font-medium">{formatDate(monthlyUsage?.periodStart)}</p>
@@ -348,9 +336,24 @@ export function AdminSchoolDetailPage() {
                   <p className="text-xs text-muted-foreground">Period end</p>
                   <p className="mt-1 text-sm font-medium">{formatDate(monthlyUsage?.periodEnd)}</p>
                 </div>
+              </div>
+
+              <div className="mt-3 grid gap-3 md:grid-cols-4">
+                <div className="rounded-lg border border-border bg-secondary/20 p-3">
+                  <p className="text-xs text-muted-foreground">Total calls</p>
+                  <p className="mt-1 text-sm font-semibold">{totalUsage?.totalCalls ?? 0}</p>
+                </div>
+                <div className="rounded-lg border border-border bg-secondary/20 p-3">
+                  <p className="text-xs text-muted-foreground">Total minutes</p>
+                  <p className="mt-1 text-sm font-semibold">{formatMinutes(totalUsage?.totalMinutes)}</p>
+                </div>
+                <div className="rounded-lg border border-border bg-secondary/20 p-3">
+                  <p className="text-xs text-muted-foreground">Current calls</p>
+                  <p className="mt-1 text-sm font-semibold">{monthlyUsage?.usedCalls ?? 0}</p>
+                </div>
                 <div className="rounded-lg border border-border bg-secondary/20 p-3">
                   <div className="flex items-center justify-between gap-3">
-                    <p className="text-xs text-muted-foreground">Minutes used</p>
+                    <p className="text-xs text-muted-foreground">Current minutes</p>
                     <p className="text-sm font-semibold">
                       {formatMinutes(monthlyUsage?.usedMinutes)}
                       {monthlyMinuteLimit != null ? ` / ${monthlyMinuteLimit}m` : ' / unlimited'}
@@ -366,15 +369,21 @@ export function AdminSchoolDetailPage() {
               <p className="mt-3 text-xs leading-5 text-muted-foreground">
                 Starting a new period resets the current counter only. Historical calls, scorecards, and analytics are not deleted.
               </p>
+              <div className="mt-4 flex justify-end">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="gap-2 sm:shrink-0"
+                  disabled={resetUsagePeriodMutation.isPending}
+                  onClick={() => setUsageResetOpen(true)}
+                >
+                  {resetUsagePeriodMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <RotateCcw className="w-4 h-4" />}
+                  Start new period
+                </Button>
+              </div>
             </CardContent>
           </Card>
-
-          <div className="flex justify-end">
-            <Button type="submit" disabled={updateSchoolMutation.isPending} className="gap-2 sm:min-w-36">
-              {updateSchoolMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-              Save changes
-            </Button>
-          </div>
         </form>
 
         {/* Invite section */}
@@ -596,6 +605,40 @@ export function AdminSchoolDetailPage() {
           </CardContent>
         </Card>
       </div>
+
+      <Dialog open={usageResetOpen} onOpenChange={setUsageResetOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <RotateCcw className="w-5 h-5 text-primary" />
+              Start new usage period
+            </DialogTitle>
+            <DialogDescription>
+              This starts a new monthly usage period for <strong>{school?.name}</strong>. Past calls, scorecards, recordings, and analytics stay in history.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="rounded-lg border border-border bg-secondary/30 p-3 text-sm text-muted-foreground">
+            Only the current minute counter resets. Future usage will count from the new period start date.
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setUsageResetOpen(false)}>Cancel</Button>
+            <Button
+              onClick={() => resetUsagePeriodMutation.mutate(school.id, {
+                onSuccess: () => {
+                  setUsageResetOpen(false);
+                  toast.success('New usage period started');
+                },
+                onError: (err) => toast.error(err.message || 'Failed to reset usage period'),
+              })}
+              disabled={resetUsagePeriodMutation.isPending}
+              className="gap-2"
+            >
+              {resetUsagePeriodMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <RotateCcw className="w-4 h-4" />}
+              Start new period
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Unassign modal */}
       <Dialog open={!!unassignTarget} onOpenChange={(open) => { if (!open) setUnassignTarget(null); }}>

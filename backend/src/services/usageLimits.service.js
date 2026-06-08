@@ -1,4 +1,4 @@
-import { getSchoolCallDurationSecondsSince } from '../db/calls.queries.js';
+import { getSchoolCallUsageSince } from '../db/calls.queries.js';
 import { findSchoolById } from '../db/schools.queries.js';
 import { getEffectivePlanDetails } from '../utils/plans.js';
 
@@ -32,7 +32,8 @@ export async function getSchoolMonthlyMinutesUsage(schoolId) {
   const planDetails = getEffectivePlanDetails(school);
   const limit = planDetails?.monthlyRoleplayMinutes ?? null;
   const period = getUsagePeriod(school);
-  const usedSeconds = await getSchoolCallDurationSecondsSince(schoolId, period.start);
+  const currentUsage = await getSchoolCallUsageSince(schoolId, period.start);
+  const usedSeconds = currentUsage.durationSeconds;
   const limitSeconds = Number.isInteger(limit) ? limit * 60 : null;
   const usedMinutes = Math.round((usedSeconds / 60) * 10) / 10;
   const remainingMinutes = limitSeconds != null
@@ -41,6 +42,7 @@ export async function getSchoolMonthlyMinutesUsage(schoolId) {
 
   return {
     limit,
+    usedCalls: currentUsage.calls,
     usedMinutes,
     remainingMinutes,
     periodStart: period.start.toISOString(),

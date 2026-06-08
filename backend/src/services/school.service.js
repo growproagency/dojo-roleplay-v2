@@ -1,12 +1,17 @@
-import { findSchoolById, updateSchool as updateSchoolDB } from '../db/schools.queries.js';
+import { findSchoolById, getSchoolUsageTotals, updateSchool as updateSchoolDB } from '../db/schools.queries.js';
 import { findUserById, findUsersBySchool, updateUser, removeUserFromSchool } from '../db/users.queries.js';
 import { findInvitesBySchool, insertInvite, revokeInvite } from '../db/invites.queries.js';
 import { hasReachedMemberLimit } from '../utils/plans.js';
+import { getSchoolMonthlyMinutesUsage } from './usageLimits.service.js';
 
 export async function getSchool(schoolId) {
-  const school = await findSchoolById(schoolId);
+  const [school, usage, monthlyUsage] = await Promise.all([
+    findSchoolById(schoolId),
+    getSchoolUsageTotals(schoolId),
+    getSchoolMonthlyMinutesUsage(schoolId),
+  ]);
   if (!school) throw new Error('NOT_FOUND');
-  return school;
+  return { ...school, usage: { ...usage, monthly: monthlyUsage } };
 }
 
 export async function updateSchool(schoolId, data) {
