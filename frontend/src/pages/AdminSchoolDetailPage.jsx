@@ -47,6 +47,11 @@ function formatMinutes(value) {
   return `${Number.isInteger(minutes) ? minutes : minutes.toFixed(1)}m`;
 }
 
+function formatOptionalMinutes(value) {
+  if (value == null) return '--';
+  return formatMinutes(value);
+}
+
 const ACCESS_STATUS_META = {
   active: { label: 'Active', className: 'border-green-500/20 bg-green-500/10 text-green-700 dark:text-green-300' },
   trialing: { label: 'Trialing', className: 'border-blue-500/20 bg-blue-500/10 text-blue-700 dark:text-blue-300' },
@@ -341,11 +346,11 @@ export function AdminSchoolDetailPage() {
               <div className="mt-3 grid gap-3 md:grid-cols-4">
                 <div className="rounded-lg border border-border bg-secondary/20 p-3">
                   <p className="text-xs text-muted-foreground">Total calls</p>
-                  <p className="mt-1 text-sm font-semibold">{totalUsage?.totalCalls ?? 0}</p>
+                  <p className="mt-1 text-sm font-semibold">{totalUsage?.totalCalls ?? '--'}</p>
                 </div>
                 <div className="rounded-lg border border-border bg-secondary/20 p-3">
                   <p className="text-xs text-muted-foreground">Total minutes</p>
-                  <p className="mt-1 text-sm font-semibold">{formatMinutes(totalUsage?.totalMinutes)}</p>
+                  <p className="mt-1 text-sm font-semibold">{formatOptionalMinutes(totalUsage?.totalMinutes)}</p>
                 </div>
                 <div className="rounded-lg border border-border bg-secondary/20 p-3">
                   <p className="text-xs text-muted-foreground">Current calls</p>
