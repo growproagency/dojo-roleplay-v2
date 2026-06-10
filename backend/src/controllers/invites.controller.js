@@ -7,7 +7,6 @@ export const getInviteHandler = asyncHandler(async (req, res) => {
 });
 
 export const acceptInviteHandler = asyncHandler(async (req, res) => {
-  const { email, password } = req.body;
-  const data = await acceptInviteToken(req.params.token, { email, password });
+  const data = await acceptInviteToken(req.params.token, { user: req.user });
   res.json({ data });
 });

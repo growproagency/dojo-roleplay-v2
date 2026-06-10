@@ -2,6 +2,10 @@ import { supabase } from './supabase.js';
 
 const USER_COLS = 'id, email, name, role, avatar_url, school_id, phone_number, supabase_auth_id, created_at, updated_at, last_signed_in';
 
+export function normalizeEmail(email) {
+  return String(email || '').trim().toLowerCase();
+}
+
 function toUser(row) {
   if (!row) return null;
   return {
@@ -30,10 +34,11 @@ export async function findUserById(id) {
 }
 
 export async function findUserByEmail(email) {
+  const normalizedEmail = normalizeEmail(email);
   const { data, error } = await supabase
     .from('users')
     .select(USER_COLS)
-    .eq('email', email)
+    .eq('email', normalizedEmail)
     .maybeSingle();
   if (error) throw error;
   return toUser(data);
@@ -83,7 +88,7 @@ export async function findGlobalAdminUsers() {
 }
 
 export async function upsertUser(fields) {
-  const row = { email: fields.email };
+  const row = { email: normalizeEmail(fields.email) };
   if (fields.name !== undefined) row.name = fields.name;
   if (fields.role !== undefined) row.role = fields.role;
   if (fields.avatarUrl !== undefined) row.avatar_url = fields.avatarUrl;

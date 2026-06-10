@@ -92,9 +92,10 @@ export function InviteAcceptPage() {
   }
 
   const emailMismatch = user && user.email?.toLowerCase() !== invite.email?.toLowerCase();
+  const inviteEmail = invite.email?.toLowerCase();
 
   const handleAccept = () => {
-    acceptMutation.mutate({ token, data: { email: invite.email } }, {
+    acceptMutation.mutate({ token, data: { email: inviteEmail } }, {
       onSuccess: (res) => {
         sessionStorage.removeItem(PENDING_INVITE_KEY);
         if (res.data?.profile) setProfile(res.data.profile);
@@ -150,7 +151,7 @@ export function InviteAcceptPage() {
               </p>
             </div>
             <Button onClick={() => {
-              sessionStorage.setItem('dojo:inviteEmail', invite.email);
+              sessionStorage.setItem('dojo:inviteEmail', inviteEmail);
               sessionStorage.setItem('dojo:inviteMode', 'signup');
               navigate('/login');
             }} className="w-full" size="lg">
@@ -159,7 +160,7 @@ export function InviteAcceptPage() {
             <p className="text-xs text-muted-foreground text-center">
               Already have an account?{' '}
               <button onClick={() => {
-                sessionStorage.setItem('dojo:inviteEmail', invite.email);
+                sessionStorage.setItem('dojo:inviteEmail', inviteEmail);
                 sessionStorage.setItem('dojo:inviteMode', 'signin');
                 navigate('/login');
               }} className="text-primary underline underline-offset-2">

@@ -4,15 +4,15 @@ import { acceptInviteSchema, updateProfileSchema } from '../src/schemas/auth.sch
 import { unassignUserSchema, updatePlatformSchema } from '../src/schemas/admin.schema.js';
 import { vapiWebhookSchema } from '../src/schemas/vapi.schema.js';
 
-test('acceptInviteSchema requires a valid email and strips unknown fields', () => {
+test('acceptInviteSchema lowercases email and strips unknown fields', () => {
   const { error, value } = acceptInviteSchema.validate({
-    email: 'staff@example.com',
+    email: 'Staff@Example.com',
     password: 'secret123',
     role: 'global_admin',
   });
 
   assert.equal(error, undefined);
-  assert.deepEqual(value, { email: 'staff@example.com', password: 'secret123' });
+  assert.deepEqual(value, { email: 'staff@example.com' });
 });
 
 test('updateProfileSchema validates E.164 phone numbers', () => {

@@ -10,6 +10,5 @@ export const updateProfileSchema = Joi.object({
 }).options({ stripUnknown: true, convert: true, abortEarly: false });
 
 export const acceptInviteSchema = Joi.object({
-  email: Joi.string().email().required(),
-  password: Joi.string().min(6).allow('', null).optional(),
+  email: Joi.string().email().lowercase().optional(),
 }).options({ stripUnknown: true, convert: true, abortEarly: false });

@@ -18,7 +18,7 @@ export const useAuth = () => {
   const signIn = async ({ email, password }) => {
     setIsLoading(true);
     setError(null);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { error } = await supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password });
     if (error) setError(error.message);
     setIsLoading(false);
     return !error;
@@ -27,7 +27,7 @@ export const useAuth = () => {
   const signUp = async ({ email, password }) => {
     setIsLoading(true);
     setError(null);
-    const { error } = await supabase.auth.signUp({ email, password });
+    const { error } = await supabase.auth.signUp({ email: email.trim().toLowerCase(), password });
     if (error) setError(error.message);
     setIsLoading(false);
     return !error;
@@ -39,7 +39,7 @@ export const useAuth = () => {
   };
 
   const resetPassword = async (email) => {
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    const { error } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), {
       redirectTo: `${window.location.origin}/update-password`,
     });
     if (error) throw error;
