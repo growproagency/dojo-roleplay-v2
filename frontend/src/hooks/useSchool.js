@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { schoolApi } from '../api/school.api';
 import { useAuthStore } from '../store/auth.store';
+import { useUIStore } from '../store/ui.store';
 
 export const schoolKeys = {
   detail: ({ userId, schoolId }) => ['school', 'detail', userId, schoolId],
@@ -8,13 +9,15 @@ export const schoolKeys = {
   invites: ({ userId, schoolId }) => ['school', 'invites', userId, schoolId],
 };
 
-export function useSchool() {
+export function useSchool(enabled = true) {
   const userId = useAuthStore((s) => s.user?.id ?? null);
-  const schoolId = useAuthStore((s) => s.profile?.schoolId ?? s.profile?.school?.id ?? null);
+  const profileSchoolId = useAuthStore((s) => s.profile?.schoolId ?? s.profile?.school?.id ?? null);
+  const viewingSchoolId = useUIStore((s) => s.viewingSchoolId);
+  const schoolId = viewingSchoolId ?? profileSchoolId;
   return useQuery({
     queryKey: schoolKeys.detail({ userId, schoolId }),
     queryFn: () => schoolApi.get().then(r => r.data),
-    enabled: !!userId && !!schoolId,
+    enabled: enabled && !!userId && !!schoolId,
   });
 }
 
@@ -28,7 +31,9 @@ export function useUpdateSchool() {
 
 export function useSchoolMembers(enabled = true) {
   const userId = useAuthStore((s) => s.user?.id ?? null);
-  const schoolId = useAuthStore((s) => s.profile?.schoolId ?? s.profile?.school?.id ?? null);
+  const profileSchoolId = useAuthStore((s) => s.profile?.schoolId ?? s.profile?.school?.id ?? null);
+  const viewingSchoolId = useUIStore((s) => s.viewingSchoolId);
+  const schoolId = viewingSchoolId ?? profileSchoolId;
   return useQuery({
     queryKey: schoolKeys.members({ userId, schoolId }),
     queryFn: () => schoolApi.getMembers().then(r => r.data),
@@ -46,7 +51,9 @@ export function useRemoveMember() {
 
 export function useInvites(enabled = true) {
   const userId = useAuthStore((s) => s.user?.id ?? null);
-  const schoolId = useAuthStore((s) => s.profile?.schoolId ?? s.profile?.school?.id ?? null);
+  const profileSchoolId = useAuthStore((s) => s.profile?.schoolId ?? s.profile?.school?.id ?? null);
+  const viewingSchoolId = useUIStore((s) => s.viewingSchoolId);
+  const schoolId = viewingSchoolId ?? profileSchoolId;
   return useQuery({
     queryKey: schoolKeys.invites({ userId, schoolId }),
     queryFn: () => schoolApi.getInvites().then(r => r.data),

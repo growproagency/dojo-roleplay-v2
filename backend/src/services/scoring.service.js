@@ -1,6 +1,7 @@
 import OpenAI from 'openai';
 import { config } from '../config/env.js';
 import { findPlatformSettings } from '../db/platform.queries.js';
+import { resolveOverallScore } from '../utils/scoreNormalization.js';
 
 let _client = null;
 function getClient() {
@@ -115,6 +116,12 @@ Score on 5 categories (0–10):
 
 Return JSON: { overallScore, categories: [{name, score, feedback}], highlights, missedOpportunities, suggestions, summary }`;
 
+const SCORE_SCALE_INSTRUCTIONS = `
+
+## Score Scale
+- Category scores must be from 0 to 10.
+- overallScore must be from 0 to 100.`;
+
 function buildCustomPrompt(customScoringPrompt) {
   return `You are an expert roleplay coach evaluating a custom training scenario.
 
@@ -133,7 +140,7 @@ Return JSON: { overallScore, categories: [{name, score, feedback}], highlights, 
 }
 
 function selectScoringPrompt(scenarioTitle, customScoringPrompt) {
-  if (customScoringPrompt) return buildCustomPrompt(customScoringPrompt);
+  if (customScoringPrompt) return buildCustomPrompt(customScoringPrompt) + SCORE_SCALE_INSTRUCTIONS;
 
   const t = (scenarioTitle || '').toLowerCase();
   let basePrompt = INBOUND_PROMPT;
@@ -141,14 +148,14 @@ function selectScoringPrompt(scenarioTitle, customScoringPrompt) {
   else if (t.includes('renewal')) basePrompt = RENEWAL_PROMPT;
   else if (t.includes('enrollment') || t.includes('conference')) basePrompt = SALES_ENROLLMENT_PROMPT;
   else if (t.includes('outbound') || t.includes('callback')) basePrompt = OUTBOUND_PROMPT;
-  return basePrompt;
+  return basePrompt + SCORE_SCALE_INSTRUCTIONS;
 }
 
 export async function scoreCallTranscript(transcript, scenarioTitle, customScoringPrompt = null) {
   const systemPrompt = selectScoringPrompt(scenarioTitle, customScoringPrompt);
 
   const settings = await findPlatformSettings().catch(() => null);
-  const model = settings?.defaultModel || config.openaiModel;
+  const model = settings?.defaultLlmModel || config.openaiModel;
 
   const response = await getClient().chat.completions.create({
     model,
@@ -190,6 +197,13 @@ export async function scoreCallTranscript(transcript, scenarioTitle, customScori
   const content = response.choices[0]?.message?.content;
   if (!content) throw new Error('No scoring response from LLM');
   const parsed = JSON.parse(content);
+  parsed.overallScore = resolveOverallScore({
+    overallScore: parsed.overallScore,
+    categories: parsed.categories,
+    scenarioTitle,
+    customScoringPrompt,
+  });
+  if (parsed.overallScore == null) throw new Error('Invalid scoring response from LLM');
   parsed._meta = { model: response.model, promptTokens: response.usage?.prompt_tokens, completionTokens: response.usage?.completion_tokens };
   return parsed;
 }

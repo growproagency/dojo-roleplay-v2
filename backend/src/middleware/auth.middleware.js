@@ -1,5 +1,5 @@
 import { supabase } from '../db/supabase.js';
-import { findUserByEmail, upsertUser } from '../db/users.queries.js';
+import { findUserByEmail, normalizeEmail, upsertUser } from '../db/users.queries.js';
 import { logger } from '../utils/logger.js';
 
 export const authMiddleware = async (req, res, next) => {
@@ -18,18 +18,20 @@ export const authMiddleware = async (req, res, next) => {
   }
 
   try {
-    let user = await findUserByEmail(supabaseUser.email);
+    const email = normalizeEmail(supabaseUser.email);
+    let user = await findUserByEmail(email);
     if (!user) {
       await upsertUser({
-        email: supabaseUser.email,
+        email,
         name: supabaseUser.user_metadata?.full_name || supabaseUser.user_metadata?.name || null,
         avatarUrl: supabaseUser.user_metadata?.avatar_url || null,
         supabaseAuthId: supabaseUser.id,
         lastSignedIn: new Date(),
       });
-      user = await findUserByEmail(supabaseUser.email);
+      user = await findUserByEmail(email);
     } else {
-      await upsertUser({ email: supabaseUser.email, supabaseAuthId: supabaseUser.id, lastSignedIn: new Date() });
+      await upsertUser({ email, supabaseAuthId: supabaseUser.id, lastSignedIn: new Date() });
+      user = await findUserByEmail(email);
     }
 
     req.user = user;

@@ -8,6 +8,8 @@ export const createSchoolSchema = Joi.object({
   usageCapUsd: Joi.number().min(0).allow(null).optional(),
   memberLimit: Joi.number().integer().min(1).allow(null).optional(),
   monthlyRoleplayMinutes: Joi.number().integer().min(0).allow(null).optional(),
+  usagePeriodStart: Joi.date().iso().allow(null).optional(),
+  usagePeriodEnd: Joi.date().iso().allow(null).optional(),
   subscriptionStatus: Joi.string().valid('active', 'trialing', 'past_due', 'suspended', 'canceled').optional(),
   subscriptionCurrentPeriodEnd: Joi.date().iso().allow(null).optional(),
   accessGraceUntil: Joi.date().iso().allow(null).optional(),
@@ -21,6 +23,8 @@ export const updateSchoolAdminSchema = Joi.object({
   usageCapUsd: Joi.number().min(0).allow(null).optional(),
   memberLimit: Joi.number().integer().min(1).allow(null).optional(),
   monthlyRoleplayMinutes: Joi.number().integer().min(0).allow(null).optional(),
+  usagePeriodStart: Joi.date().iso().allow(null).optional(),
+  usagePeriodEnd: Joi.date().iso().allow(null).optional(),
   subscriptionStatus: Joi.string().valid('active', 'trialing', 'past_due', 'suspended', 'canceled').optional(),
   subscriptionCurrentPeriodEnd: Joi.date().iso().allow(null).optional(),
   accessGraceUntil: Joi.date().iso().allow(null).optional(),
@@ -57,7 +61,7 @@ export const passwordResetLinkSchema = Joi.object({
 }).options({ stripUnknown: true, abortEarly: false });
 
 export const updatePlatformSchema = Joi.object({
-  defaultModel: Joi.string().max(100).optional(),
+  defaultLlmModel: Joi.string().max(100).allow(null).optional(),
   markupPercent: Joi.number().min(0).max(1000).allow(null).optional(),
   defaultUsageCapUsd: Joi.number().min(0).allow(null).optional(),
   maintenanceEnabled: Joi.boolean().optional(),

@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table';
 import { Progress } from '../components/ui/progress';
 import { Activity, BarChart3, Clock, DollarSign, Loader2, Phone, School, Target, TrendingUp } from 'lucide-react';
+import { labelScenario } from '../utils/scenarioLabels';
 
 const ALL = 'all';
 
@@ -30,11 +31,6 @@ function percent(value) {
 function formatDate(value) {
   if (!value) return '-';
   return new Date(value).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-}
-
-function labelScenario(value) {
-  if (!value) return 'Unknown';
-  return String(value).replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
 function getCapStatus(school) {

@@ -4,6 +4,7 @@ import { requireGlobalAdmin } from '../middleware/auth.middleware.js';
 import {
   listSchoolsHandler, createSchoolHandler, updateSchoolHandler, deleteSchoolHandler, getSchoolDetailHandler,
   restoreSchoolHandler,
+  resetSchoolUsagePeriodHandler,
   getPlatformAdminsHandler, createPlatformAdminInviteHandler, revokePlatformAdminInviteHandler,
   revokePlatformAdminHandler,
   createPasswordResetLinkHandler,
@@ -23,6 +24,7 @@ router.get('/schools/:schoolId', getSchoolDetailHandler);
 router.put('/schools/:schoolId', validateBody(updateSchoolAdminSchema), updateSchoolHandler);
 router.delete('/schools/:schoolId', deleteSchoolHandler);
 router.put('/schools/:schoolId/restore', restoreSchoolHandler);
+router.post('/schools/:schoolId/usage-period/reset', resetSchoolUsagePeriodHandler);
 router.get('/schools/:schoolId/invites', getSchoolInvitesHandler);
 router.post('/schools/:schoolId/invites', validateBody(adminCreateInviteSchema), createSchoolInviteHandler);
 router.post('/schools/:schoolId/users/readd', validateBody(readdSchoolUserSchema), readdSchoolUserHandler);

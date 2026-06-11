@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import DashboardLayout from '../components/DashboardLayout';
 import { useCreatePasswordResetLink, useCreatePlatformAdminInvite, usePlatformAdmins, useRevokePlatformAdmin, useRevokePlatformAdminInvite } from '../hooks/useAdmin';
-import { useCreateInvite, useDeleteInvite, useInvites, useRemoveMember, useSchoolMembers } from '../hooks/useSchool';
+import { useCreateInvite, useDeleteInvite, useInvites, useRemoveMember, useSchool, useSchoolMembers } from '../hooks/useSchool';
 import { useAuth } from '../hooks/useAuth';
 import { useUIStore } from '../store/ui.store';
 import { Button } from '../components/ui/button';
@@ -31,12 +31,14 @@ export function MembersPage() {
   const createPasswordResetLink = useCreatePasswordResetLink();
   const revokePlatformAdmin = useRevokePlatformAdmin();
   const revokePlatformInvite = useRevokePlatformAdminInvite();
+  const { data: schoolDetail } = useSchool(!platformMode);
   const { data: members = [], isLoading: membersLoading } = useSchoolMembers(!platformMode);
   const { data: invites = [], isLoading: invitesLoading } = useInvites(!platformMode);
   const createInvite = useCreateInvite();
   const removeMember = useRemoveMember();
   const deleteInvite = useDeleteInvite();
-  const planDetails = profile?.school?.planDetails ?? getEffectivePlanDetails(profile?.school);
+  const currentSchool = schoolDetail ?? profile?.school;
+  const planDetails = currentSchool?.planDetails ?? getEffectivePlanDetails(currentSchool);
   const memberLimit = planDetails?.memberLimit;
   const reservedMemberCount = members.length + invites.length;
   const memberLimitReached = Number.isInteger(memberLimit) && reservedMemberCount >= memberLimit;

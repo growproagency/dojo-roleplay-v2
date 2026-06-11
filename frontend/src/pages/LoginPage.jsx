@@ -33,8 +33,9 @@ export function LoginPage() {
     const storedEmail = sessionStorage.getItem('dojo:inviteEmail');
     const storedMode = sessionStorage.getItem('dojo:inviteMode');
     if (storedEmail) {
-      setEmail(storedEmail);
-      setInviteEmail(storedEmail);
+      const normalizedEmail = storedEmail.trim().toLowerCase();
+      setEmail(normalizedEmail);
+      setInviteEmail(normalizedEmail);
       setIsSignUp(storedMode !== 'signin');
       sessionStorage.removeItem('dojo:inviteEmail');
       sessionStorage.removeItem('dojo:inviteMode');
@@ -49,8 +50,9 @@ export function LoginPage() {
     }
     setLoading(true);
     try {
+      const normalizedEmail = email.trim().toLowerCase();
       if (isSignUp) {
-        const { data, error } = await supabase.auth.signUp({ email, password });
+        const { data, error } = await supabase.auth.signUp({ email: normalizedEmail, password });
         if (error) throw error;
         if (data?.session) {
           queryClient.removeQueries({ queryKey: ['auth', 'me'] });
@@ -59,7 +61,7 @@ export function LoginPage() {
           toast.success('Check your email for a confirmation link!');
         }
       } else {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        const { error } = await supabase.auth.signInWithPassword({ email: normalizedEmail, password });
         if (error) throw error;
         queryClient.removeQueries({ queryKey: ['auth', 'me'] });
         navigate(postLoginPath, { replace: true });

@@ -4,6 +4,7 @@ import {
   useAdminSchool,
   useAdminSchoolInvites,
   useUpdateAdminSchool,
+  useResetSchoolUsagePeriod,
   useChangeUserRole,
   useRemoveUserFromSchool,
   useCreatePasswordResetLink,
@@ -20,7 +21,7 @@ import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../components/ui/dialog';
-import { Loader2, School, Users, ArrowLeft, Trash2, AlertTriangle, Mail, UserPlus, Copy, CheckCircle2, Save, SlidersHorizontal, KeyRound } from 'lucide-react';
+import { Loader2, School, Users, ArrowLeft, Trash2, AlertTriangle, Mail, UserPlus, Copy, CheckCircle2, Save, SlidersHorizontal, KeyRound, Clock, RotateCcw } from 'lucide-react';
 import { toast } from 'sonner';
 import { getEffectivePlanDetails, getPlanDetails } from '../utils/plans';
 
@@ -38,6 +39,17 @@ function RoleBadge({ role }) {
 function formatDate(date) {
   if (!date) return '—';
   return new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+function formatMinutes(value) {
+  if (value == null) return '0m';
+  const minutes = Math.round(Number(value || 0) * 10) / 10;
+  return `${Number.isInteger(minutes) ? minutes : minutes.toFixed(1)}m`;
+}
+
+function formatOptionalMinutes(value) {
+  if (value == null) return '--';
+  return formatMinutes(value);
 }
 
 const ACCESS_STATUS_META = {
@@ -66,6 +78,7 @@ export function AdminSchoolDetailPage() {
   const [lastInviteUrl, setLastInviteUrl] = useState(null);
   const [copiedToken, setCopiedToken] = useState(null);
   const [unassignTarget, setUnassignTarget] = useState(null);
+  const [usageResetOpen, setUsageResetOpen] = useState(false);
   const [resettingEmail, setResettingEmail] = useState(null);
   const [generatingResetLinkEmail, setGeneratingResetLinkEmail] = useState(null);
   const [planForm, setPlanForm] = useState({
@@ -85,11 +98,14 @@ export function AdminSchoolDetailPage() {
   const readdUserMutation = useReaddSchoolUser(schoolId);
   const revokeInviteMutation = useRevokeSchoolInvite(schoolId);
   const updateSchoolMutation = useUpdateAdminSchool();
+  const resetUsagePeriodMutation = useResetSchoolUsagePeriod();
   const createPasswordResetLink = useCreatePasswordResetLink();
 
   const school = data?.school;
   const members = data?.members ?? [];
   const invites = invitesData ?? [];
+  const totalUsage = data?.usage;
+  const monthlyUsage = data?.usage?.monthly;
 
   useEffect(() => {
     if (!school) return;
@@ -126,6 +142,10 @@ export function AdminSchoolDetailPage() {
 
   const effectivePlan = getEffectivePlanDetails(school);
   const planDefaults = getPlanDetails(planForm.plan);
+  const monthlyMinuteLimit = monthlyUsage?.limit ?? effectivePlan?.monthlyRoleplayMinutes ?? null;
+  const usagePercent = monthlyMinuteLimit
+    ? Math.min(100, Math.round((Number(monthlyUsage?.usedMinutes || 0) / monthlyMinuteLimit) * 100))
+    : null;
 
   const handleLimitsSave = (event) => {
     event.preventDefault();
@@ -301,6 +321,74 @@ export function AdminSchoolDetailPage() {
               Save changes
             </Button>
           </div>
+
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Clock className="w-4 h-4 text-primary" />Usage period
+              </CardTitle>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Controls which calls count against this school's current monthly minute limit.
+              </p>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-3 md:grid-cols-2">
+                <div className="rounded-lg border border-border bg-secondary/20 p-3">
+                  <p className="text-xs text-muted-foreground">Period start</p>
+                  <p className="mt-1 text-sm font-medium">{formatDate(monthlyUsage?.periodStart)}</p>
+                </div>
+                <div className="rounded-lg border border-border bg-secondary/20 p-3">
+                  <p className="text-xs text-muted-foreground">Period end</p>
+                  <p className="mt-1 text-sm font-medium">{formatDate(monthlyUsage?.periodEnd)}</p>
+                </div>
+              </div>
+
+              <div className="mt-3 grid gap-3 md:grid-cols-4">
+                <div className="rounded-lg border border-border bg-secondary/20 p-3">
+                  <p className="text-xs text-muted-foreground">Total calls</p>
+                  <p className="mt-1 text-sm font-semibold">{totalUsage?.totalCalls ?? '--'}</p>
+                </div>
+                <div className="rounded-lg border border-border bg-secondary/20 p-3">
+                  <p className="text-xs text-muted-foreground">Total minutes</p>
+                  <p className="mt-1 text-sm font-semibold">{formatOptionalMinutes(totalUsage?.totalMinutes)}</p>
+                </div>
+                <div className="rounded-lg border border-border bg-secondary/20 p-3">
+                  <p className="text-xs text-muted-foreground">Current calls</p>
+                  <p className="mt-1 text-sm font-semibold">{monthlyUsage?.usedCalls ?? 0}</p>
+                </div>
+                <div className="rounded-lg border border-border bg-secondary/20 p-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-xs text-muted-foreground">Current minutes</p>
+                    <p className="text-sm font-semibold">
+                      {formatMinutes(monthlyUsage?.usedMinutes)}
+                      {monthlyMinuteLimit != null ? ` / ${monthlyMinuteLimit}m` : ' / unlimited'}
+                    </p>
+                  </div>
+                  {usagePercent != null && (
+                    <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-secondary">
+                      <div className="h-full rounded-full bg-primary" style={{ width: `${usagePercent}%` }} />
+                    </div>
+                  )}
+                </div>
+              </div>
+              <p className="mt-3 text-xs leading-5 text-muted-foreground">
+                Starting a new period resets the current counter only. Historical calls, scorecards, and analytics are not deleted.
+              </p>
+              <div className="mt-4 flex justify-end">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="gap-2 sm:shrink-0"
+                  disabled={resetUsagePeriodMutation.isPending}
+                  onClick={() => setUsageResetOpen(true)}
+                >
+                  {resetUsagePeriodMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <RotateCcw className="w-4 h-4" />}
+                  Start new period
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         </form>
 
         {/* Invite section */}
@@ -522,6 +610,40 @@ export function AdminSchoolDetailPage() {
           </CardContent>
         </Card>
       </div>
+
+      <Dialog open={usageResetOpen} onOpenChange={setUsageResetOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <RotateCcw className="w-5 h-5 text-primary" />
+              Start new usage period
+            </DialogTitle>
+            <DialogDescription>
+              This starts a new monthly usage period for <strong>{school?.name}</strong>. Past calls, scorecards, recordings, and analytics stay in history.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="rounded-lg border border-border bg-secondary/30 p-3 text-sm text-muted-foreground">
+            Only the current minute counter resets. Future usage will count from the new period start date.
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setUsageResetOpen(false)}>Cancel</Button>
+            <Button
+              onClick={() => resetUsagePeriodMutation.mutate(school.id, {
+                onSuccess: () => {
+                  setUsageResetOpen(false);
+                  toast.success('New usage period started');
+                },
+                onError: (err) => toast.error(err.message || 'Failed to reset usage period'),
+              })}
+              disabled={resetUsagePeriodMutation.isPending}
+              className="gap-2"
+            >
+              {resetUsagePeriodMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <RotateCcw className="w-4 h-4" />}
+              Start new period
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Unassign modal */}
       <Dialog open={!!unassignTarget} onOpenChange={(open) => { if (!open) setUnassignTarget(null); }}>

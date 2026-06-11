@@ -45,6 +45,18 @@ export function useUpdateAdminSchool() {
   });
 }
 
+export function useResetSchoolUsagePeriod() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id) => adminApi.resetSchoolUsagePeriod(id),
+    onSuccess: (_data, id) => {
+      qc.invalidateQueries({ queryKey: adminKeys.school(id) });
+      qc.invalidateQueries({ queryKey: adminKeys.usage });
+      qc.invalidateQueries({ queryKey: ['admin', 'schools'] });
+    },
+  });
+}
+
 export function useAdminUsage() {
   return useQuery({
     queryKey: adminKeys.usage,

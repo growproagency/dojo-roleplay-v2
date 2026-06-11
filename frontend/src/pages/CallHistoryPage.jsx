@@ -8,15 +8,7 @@ import { Button } from '../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Phone, ChevronRight, Loader2, Clock, Calendar, User } from 'lucide-react';
-
-const SCENARIO_LABELS = {
-  new_student: 'New Student',
-  parent_enrollment: 'Parent Enrollment',
-  web_lead_callback: 'Outbound Callback',
-  sales_enrollment: 'Sales Enrollment',
-  renewal_conference: 'Renewal',
-  cancellation_save: 'Cancellation Save',
-};
+import { labelScenario } from '../utils/scenarioLabels';
 
 const DIFFICULTY_DOT = { easy: 'bg-green-500', medium: 'bg-yellow-500', hard: 'bg-red-500' };
 
@@ -116,7 +108,7 @@ export function CallHistoryPage() {
                       </div>
                       <div className="min-w-0">
                         <div className="flex items-center gap-3 flex-wrap mb-1">
-                          <span className="text-sm font-medium">{SCENARIO_LABELS[call.scenario] ?? call.scenario}</span>
+                          <span className="text-sm font-medium">{labelScenario(call.scenario)}</span>
                           <DifficultyChip difficulty={call.difficulty} />
                         </div>
                         <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">

@@ -230,6 +230,7 @@ function scenarioMeta(scenario) {
     contextType: scenario.contextType ?? builtIn.contextType ?? 'inbound_call',
     characterName: scenario.characterName ?? builtIn.characterName,
     characterBlurb: scenario.characterBlurb ?? builtIn.characterBlurb,
+    description: scenario.description ?? builtIn.characterBlurb ?? '',
     topics: Array.isArray(scenario.topics) ? scenario.topics : builtIn.topics ?? [],
     script: scenario.characterPrompt ?? scenario.systemPrompt ?? '',
   };
@@ -246,10 +247,28 @@ function getTrainingGuide(scenario) {
   return TRAINING_GUIDES.inbound;
 }
 
+function getCustomRubricCategories(scoringPrompt) {
+  if (!scoringPrompt) return [];
+  return String(scoringPrompt)
+    .split('\n')
+    .map((line) => line.trim())
+    .map((line) => {
+      const match = line.match(/^\d+\.\s+(.+?)(?:\s*[-:]\s*.*)?$/);
+      return match?.[1]?.trim();
+    })
+    .filter(Boolean)
+    .slice(0, 8)
+    .map((name) => [name, 'Avg']);
+}
+
 function ScenarioCard({ scenario, isLocked, isSelected, onSelect, onViewScript }) {
   const meta = scenarioMeta(scenario);
   const ContextIcon = meta.contextType === 'in_person' ? Users : Phone;
   const title = getPracticeScenarioTitle(scenario);
+  const isCustom = !scenario.isBuiltIn;
+  const summaryText = isCustom
+    ? meta.description
+    : [meta.characterName, meta.characterBlurb].filter(Boolean).join(' - ');
 
   return (
     <div
@@ -277,20 +296,20 @@ function ScenarioCard({ scenario, isLocked, isSelected, onSelect, onViewScript }
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1 space-y-1.5">
           <div className="min-w-0 space-y-1">
-            <div className="flex min-w-0 items-start gap-1.5">
-              <h3 className="min-w-0 flex-1 font-heading text-sm font-medium leading-5">{title}</h3>
+            <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+              <h3 className="min-w-0 font-heading text-sm font-medium leading-5">{title}</h3>
               <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-secondary px-1.5 py-0.5 text-[10px] font-medium leading-4 text-muted-foreground">
                 <ContextIcon className="h-2.5 w-2.5 text-primary" />
                 {CONTEXT_LABELS[meta.contextType] ?? 'Training call'}
               </span>
               {!scenario.isBuiltIn && <Badge variant="secondary">Custom</Badge>}
             </div>
-            {meta.characterName && (
+            {summaryText && (
               <p
                 className="overflow-hidden pr-10 text-xs leading-5 text-muted-foreground"
                 style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}
               >
-                {meta.characterName}{meta.characterBlurb ? ` - ${meta.characterBlurb}` : ''}
+                {summaryText}
               </p>
             )}
           </div>
@@ -306,18 +325,20 @@ function ScenarioCard({ scenario, isLocked, isSelected, onSelect, onViewScript }
           )}
         </div>
 
-        <button
-          type="button"
-          onClick={(event) => {
-            event.stopPropagation();
-            onViewScript(scenario);
-          }}
-          className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-lg px-2 text-xs font-medium text-primary hover:bg-primary/10"
-          aria-label={`View ${title} training script`}
-        >
-          <FileText className="h-3.5 w-3.5" />
-          Script
-        </button>
+        {scenario.isBuiltIn && (
+          <button
+            type="button"
+            onClick={(event) => {
+              event.stopPropagation();
+              onViewScript(scenario);
+            }}
+            className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-lg px-2 text-xs font-medium text-primary hover:bg-primary/10"
+            aria-label={`View ${title} training script`}
+          >
+            <FileText className="h-3.5 w-3.5" />
+            Script
+          </button>
+        )}
       </div>
     </div>
   );
@@ -370,6 +391,14 @@ export function PracticeCallPage() {
   const selectedScenarioKey = getScenarioKey(selectedScenario) ?? selectedScenarioId ?? normalizeScenarioId(selectedScenario?.id);
   const selectedImage = SCENARIO_IMAGES[selectedScenarioKey] ?? '/ai-caller-room.png';
   const selectedMeta = selectedScenario ? scenarioMeta(selectedScenario) : null;
+  const selectedSummary = selectedScenario?.isBuiltIn
+    ? [selectedMeta?.characterName, selectedMeta?.characterBlurb].filter(Boolean).join(' - ')
+    : selectedMeta?.description;
+  const selectedRubric = selectedScenario
+    ? selectedScenario.isBuiltIn
+      ? getTrainingGuide(selectedScenario).categories
+      : getCustomRubricCategories(selectedScenario.scoringPrompt)
+    : [];
   const handleCallButton = () => {
     if (callStatus === 'active') endPractice();
     else if (!callConnecting) startPractice();
@@ -475,8 +504,8 @@ export function PracticeCallPage() {
                         {selectedScenario ? selectedScenarioTitle : 'AI Receptionist'}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {selectedMeta?.characterName
-                          ? `${selectedMeta.characterName}${selectedMeta.characterBlurb ? ` - ${selectedMeta.characterBlurb}` : ''}`
+                        {selectedSummary
+                          ? selectedSummary
                           : callStatusDescription}
                       </p>
                     </div>
@@ -535,6 +564,19 @@ export function PracticeCallPage() {
                     ? `Selected scenario: ${selectedScenarioTitle}. Difficulty: ${selectedDifficulty}. The call will hand off directly to the practice caller.`
                     : 'Choose a scenario on the right before starting your web call. Phone callers can still choose by voice.'}
                 </p>
+                {selectedRubric.length > 0 && (
+                  <div className="pt-2">
+                    <p className="text-sm font-medium">Scoring rubric</p>
+                    <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                      {selectedRubric.map(([name, weight]) => (
+                        <div key={name} className="flex items-center justify-between gap-3 rounded-lg border border-border bg-secondary/30 px-3 py-2">
+                          <span className="min-w-0 truncate text-xs text-muted-foreground">{name}</span>
+                          <Badge variant="outline" className="shrink-0 font-normal">{weight}</Badge>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>

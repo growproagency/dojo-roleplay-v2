@@ -5,6 +5,7 @@ export const adminApi = {
   createSchool:           (data)          => apiClient.post('/api/admin/schools', data),
   getSchool:              (id)            => apiClient.get(`/api/admin/schools/${id}`),
   updateSchool:           (id, data)      => apiClient.put(`/api/admin/schools/${id}`, data),
+  resetSchoolUsagePeriod: (id)            => apiClient.post(`/api/admin/schools/${id}/usage-period/reset`, {}),
   archiveSchool:          (id)            => apiClient.delete(`/api/admin/schools/${id}`),
   restoreSchool:          (id)            => apiClient.put(`/api/admin/schools/${id}/restore`, {}),
   getUsage:               ()              => apiClient.get('/api/admin/usage'),
