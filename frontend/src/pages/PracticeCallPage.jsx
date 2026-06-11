@@ -230,6 +230,7 @@ function scenarioMeta(scenario) {
     contextType: scenario.contextType ?? builtIn.contextType ?? 'inbound_call',
     characterName: scenario.characterName ?? builtIn.characterName,
     characterBlurb: scenario.characterBlurb ?? builtIn.characterBlurb,
+    description: scenario.description ?? builtIn.characterBlurb ?? '',
     topics: Array.isArray(scenario.topics) ? scenario.topics : builtIn.topics ?? [],
     script: scenario.characterPrompt ?? scenario.systemPrompt ?? '',
   };
@@ -250,6 +251,10 @@ function ScenarioCard({ scenario, isLocked, isSelected, onSelect, onViewScript }
   const meta = scenarioMeta(scenario);
   const ContextIcon = meta.contextType === 'in_person' ? Users : Phone;
   const title = getPracticeScenarioTitle(scenario);
+  const isCustom = !scenario.isBuiltIn;
+  const summaryText = isCustom
+    ? meta.description
+    : [meta.characterName, meta.characterBlurb].filter(Boolean).join(' - ');
 
   return (
     <div
@@ -277,20 +282,20 @@ function ScenarioCard({ scenario, isLocked, isSelected, onSelect, onViewScript }
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1 space-y-1.5">
           <div className="min-w-0 space-y-1">
-            <div className="flex min-w-0 items-start gap-1.5">
-              <h3 className="min-w-0 flex-1 font-heading text-sm font-medium leading-5">{title}</h3>
+            <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+              <h3 className="min-w-0 font-heading text-sm font-medium leading-5">{title}</h3>
               <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-secondary px-1.5 py-0.5 text-[10px] font-medium leading-4 text-muted-foreground">
                 <ContextIcon className="h-2.5 w-2.5 text-primary" />
                 {CONTEXT_LABELS[meta.contextType] ?? 'Training call'}
               </span>
               {!scenario.isBuiltIn && <Badge variant="secondary">Custom</Badge>}
             </div>
-            {meta.characterName && (
+            {summaryText && (
               <p
                 className="overflow-hidden pr-10 text-xs leading-5 text-muted-foreground"
                 style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}
               >
-                {meta.characterName}{meta.characterBlurb ? ` - ${meta.characterBlurb}` : ''}
+                {summaryText}
               </p>
             )}
           </div>
@@ -306,18 +311,20 @@ function ScenarioCard({ scenario, isLocked, isSelected, onSelect, onViewScript }
           )}
         </div>
 
-        <button
-          type="button"
-          onClick={(event) => {
-            event.stopPropagation();
-            onViewScript(scenario);
-          }}
-          className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-lg px-2 text-xs font-medium text-primary hover:bg-primary/10"
-          aria-label={`View ${title} training script`}
-        >
-          <FileText className="h-3.5 w-3.5" />
-          Script
-        </button>
+        {scenario.isBuiltIn && (
+          <button
+            type="button"
+            onClick={(event) => {
+              event.stopPropagation();
+              onViewScript(scenario);
+            }}
+            className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-lg px-2 text-xs font-medium text-primary hover:bg-primary/10"
+            aria-label={`View ${title} training script`}
+          >
+            <FileText className="h-3.5 w-3.5" />
+            Script
+          </button>
+        )}
       </div>
     </div>
   );
@@ -370,6 +377,9 @@ export function PracticeCallPage() {
   const selectedScenarioKey = getScenarioKey(selectedScenario) ?? selectedScenarioId ?? normalizeScenarioId(selectedScenario?.id);
   const selectedImage = SCENARIO_IMAGES[selectedScenarioKey] ?? '/ai-caller-room.png';
   const selectedMeta = selectedScenario ? scenarioMeta(selectedScenario) : null;
+  const selectedSummary = selectedScenario?.isBuiltIn
+    ? [selectedMeta?.characterName, selectedMeta?.characterBlurb].filter(Boolean).join(' - ')
+    : selectedMeta?.description;
   const handleCallButton = () => {
     if (callStatus === 'active') endPractice();
     else if (!callConnecting) startPractice();
@@ -475,8 +485,8 @@ export function PracticeCallPage() {
                         {selectedScenario ? selectedScenarioTitle : 'AI Receptionist'}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {selectedMeta?.characterName
-                          ? `${selectedMeta.characterName}${selectedMeta.characterBlurb ? ` - ${selectedMeta.characterBlurb}` : ''}`
+                        {selectedSummary
+                          ? selectedSummary
                           : callStatusDescription}
                       </p>
                     </div>
