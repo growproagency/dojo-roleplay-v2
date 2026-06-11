@@ -2,20 +2,7 @@ import { useMemo } from 'react';
 import { Area, AreaChart, CartesianGrid, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { Activity, BarChart3, Clock, Phone, TrendingUp } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { Button } from './ui/button';
-
-const SCENARIO_LABELS = {
-  new_student: 'New Student',
-  parent_enrollment: 'Parent Enroll',
-  web_lead_callback: 'Web Callback',
-  sales_enrollment: 'Sales Enroll',
-  renewal_conference: 'Renewal',
-  cancellation_save: 'Cancellation',
-};
-
-function labelScenario(slug) {
-  return SCENARIO_LABELS[slug] || String(slug).replace(/_/g, ' ');
-}
+import { labelScenario } from '../utils/scenarioLabels';
 
 function shortDate(date) {
   return new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });

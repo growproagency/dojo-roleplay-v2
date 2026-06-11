@@ -61,7 +61,7 @@ export const passwordResetLinkSchema = Joi.object({
 }).options({ stripUnknown: true, abortEarly: false });
 
 export const updatePlatformSchema = Joi.object({
-  defaultModel: Joi.string().max(100).optional(),
+  defaultLlmModel: Joi.string().max(100).allow(null).optional(),
   markupPercent: Joi.number().min(0).max(1000).allow(null).optional(),
   defaultUsageCapUsd: Joi.number().min(0).allow(null).optional(),
   maintenanceEnabled: Joi.boolean().optional(),

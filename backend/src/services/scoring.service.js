@@ -155,7 +155,7 @@ export async function scoreCallTranscript(transcript, scenarioTitle, customScori
   const systemPrompt = selectScoringPrompt(scenarioTitle, customScoringPrompt);
 
   const settings = await findPlatformSettings().catch(() => null);
-  const model = settings?.defaultModel || config.openaiModel;
+  const model = settings?.defaultLlmModel || config.openaiModel;
 
   const response = await getClient().chat.completions.create({
     model,

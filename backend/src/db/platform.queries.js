@@ -4,7 +4,7 @@ function toSettings(row) {
   if (!row) return null;
   return {
     id: row.id,
-    defaultModel: row.default_model,
+    defaultLlmModel: row.default_llm_model,
     markupPercent: row.markup_percent != null ? Number(row.markup_percent) : null,
     defaultUsageCapUsd: row.default_usage_cap_usd != null ? Number(row.default_usage_cap_usd) : null,
     maintenanceEnabled: Boolean(row.maintenance_enabled),
@@ -18,7 +18,7 @@ function toSettings(row) {
 export async function findPlatformSettings() {
   const { data, error } = await supabase
     .from('platform_settings')
-    .select('id, default_model, markup_percent, default_usage_cap_usd, maintenance_enabled, maintenance_message, maintenance_severity, created_at, updated_at')
+    .select('id, default_llm_model, markup_percent, default_usage_cap_usd, maintenance_enabled, maintenance_message, maintenance_severity, created_at, updated_at')
     .order('id', { ascending: true })
     .limit(1)
     .maybeSingle();
@@ -28,7 +28,7 @@ export async function findPlatformSettings() {
 
 export async function updatePlatformSettings(id, fields) {
   const row = {};
-  if (fields.defaultModel !== undefined) row.default_model = fields.defaultModel;
+  if (fields.defaultLlmModel !== undefined) row.default_llm_model = fields.defaultLlmModel;
   if (fields.markupPercent !== undefined) row.markup_percent = fields.markupPercent;
   if (fields.defaultUsageCapUsd !== undefined) row.default_usage_cap_usd = fields.defaultUsageCapUsd;
   if (fields.maintenanceEnabled !== undefined) row.maintenance_enabled = fields.maintenanceEnabled;

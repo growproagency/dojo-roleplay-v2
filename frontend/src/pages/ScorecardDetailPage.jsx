@@ -9,14 +9,13 @@ import {
   AlertTriangle, Lightbulb, BarChart3, RefreshCw, FileText, Volume2, User, Bot,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { labelScenario } from '../utils/scenarioLabels';
 
-const scenarioLabels = {
+const SCORECARD_SCENARIO_LABELS = {
   new_student: 'New Student Inquiry',
-  parent_enrollment: 'Parent Enrollment',
   web_lead_callback: 'Outbound Web Lead Callback',
   sales_enrollment: 'Sales Enrollment Conference',
   renewal_conference: 'Renewal Conference',
-  cancellation_save: 'Cancellation Save',
 };
 
 function ScoreRing({ score, size = 120 }) {
@@ -116,7 +115,7 @@ export function ScorecardDetailPage() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 mb-1 flex-wrap">
-              <Badge variant="secondary">{scenarioLabels[call.scenario] ?? call.scenario}</Badge>
+              <Badge variant="secondary">{labelScenario(call.scenario, SCORECARD_SCENARIO_LABELS)}</Badge>
               {dc && <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${dc.className}`}>{dc.label}</span>}
               <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${
                 call.status === 'scored' ? 'bg-green-500/10 text-green-400 border-green-500/20' :

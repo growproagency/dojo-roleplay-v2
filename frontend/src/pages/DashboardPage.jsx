@@ -10,15 +10,7 @@ import { Button } from '../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Phone, Clock, TrendingUp, Loader2, ChevronRight, Trophy, Medal, Star, Sparkles, Users, Gauge } from 'lucide-react';
 import { getEffectivePlanDetails } from '../utils/plans';
-
-const SCENARIO_LABELS = {
-  new_student: 'New Student',
-  parent_enrollment: 'Parent Enrollment',
-  web_lead_callback: 'Outbound Callback',
-  sales_enrollment: 'Sales Enrollment',
-  renewal_conference: 'Renewal',
-  cancellation_save: 'Cancellation Save',
-};
+import { labelScenario } from '../utils/scenarioLabels';
 
 const DIFFICULTY_DOT = {
   easy: 'bg-green-500',
@@ -243,7 +235,7 @@ function RecentCallsCard({ calls, isLoading, onViewAll, onSelectCall }) {
                   </div>
                   <div className="min-w-0">
                     <div className="flex items-center gap-3 flex-wrap mb-1">
-                      <span className="text-sm font-medium">{SCENARIO_LABELS[call.scenario] ?? call.scenario}</span>
+                      <span className="text-sm font-medium">{labelScenario(call.scenario)}</span>
                       <DifficultyChip difficulty={call.difficulty} />
                     </div>
                     <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">

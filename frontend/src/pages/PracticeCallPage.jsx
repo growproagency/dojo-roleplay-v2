@@ -247,6 +247,20 @@ function getTrainingGuide(scenario) {
   return TRAINING_GUIDES.inbound;
 }
 
+function getCustomRubricCategories(scoringPrompt) {
+  if (!scoringPrompt) return [];
+  return String(scoringPrompt)
+    .split('\n')
+    .map((line) => line.trim())
+    .map((line) => {
+      const match = line.match(/^\d+\.\s+(.+?)(?:\s*[-:]\s*.*)?$/);
+      return match?.[1]?.trim();
+    })
+    .filter(Boolean)
+    .slice(0, 8)
+    .map((name) => [name, 'Avg']);
+}
+
 function ScenarioCard({ scenario, isLocked, isSelected, onSelect, onViewScript }) {
   const meta = scenarioMeta(scenario);
   const ContextIcon = meta.contextType === 'in_person' ? Users : Phone;
@@ -380,6 +394,11 @@ export function PracticeCallPage() {
   const selectedSummary = selectedScenario?.isBuiltIn
     ? [selectedMeta?.characterName, selectedMeta?.characterBlurb].filter(Boolean).join(' - ')
     : selectedMeta?.description;
+  const selectedRubric = selectedScenario
+    ? selectedScenario.isBuiltIn
+      ? getTrainingGuide(selectedScenario).categories
+      : getCustomRubricCategories(selectedScenario.scoringPrompt)
+    : [];
   const handleCallButton = () => {
     if (callStatus === 'active') endPractice();
     else if (!callConnecting) startPractice();
@@ -545,6 +564,19 @@ export function PracticeCallPage() {
                     ? `Selected scenario: ${selectedScenarioTitle}. Difficulty: ${selectedDifficulty}. The call will hand off directly to the practice caller.`
                     : 'Choose a scenario on the right before starting your web call. Phone callers can still choose by voice.'}
                 </p>
+                {selectedRubric.length > 0 && (
+                  <div className="pt-2">
+                    <p className="text-sm font-medium">Scoring rubric</p>
+                    <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                      {selectedRubric.map(([name, weight]) => (
+                        <div key={name} className="flex items-center justify-between gap-3 rounded-lg border border-border bg-secondary/30 px-3 py-2">
+                          <span className="min-w-0 truncate text-xs text-muted-foreground">{name}</span>
+                          <Badge variant="outline" className="shrink-0 font-normal">{weight}</Badge>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
