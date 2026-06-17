@@ -682,7 +682,7 @@ async function handleEndOfCallReport(message) {
 
   clearCtx(vapiCallId);
   if (isScoreableTranscriptTurns(turns)) {
-    backgroundScore(dbCall.id, transcript, dbCall.scenario, dbCall.schoolId ?? null);
+    backgroundScore(dbCall.id, transcript, dbCall.scenario, dbCall.schoolId ?? null, dbCall.difficulty);
   } else {
     logger.info({
       callId: dbCall.id,
@@ -695,7 +695,7 @@ async function handleEndOfCallReport(message) {
   return {};
 }
 
-async function backgroundScore(callId, transcript, scenario, schoolId = null) {
+async function backgroundScore(callId, transcript, scenario, schoolId = null, difficulty = null) {
   try {
     await updateCall(callId, { status: 'scoring' });
     let scenarioTitle = SCENARIOS[scenario]?.title || scenario;
@@ -707,7 +707,7 @@ async function backgroundScore(callId, transcript, scenario, schoolId = null) {
         customScoringPrompt = custom.scoringPrompt;
       }
     }
-    const result = await scoreCallTranscript(transcript, scenarioTitle, customScoringPrompt);
+    const result = await scoreCallTranscript(transcript, scenarioTitle, customScoringPrompt, difficulty);
     await insertScorecard({
       callId,
       overallScore: result.overallScore,

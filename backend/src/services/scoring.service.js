@@ -20,7 +20,7 @@ const INBOUND_PROMPT = `You are an expert sales coach for martial arts schools e
 6. Current Efforts — any previous training?
 7. Position the School — address their specific WHY
 8. Present the Offer — free trial, intro offer
-9. Schedule the Appointment — specific time slots
+9. Schedule the Appointment - specific time slots
 10. Gather Information — name, email, phone
 11. Ask for Referrals
 12. Pre-Frame the Sign-Up — "if you like what you see, we can get you signed up — fair enough?"
@@ -38,23 +38,24 @@ Return JSON: { overallScore, categories: [{name, score, feedback}], highlights, 
 
 const OUTBOUND_PROMPT = `You are an expert sales coach evaluating an outbound web lead callback.
 
-## The 12-Step Outbound Callback Script:
+## The 13-Step Outbound Callback Script:
 1. Warm Introduction — introduce self and school
 2. Reference the Form — establish context
 3. Establish Rapport — genuine questions before pitching
 4. Identify WHY — what are they hoping to get?
-5. Handle Cold Open / Skepticism
-6. Position the School
-7. Present the Offer
-8. Handle "Think About It"
-9. Schedule the Appointment — specific time slots
-10. Gather Information
-11. Pre-Frame the Visit
-12. Confirm Next Steps
+5. Current Efforts - ask what they are currently doing to achieve that goal
+6. Handle Cold Open / Skepticism
+7. Position the School
+8. Present the Offer
+9. Handle "Think About It"
+10. Schedule the Appointment - specific time slots
+11. Gather Information
+12. Pre-Frame the Visit
+13. Confirm Next Steps
 
 Score on 6 categories (0–10):
 1. Rapport & Introduction (20%)
-2. Needs Discovery (20%)
+2. Needs Discovery (20%) - includes WHY and current efforts
 3. School Positioning & Offer (15%)
 4. Objection Handling (20%)
 5. Appointment Setting (15%)
@@ -122,6 +123,24 @@ const SCORE_SCALE_INSTRUCTIONS = `
 - Category scores must be from 0 to 10.
 - overallScore must be from 0 to 100.`;
 
+const HARD_DIFFICULTY_SCORING_INSTRUCTIONS = `
+
+## Hard Difficulty Scoring
+On hard difficulty, the prospect may have a realistic decision blocker such as needing to speak with the other parent, needing time to check the family schedule, comparing options, or not being ready to book immediately.
+- Do NOT penalize the staff simply because the prospect did not book a firm appointment.
+- Treat a clear soft next step as strong performance when it fits the prospect's blocker: a specific callback time, permission to follow up, sending class options, a tentative hold, or agreement to discuss with the other decision-maker.
+- In Appointment Setting or Closing categories, score whether the staff uncovered the blocker, responded with empathy, avoided pressure, offered specific options, and secured the best realistic next step.
+- Penalize pressure, ignoring the blocker, vague "call us back" endings, or failing to ask for any next step.`;
+
+const CATEGORY_INDEPENDENCE_SCORING_INSTRUCTIONS = `
+
+## Category Independence
+Score each category independently based only on the behaviors in that category.
+- Do not let a booked appointment inflate Rapport, Needs Discovery, School Positioning, Call Flow, or Objection Handling scores.
+- A booked appointment can earn strong Appointment Setting credit, but other categories must remain low or moderate when those fundamentals were skipped.
+- If the staff member books the call but rushes rapport, misses the lead's WHY, skips current efforts, ignores objections, or creates a choppy flow, reflect those misses in the relevant category scores and feedback.
+- Do not treat the final outcome as proof that the full call was strong.`;
+
 function buildCustomPrompt(customScoringPrompt) {
   return `You are an expert roleplay coach evaluating a custom training scenario.
 
@@ -139,7 +158,7 @@ ${customScoringPrompt}
 Return JSON: { overallScore, categories: [{name, score, feedback}], highlights, missedOpportunities, suggestions, summary }`;
 }
 
-function selectScoringPrompt(scenarioTitle, customScoringPrompt) {
+function selectScoringPrompt(scenarioTitle, customScoringPrompt, difficulty = null) {
   if (customScoringPrompt) return buildCustomPrompt(customScoringPrompt) + SCORE_SCALE_INSTRUCTIONS;
 
   const t = (scenarioTitle || '').toLowerCase();
@@ -148,11 +167,12 @@ function selectScoringPrompt(scenarioTitle, customScoringPrompt) {
   else if (t.includes('renewal')) basePrompt = RENEWAL_PROMPT;
   else if (t.includes('enrollment') || t.includes('conference')) basePrompt = SALES_ENROLLMENT_PROMPT;
   else if (t.includes('outbound') || t.includes('callback')) basePrompt = OUTBOUND_PROMPT;
-  return basePrompt + SCORE_SCALE_INSTRUCTIONS;
+  const difficultyPrompt = difficulty === 'hard' ? HARD_DIFFICULTY_SCORING_INSTRUCTIONS : '';
+  return basePrompt + CATEGORY_INDEPENDENCE_SCORING_INSTRUCTIONS + difficultyPrompt + SCORE_SCALE_INSTRUCTIONS;
 }
 
-export async function scoreCallTranscript(transcript, scenarioTitle, customScoringPrompt = null) {
-  const systemPrompt = selectScoringPrompt(scenarioTitle, customScoringPrompt);
+export async function scoreCallTranscript(transcript, scenarioTitle, customScoringPrompt = null, difficulty = null) {
+  const systemPrompt = selectScoringPrompt(scenarioTitle, customScoringPrompt, difficulty);
 
   const settings = await findPlatformSettings().catch(() => null);
   const model = settings?.defaultLlmModel || config.openaiModel;
@@ -161,7 +181,7 @@ export async function scoreCallTranscript(transcript, scenarioTitle, customScori
     model,
     messages: [
       { role: 'system', content: systemPrompt },
-      { role: 'user', content: `Scenario: ${scenarioTitle}\n\nTranscript:\n${transcript}\n\nEvaluate this call and return the JSON scorecard.` },
+      { role: 'user', content: `Scenario: ${scenarioTitle}\nDifficulty: ${difficulty || 'unknown'}\n\nTranscript:\n${transcript}\n\nEvaluate this call and return the JSON scorecard.` },
     ],
     response_format: {
       type: 'json_schema',
