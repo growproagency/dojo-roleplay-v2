@@ -51,7 +51,7 @@ export async function triggerScoring(callId, user) {
   if (!canAccessCall(user, call)) throw new Error('NOT_FOUND');
   const turns = call.transcriptTurns?.length ? call.transcriptTurns : parseTranscriptTurns(call.transcription);
   if (!isScoreableTranscriptTurns(turns)) {
-    throw new Error('VALIDATION');
+    throw new Error('CALL_NOT_SCOREABLE');
   }
 
   let scenarioTitle = SCENARIOS[call.scenario]?.title || call.scenario;

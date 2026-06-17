@@ -17,6 +17,7 @@ const STATUS_MAP = {
   FORBIDDEN:    403,
   UNAUTHORIZED: 401,
   VALIDATION:   400,
+  CALL_NOT_SCOREABLE: 400,
   CONFLICT:     409,
   SCHOOL_MEMBER_EXISTS: 409,
   SCHOOL_INVITE_EXISTS: 409,
@@ -44,6 +45,7 @@ const MESSAGE_MAP = {
   MONTHLY_MINUTES_LIMIT_REACHED: 'This school has reached its monthly roleplay minute limit.',
   SCHOOL_ACCESS_DISABLED: 'This school does not currently have access. Please contact your administrator.',
   CUSTOM_SCENARIOS_PLAN_REQUIRED: 'Custom scenarios are available on the AIOS plan.',
+  CALL_NOT_SCOREABLE: 'This call is too short or does not contain enough conversation to generate a scorecard.',
 };
 
 export const errorHandler = (err, req, res, _next) => {
