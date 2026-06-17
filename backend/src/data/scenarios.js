@@ -273,6 +273,18 @@ const OBJECTION_FOCUS = {
       'Primary blocker: comparison shopping. You are comparing several schools and do not want pressure.',
       'Primary blocker: schedule uncertainty. You need class time options before committing.',
     ],
+    sales_enrollment: [
+      'Primary blocker: price/budget. The membership is more than expected and you need to understand the value before deciding.',
+      'Primary blocker: other-parent decision. You need to talk to the other parent before making a membership decision.',
+      'Primary blocker: schedule uncertainty. You are unsure the class schedule will work once school activities start.',
+      'Primary blocker: commitment length. You are nervous about committing to a full program before knowing your child will stick with it.',
+    ],
+    renewal_conference: [
+      'Primary blocker: price/value. You need to understand why renewing is worth it before committing again.',
+      'Primary blocker: other-parent decision. You need to talk to the other parent before renewing.',
+      "Primary blocker: schedule uncertainty. Tyler's school schedule may change soon, so you need to confirm class times.",
+      'Primary blocker: progress doubt. You like the program, but you are not fully convinced the progress is strong enough to renew yet.',
+    ],
   },
 };
 

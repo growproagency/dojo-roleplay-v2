@@ -47,6 +47,36 @@ test('hard parent enrollment can use a non-schedule blocker', () => {
   }
 });
 
+test('hard sales enrollment can use a random blocker', () => {
+  const originalRandom = Math.random;
+  Math.random = () => 0.75;
+
+  try {
+    const prompt = getScenarioSystemPrompt('sales_enrollment', null, 'hard');
+
+    assert.match(prompt, /Selected Objection Focus/);
+    assert.match(prompt, /commitment length/);
+    assert.match(prompt, /Do not default to schedule/);
+  } finally {
+    Math.random = originalRandom;
+  }
+});
+
+test('hard renewal conference can use a random blocker', () => {
+  const originalRandom = Math.random;
+  Math.random = () => 0.75;
+
+  try {
+    const prompt = getScenarioSystemPrompt('renewal_conference', null, 'hard');
+
+    assert.match(prompt, /Selected Objection Focus/);
+    assert.match(prompt, /progress doubt/);
+    assert.match(prompt, /Do not default to schedule/);
+  } finally {
+    Math.random = originalRandom;
+  }
+});
+
 test('scenario prompts discourage elongated filler sounds', () => {
   const prompt = getScenarioSystemPrompt('web_lead_callback', null, 'easy');
 
