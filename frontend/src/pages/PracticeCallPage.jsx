@@ -89,7 +89,7 @@ const SCENARIO_ALIASES = {
 const DIFFICULTIES = [
   { value: 'easy', label: 'Easy', color: 'bg-green-500', description: 'Friendly, few objections. Good for warm-up.' },
   { value: 'medium', label: 'Medium', color: 'bg-yellow-500', description: 'Realistic. Some hesitation and pushback.' },
-  { value: 'hard', label: 'Hard', color: 'bg-red-500', description: 'Skeptical and busy. Lots of objections.' },
+  { value: 'hard', label: 'Hard', color: 'bg-red-500', description: 'Skeptical, busy, and may need a realistic follow-up instead of booking.' },
 ];
 
 const TRAINING_GUIDES = {
@@ -122,12 +122,13 @@ const TRAINING_GUIDES = {
   },
   outbound: {
     title: 'Outbound Callback',
-    description: 'Based on the 12-step outbound callback script.',
+    description: 'Based on the 13-step outbound callback script.',
     steps: [
       ['Warm introduction', 'Open with friendly energy and identify yourself and the school'],
       ['Reference the form', 'Remind them they requested information or showed interest online'],
       ['Establish rapport', 'Keep it conversational before moving into questions'],
       ['Identify WHY', 'Ask what they are hoping to get from training'],
+      ['Current efforts', 'Ask what they are currently doing to achieve that goal'],
       ['Handle cold open / skepticism', 'Acknowledge hesitation and keep the call low-pressure'],
       ['Position the school', 'Connect the school to their stated goal or concern'],
       ['Present the offer', 'Explain the free trial, intro class, or next best offer'],

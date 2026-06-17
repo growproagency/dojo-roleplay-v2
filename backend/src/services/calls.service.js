@@ -68,7 +68,7 @@ export async function triggerScoring(callId, user) {
   await updateCall(call.id, { status: 'scoring' });
 
   try {
-    const result = await scoreCallTranscript(call.transcription, scenarioTitle, customScoringPrompt);
+    const result = await scoreCallTranscript(call.transcription, scenarioTitle, customScoringPrompt, call.difficulty);
     await insertScorecard({
       callId: call.id,
       overallScore: result.overallScore,
