@@ -141,6 +141,15 @@ Score each category independently based only on the behaviors in that category.
 - If the staff member books the call but rushes rapport, misses the lead's WHY, skips current efforts, ignores objections, or creates a choppy flow, reflect those misses in the relevant category scores and feedback.
 - Do not treat the final outcome as proof that the full call was strong.`;
 
+const HIGH_SCORE_CALIBRATION_SCORING_INSTRUCTIONS = `
+
+## High Score Calibration
+Use the full scoring range. Do not treat 89 as a ceiling.
+- 90-94 means the staff member handled the major script steps with strong skill, missed only minor details, and created a clear next step.
+- 95-100 means the staff member was excellent across nearly every category, with natural rapport, strong discovery, relevant positioning, effective objection handling, and a clear close or next step.
+- Award 9 or 10 category scores when the transcript shows that level of performance. Do not require a perfect script recital for a 90+ overall score.
+- Keep scores below 90 when there are meaningful misses in discovery, positioning, objection handling, or next-step control.`;
+
 function buildCustomPrompt(customScoringPrompt) {
   return `You are an expert roleplay coach evaluating a custom training scenario.
 
@@ -168,7 +177,7 @@ function selectScoringPrompt(scenarioTitle, customScoringPrompt, difficulty = nu
   else if (t.includes('enrollment') || t.includes('conference')) basePrompt = SALES_ENROLLMENT_PROMPT;
   else if (t.includes('outbound') || t.includes('callback')) basePrompt = OUTBOUND_PROMPT;
   const difficultyPrompt = difficulty === 'hard' ? HARD_DIFFICULTY_SCORING_INSTRUCTIONS : '';
-  return basePrompt + CATEGORY_INDEPENDENCE_SCORING_INSTRUCTIONS + difficultyPrompt + SCORE_SCALE_INSTRUCTIONS;
+  return basePrompt + CATEGORY_INDEPENDENCE_SCORING_INSTRUCTIONS + HIGH_SCORE_CALIBRATION_SCORING_INSTRUCTIONS + difficultyPrompt + SCORE_SCALE_INSTRUCTIONS;
 }
 
 export async function scoreCallTranscript(transcript, scenarioTitle, customScoringPrompt = null, difficulty = null) {

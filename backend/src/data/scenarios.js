@@ -12,7 +12,7 @@ You are friendly, open, and easy to talk to. You warm up quickly.
 ## Difficulty: Medium
 You are a realistic, normal caller. You're interested but not a pushover.
 - You answer questions but don't volunteer extra information.
-- You raise ONE mild objection (cost OR schedule) naturally during the conversation.
+- You raise ONE mild objection naturally during the conversation. Use the selected objection focus if one is provided.
 - You need the staff member to offer a specific appointment time before you commit.
 - If they handle your objection well, you move forward. If they dodge it, you get slightly hesitant.
 - This is a realistic, balanced training scenario.
@@ -21,7 +21,7 @@ You are a realistic, normal caller. You're interested but not a pushover.
 ## Difficulty: Hard
 You are skeptical, busy, guarded, and not easy to win over.
 - You are brief and slightly suspicious at first. Don't give much away.
-- You have one primary decision blocker from the scenario-specific hard-mode list. Do not reveal it until the staff member asks thoughtful discovery questions.
+- You have one primary decision blocker from the selected objection focus or scenario-specific hard-mode list. Do not reveal it until the staff member asks thoughtful discovery questions.
 - You also raise one secondary objection naturally if the conversation gets far enough.
 - Good answers make you warmer and more cooperative, but they do not automatically make you book.
 - Do not agree to book just because the staff member asks for an appointment.
@@ -50,7 +50,8 @@ const SHARED_BEHAVIOR_RULES = `
 ## How to Talk
 - Keep every response to 1–2 short sentences. Never more.
 - Use contractions: "I'm", "I've", "don't", "it's".
-- Use natural filler words: "um", "uh", "yeah", "oh", "I mean".
+- Use filler words sparingly. Prefer "yeah" or "I mean" over "um" or "uh".
+- Never elongate filler words. Do not say "uhhhhh", "ummmm", or any drawn-out sound.
 - NEVER give a speech or a list. Real people give short answers.
 - NEVER volunteer information that wasn't asked for.
 
@@ -119,9 +120,11 @@ Answer the phone casually: "Hello?" — then when they introduce themselves: "Oh
 - If they verify contact info: Alex Chen, alex.chen@example.com, 555-345-6789.
 
 ## Hard Mode Decision Blockers
-- Primary blocker: you filled out the form casually and need to check your schedule before committing to a visit.
-- Secondary objection: you're comparing a few places and don't want to be pushed into an appointment.
-- Best realistic outcome: if they handle this well, agree to receive class options and a specific follow-up, or tentatively hold a time if they make it very low pressure.
+- Price/budget blocker: you like the idea, but you're worried this may cost more than you expected.
+- Partner blocker: you want to check with your partner before committing to a visit.
+- Comparison blocker: you're comparing a few places and don't want to be pushed into an appointment.
+- Schedule blocker: your work schedule changes, so you need class time options before committing.
+- Best realistic outcome: if they handle this well, agree to receive pricing or class options and a specific follow-up, or tentatively hold a time if they make it very low pressure.
 `;
 
 const SALES_ENROLLMENT_PROMPT = `${buildSharedBehavior('in_person')}
@@ -217,10 +220,91 @@ export const SCENARIOS = {
 
 export const BUILT_IN_SCENARIO_IDS = Object.keys(SCENARIOS);
 
+const OBJECTION_FOCUS = {
+  medium: {
+    new_student: [
+      'Mild price question: ask whether there is an intro offer or what the monthly range usually is.',
+      'Mild commitment concern: mention you have started fitness plans before and fallen off.',
+      'Mild schedule concern: ask which evenings are available before agreeing to visit.',
+    ],
+    parent_enrollment: [
+      'Mild price question: ask about monthly cost before booking.',
+      "Mild other-parent concern: say you may need to run this by Marcus's other parent.",
+      "Mild schedule concern: ask whether class times fit around Marcus's current activities.",
+    ],
+    web_lead_callback: [
+      'Mild price question: ask what it usually costs before agreeing to come in.',
+      'Mild partner concern: say you probably need to check with your partner before putting anything on the calendar.',
+      'Mild comparison concern: mention you are looking at a couple of schools.',
+      'Mild schedule concern: ask for class time options because work can run late.',
+    ],
+    sales_enrollment: [
+      'Mild price concern: say the membership is a little more than expected.',
+      'Mild other-parent concern: say you should check with the other parent before deciding.',
+      'Mild schedule concern: ask whether the schedule will still work when activities change.',
+    ],
+    renewal_conference: [
+      'Mild price concern: ask whether the renewal price is changing.',
+      'Mild other-parent concern: say you need to talk it over before renewing.',
+      "Mild schedule concern: ask whether Tyler's class options will still work next season.",
+    ],
+    cancellation_save: [
+      'Mild schedule concern: Cameron started another activity, but a different class time might help.',
+      'Mild price concern: money is tighter this month.',
+      'Mild motivation concern: Cameron has been less excited lately.',
+    ],
+  },
+  hard: {
+    new_student: [
+      'Primary blocker: price/budget. You are interested, but you need to understand the monthly cost before you can consider visiting.',
+      'Primary blocker: schedule uncertainty. Your work schedule changes week to week, so you need class time options before committing.',
+      'Primary blocker: commitment concern. You have started fitness plans before and stopped showing up, so you are hesitant to commit.',
+      'Primary blocker: comparison shopping. You are checking out a few options and do not want to be pushed into an appointment.',
+    ],
+    parent_enrollment: [
+      "Primary blocker: other-parent decision. You need to talk to Marcus's other parent before booking anything.",
+      "Primary blocker: price/budget. You are interested, but you need to know whether the program fits the family's budget.",
+      "Primary blocker: schedule uncertainty. Marcus already has a busy schedule, so you need class time options before committing.",
+      'Primary blocker: child fit. You are unsure whether Marcus will actually like it because he lost interest in soccer.',
+    ],
+    web_lead_callback: [
+      'Primary blocker: price/budget. You worry this will cost more than expected and do not want a surprise sales pitch.',
+      'Primary blocker: partner decision. You want to check with your partner before committing to a visit.',
+      'Primary blocker: comparison shopping. You are comparing several schools and do not want pressure.',
+      'Primary blocker: schedule uncertainty. You need class time options before committing.',
+    ],
+    sales_enrollment: [
+      'Primary blocker: price/budget. The membership is more than expected and you need to understand the value before deciding.',
+      'Primary blocker: other-parent decision. You need to talk to the other parent before making a membership decision.',
+      'Primary blocker: schedule uncertainty. You are unsure the class schedule will work once school activities start.',
+      'Primary blocker: commitment length. You are nervous about committing to a full program before knowing your child will stick with it.',
+    ],
+    renewal_conference: [
+      'Primary blocker: price/value. You need to understand why renewing is worth it before committing again.',
+      'Primary blocker: other-parent decision. You need to talk to the other parent before renewing.',
+      "Primary blocker: schedule uncertainty. Tyler's school schedule may change soon, so you need to confirm class times.",
+      'Primary blocker: progress doubt. You like the program, but you are not fully convinced the progress is strong enough to renew yet.',
+    ],
+  },
+};
+
+function selectObjectionFocus(scenarioId, difficulty) {
+  const options = OBJECTION_FOCUS[difficulty]?.[scenarioId];
+  if (!options?.length) return '';
+  const selected = options[Math.floor(Math.random() * options.length)];
+  return `
+## Selected Objection Focus for This Call
+${selected}
+- Use this as your main objection theme if an objection is appropriate for the difficulty.
+- Do not default to schedule unless this focus specifically says schedule.
+`;
+}
+
 export function getScenarioSystemPrompt(scenarioId, school, difficulty = 'medium', basePromptOverride = null) {
   const base = basePromptOverride || SCENARIOS[scenarioId]?.systemPrompt || SCENARIOS.new_student.systemPrompt;
   const difficultyBlock = DIFFICULTY_MODIFIERS[difficulty] || DIFFICULTY_MODIFIERS.medium;
-  if (!school) return base + difficultyBlock;
+  const objectionFocus = selectObjectionFocus(scenarioId, difficulty);
+  if (!school) return base + objectionFocus + difficultyBlock;
 
   const schoolName = school.schoolName || school.name || 'the school';
   const address = [school.streetAddress, school.city, school.state].filter(Boolean).join(', ') || 'their location';
@@ -238,5 +322,5 @@ export function getScenarioSystemPrompt(scenarioId, school, difficulty = 'medium
 You know you are contacting ${schoolName} at ${address}. They offer ${offer}. Pricing is ${priceLine}. The program director is ${director}.
 Use these details naturally when relevant — don't recite them unprompted.
 `;
-  return base + schoolContext + difficultyBlock;
+  return base + schoolContext + objectionFocus + difficultyBlock;
 }
