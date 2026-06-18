@@ -41,7 +41,7 @@ const OUTBOUND_PROMPT = `You are an expert sales coach evaluating an outbound we
 ## The 13-Step Outbound Callback Script:
 1. Warm Introduction — introduce self and school
 2. Reference the Form — establish context
-3. Establish Rapport — genuine questions before pitching
+3. Establish Rapport 
 4. Identify WHY — what are they hoping to get?
 5. Current Efforts - ask what they are currently doing to achieve that goal
 6. Handle Cold Open / Skepticism
@@ -60,6 +60,27 @@ Score on 6 categories (0–10):
 4. Objection Handling (20%)
 5. Appointment Setting (15%)
 6. Information & Next Steps (10%)
+
+## Outbound Category Scoring Detail
+Rapport & Introduction:
+- 10: introduces self and school clearly, references the submitted form, gives the call recording notice when present, and uses polite wording before moving into the call purpose.
+- 8-9: covers most required intro pieces with understandable wording.
+- 6-7: introduces self/school and establishes basic context, but misses one required intro piece or feels noticeably rushed.
+- 4-5: introduction is understandable but misses either school identity, form context, recording notice when expected, or polite wording.
+- 0-3: unclear intro, abrupt pitch, or little/no attempt to establish context.
+- Do not require extended small talk, extra warmth, a rapport question, or a perfectly smooth transition for a 10. A short, professional greeting plus a clear form reference can score 10 when it is polite and easy to follow.
+- Do not penalize Rapport & Introduction for a brief transition into the call purpose when the required intro pieces are present. Do not cite "transition could be smoother" as a reason to score below 10.
+- Do not penalize this category for missing WHY or current efforts; score those under Needs Discovery.
+
+Appointment Setting:
+- 10: clearly asks for the visit, intro class, trial, or appointment; gives specific appointment options; confirms the selected date/time; and confirms the prospect agreed.
+- 7-8: clearly asks for the appointment or intro class and offers specific times, but confirmation is incomplete.
+- 4-6: suggests visiting or trying a class, but gives no specific times or does not directly ask for commitment.
+- 1-3: the call has general momentum or could lead to a future appointment, but the staff never directly asks for an appointment or concrete next step.
+- 0: no appointment, visit, trial, or next-step discussion.
+- Do not score Appointment Setting above 3 if the staff never directly asks for an appointment, visit, intro class, trial, callback time, or other concrete next step.
+- If the feedback says the staff missed appointment setting, did not get to scheduling, failed to ask for a clear call to action, or did not progress toward securing the visit, the Appointment Setting score must be 0-3, not 7-10.
+- The numeric Appointment Setting score must match the written feedback. Never give a high Appointment Setting score with negative feedback saying the appointment was not asked for or not established.
 
 Return JSON: { overallScore, categories: [{name, score, feedback}], highlights, missedOpportunities, suggestions, summary }`;
 
@@ -132,6 +153,16 @@ On hard difficulty, the prospect may have a realistic decision blocker such as n
 - In Appointment Setting or Closing categories, score whether the staff uncovered the blocker, responded with empathy, avoided pressure, offered specific options, and secured the best realistic next step.
 - Penalize pressure, ignoring the blocker, vague "call us back" endings, or failing to ask for any next step.`;
 
+const EASY_DIFFICULTY_SCORING_INSTRUCTIONS = `
+
+## Easy Difficulty Scoring
+On easy difficulty, score more generously because the prospect is meant to be friendly, open, and easier to guide.
+- Give credit for clear, functional execution even when phrasing is not polished.
+- Do not heavily penalize brief rapport, minor awkward wording, filler, or small sequencing issues if the staff still covers the core intent of the step.
+- Minor misses should usually reduce a category by 1-2 points, not force a low score.
+- Reserve low scores for categories where the staff skipped the behavior entirely, gave incorrect information, ignored the prospect, pressured them, or failed to secure any relevant next step.
+- On easy calls, a staff member who covers the major steps with a friendly tone and clear next step should generally score in the strong range.`;
+
 const CATEGORY_INDEPENDENCE_SCORING_INSTRUCTIONS = `
 
 ## Category Independence
@@ -176,7 +207,11 @@ function selectScoringPrompt(scenarioTitle, customScoringPrompt, difficulty = nu
   else if (t.includes('renewal')) basePrompt = RENEWAL_PROMPT;
   else if (t.includes('enrollment') || t.includes('conference')) basePrompt = SALES_ENROLLMENT_PROMPT;
   else if (t.includes('outbound') || t.includes('callback')) basePrompt = OUTBOUND_PROMPT;
-  const difficultyPrompt = difficulty === 'hard' ? HARD_DIFFICULTY_SCORING_INSTRUCTIONS : '';
+  const difficultyPrompt = difficulty === 'hard'
+    ? HARD_DIFFICULTY_SCORING_INSTRUCTIONS
+    : difficulty === 'easy'
+      ? EASY_DIFFICULTY_SCORING_INSTRUCTIONS
+      : '';
   return basePrompt + CATEGORY_INDEPENDENCE_SCORING_INSTRUCTIONS + HIGH_SCORE_CALIBRATION_SCORING_INSTRUCTIONS + difficultyPrompt + SCORE_SCALE_INSTRUCTIONS;
 }
 
