@@ -79,6 +79,8 @@ Appointment Setting:
 - 1-3: the call has general momentum or could lead to a future appointment, but the staff never directly asks for an appointment or concrete next step.
 - 0: no appointment, visit, trial, or next-step discussion.
 - Do not score Appointment Setting above 3 if the staff never directly asks for an appointment, visit, intro class, trial, callback time, or other concrete next step.
+- If the feedback says the staff missed appointment setting, did not get to scheduling, failed to ask for a clear call to action, or did not progress toward securing the visit, the Appointment Setting score must be 0-3, not 7-10.
+- The numeric Appointment Setting score must match the written feedback. Never give a high Appointment Setting score with negative feedback saying the appointment was not asked for or not established.
 
 Return JSON: { overallScore, categories: [{name, score, feedback}], highlights, missedOpportunities, suggestions, summary }`;
 
