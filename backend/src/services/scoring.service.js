@@ -63,7 +63,7 @@ Score on 6 categories (0–10):
 
 ## Outbound Category Scoring Detail
 Rapport & Introduction:
-- 10: warmly introduces self and school, references the submitted form, gives the call recording notice when present, and creates a polite, comfortable opening before moving into the call purpose.
+- 10: introduces self and school clearly, references the submitted form, gives the call recording notice when present, uses polite wording such as greeting the prospect, and acknowledging their response.
 - 8-9: covers the introduction, form context, and recording notice with a friendly tone, even if the rapport is brief or practical.
 - 6-7: introduces self/school and establishes basic context, but feels somewhat scripted, rushed, or lightly connected.
 - 4-5: introduction is understandable but misses either school identity, form context, or a polite transition.
