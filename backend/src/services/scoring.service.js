@@ -34,22 +34,6 @@ Score on 6 categories (0–10):
 5. Appointment Setting (20%)
 6. Information Gathering & Referrals (10%)
 
-## Outbound Category Scoring Detail
-Rapport & Introduction:
-- 10: warmly introduces self and school, references the submitted form, gives the call recording notice when present, responds naturally to the prospect's greeting, and asks at least one genuine rapport or context question before pitching.
-- 7-8: covers the required introduction and form context but rapport is brief, scripted, or only lightly acknowledges the prospect.
-- 4-6: introduces self/school but misses meaningful rapport, form context, or a natural response to the prospect.
-- 0-3: unclear intro, abrupt pitch, or little/no attempt to establish context.
-- Do not penalize this category for missing WHY or current efforts; score those under Needs Discovery.
-
-Appointment Setting:
-- 10: clearly asks for the visit, intro class, trial, or appointment; gives specific appointment options; confirms the selected date/time; and confirms the prospect agreed.
-- 7-8: clearly asks for the appointment or intro class and offers specific times, but confirmation is incomplete.
-- 4-6: suggests visiting or trying a class, but gives no specific times or does not directly ask for commitment.
-- 1-3: the call has general momentum or could lead to a future appointment, but the staff never directly asks for an appointment or concrete next step.
-- 0: no appointment, visit, trial, or next-step discussion.
-- Do not score Appointment Setting above 3 if the staff never directly asks for an appointment, visit, intro class, trial, callback time, or other concrete next step.
-
 Return JSON: { overallScore, categories: [{name, score, feedback}], highlights, missedOpportunities, suggestions, summary }`;
 
 const OUTBOUND_PROMPT = `You are an expert sales coach evaluating an outbound web lead callback.
@@ -76,6 +60,24 @@ Score on 6 categories (0–10):
 4. Objection Handling (20%)
 5. Appointment Setting (15%)
 6. Information & Next Steps (10%)
+
+## Outbound Category Scoring Detail
+Rapport & Introduction:
+- 10: warmly introduces self and school, references the submitted form, gives the call recording notice when present, and creates a polite, comfortable opening before moving into the call purpose.
+- 8-9: covers the introduction, form context, and recording notice with a friendly tone, even if the rapport is brief or practical.
+- 6-7: introduces self/school and establishes basic context, but feels somewhat scripted, rushed, or lightly connected.
+- 4-5: introduction is understandable but misses either school identity, form context, or a polite transition.
+- 0-3: unclear intro, abrupt pitch, or little/no attempt to establish context.
+- Do not require extended small talk for a high score. A short, professional greeting plus a clear form reference can score well when it sounds polite and natural.
+- Do not penalize this category for missing WHY or current efforts; score those under Needs Discovery.
+
+Appointment Setting:
+- 10: clearly asks for the visit, intro class, trial, or appointment; gives specific appointment options; confirms the selected date/time; and confirms the prospect agreed.
+- 7-8: clearly asks for the appointment or intro class and offers specific times, but confirmation is incomplete.
+- 4-6: suggests visiting or trying a class, but gives no specific times or does not directly ask for commitment.
+- 1-3: the call has general momentum or could lead to a future appointment, but the staff never directly asks for an appointment or concrete next step.
+- 0: no appointment, visit, trial, or next-step discussion.
+- Do not score Appointment Setting above 3 if the staff never directly asks for an appointment, visit, intro class, trial, callback time, or other concrete next step.
 
 Return JSON: { overallScore, categories: [{name, score, feedback}], highlights, missedOpportunities, suggestions, summary }`;
 
@@ -148,6 +150,16 @@ On hard difficulty, the prospect may have a realistic decision blocker such as n
 - In Appointment Setting or Closing categories, score whether the staff uncovered the blocker, responded with empathy, avoided pressure, offered specific options, and secured the best realistic next step.
 - Penalize pressure, ignoring the blocker, vague "call us back" endings, or failing to ask for any next step.`;
 
+const EASY_DIFFICULTY_SCORING_INSTRUCTIONS = `
+
+## Easy Difficulty Scoring
+On easy difficulty, score more generously because the prospect is meant to be friendly, open, and easier to guide.
+- Give credit for clear, functional execution even when phrasing is not polished.
+- Do not heavily penalize brief rapport, minor awkward wording, filler, or small sequencing issues if the staff still covers the core intent of the step.
+- Minor misses should usually reduce a category by 1-2 points, not force a low score.
+- Reserve low scores for categories where the staff skipped the behavior entirely, gave incorrect information, ignored the prospect, pressured them, or failed to secure any relevant next step.
+- On easy calls, a staff member who covers the major steps with a friendly tone and clear next step should generally score in the strong range.`;
+
 const CATEGORY_INDEPENDENCE_SCORING_INSTRUCTIONS = `
 
 ## Category Independence
@@ -192,7 +204,11 @@ function selectScoringPrompt(scenarioTitle, customScoringPrompt, difficulty = nu
   else if (t.includes('renewal')) basePrompt = RENEWAL_PROMPT;
   else if (t.includes('enrollment') || t.includes('conference')) basePrompt = SALES_ENROLLMENT_PROMPT;
   else if (t.includes('outbound') || t.includes('callback')) basePrompt = OUTBOUND_PROMPT;
-  const difficultyPrompt = difficulty === 'hard' ? HARD_DIFFICULTY_SCORING_INSTRUCTIONS : '';
+  const difficultyPrompt = difficulty === 'hard'
+    ? HARD_DIFFICULTY_SCORING_INSTRUCTIONS
+    : difficulty === 'easy'
+      ? EASY_DIFFICULTY_SCORING_INSTRUCTIONS
+      : '';
   return basePrompt + CATEGORY_INDEPENDENCE_SCORING_INSTRUCTIONS + HIGH_SCORE_CALIBRATION_SCORING_INSTRUCTIONS + difficultyPrompt + SCORE_SCALE_INSTRUCTIONS;
 }
 
