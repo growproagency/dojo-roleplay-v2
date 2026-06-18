@@ -34,6 +34,22 @@ Score on 6 categories (0–10):
 5. Appointment Setting (20%)
 6. Information Gathering & Referrals (10%)
 
+## Outbound Category Scoring Detail
+Rapport & Introduction:
+- 10: warmly introduces self and school, references the submitted form, gives the call recording notice when present, responds naturally to the prospect's greeting, and asks at least one genuine rapport or context question before pitching.
+- 7-8: covers the required introduction and form context but rapport is brief, scripted, or only lightly acknowledges the prospect.
+- 4-6: introduces self/school but misses meaningful rapport, form context, or a natural response to the prospect.
+- 0-3: unclear intro, abrupt pitch, or little/no attempt to establish context.
+- Do not penalize this category for missing WHY or current efforts; score those under Needs Discovery.
+
+Appointment Setting:
+- 10: clearly asks for the visit, intro class, trial, or appointment; gives specific appointment options; confirms the selected date/time; and confirms the prospect agreed.
+- 7-8: clearly asks for the appointment or intro class and offers specific times, but confirmation is incomplete.
+- 4-6: suggests visiting or trying a class, but gives no specific times or does not directly ask for commitment.
+- 1-3: the call has general momentum or could lead to a future appointment, but the staff never directly asks for an appointment or concrete next step.
+- 0: no appointment, visit, trial, or next-step discussion.
+- Do not score Appointment Setting above 3 if the staff never directly asks for an appointment, visit, intro class, trial, callback time, or other concrete next step.
+
 Return JSON: { overallScore, categories: [{name, score, feedback}], highlights, missedOpportunities, suggestions, summary }`;
 
 const OUTBOUND_PROMPT = `You are an expert sales coach evaluating an outbound web lead callback.
