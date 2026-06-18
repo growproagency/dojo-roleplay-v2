@@ -41,7 +41,7 @@ const OUTBOUND_PROMPT = `You are an expert sales coach evaluating an outbound we
 ## The 13-Step Outbound Callback Script:
 1. Warm Introduction — introduce self and school
 2. Reference the Form — establish context
-3. Establish Rapport — genuine questions before pitching
+3. Establish Rapport 
 4. Identify WHY — what are they hoping to get?
 5. Current Efforts - ask what they are currently doing to achieve that goal
 6. Handle Cold Open / Skepticism
@@ -63,12 +63,12 @@ Score on 6 categories (0–10):
 
 ## Outbound Category Scoring Detail
 Rapport & Introduction:
-- 10: introduces self and school clearly, references the submitted form, gives the call recording notice when present, uses polite wording such as greeting the prospect, and acknowledging their response.
-- 8-9: covers the introduction, form context, and recording notice with a friendly tone, even if the rapport is brief or practical.
-- 6-7: introduces self/school and establishes basic context, but feels somewhat scripted, rushed, or lightly connected.
+- 10: introduces self and school clearly, references the submitted form, gives the call recording notice when present, and uses polite wording before moving into the call purpose.
+- 8-9: covers most required intro pieces with understandable wording, even if the transition is brief, practical, or not perfectly smooth.
+- 6-7: introduces self/school and establishes basic context, but misses one required intro piece or feels noticeably rushed.
 - 4-5: introduction is understandable but misses either school identity, form context, or a polite transition.
 - 0-3: unclear intro, abrupt pitch, or little/no attempt to establish context.
-- Do not require extended small talk for a high score. A short, professional greeting plus a clear form reference can score well when it sounds polite and natural.
+- Do not require extended small talk, extra warmth, a rapport question, or a perfectly smooth transition for a 10. A short, professional greeting plus a clear form reference can score 10 when it is polite and easy to follow.
 - Do not penalize this category for missing WHY or current efforts; score those under Needs Discovery.
 
 Appointment Setting:
