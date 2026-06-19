@@ -55,11 +55,10 @@ const DEFAULT_FORM = {
 const DEFAULT_BUILT_IN_FORM = {
   title: '', description: '', systemPromptBase: '', firstMessage: '',
   voiceId: 'Elliot', voiceProvider: 'vapi', scoringRubricType: 'inbound',
-  scoringCategories: [], objectionFocus: { easy: '', medium: '', hard: '' }, status: 'draft',
+  scoringCategories: [], objectionFocus: { easy: [], medium: [], hard: [] }, status: 'draft',
 };
 
 const SCORE_BANDS = ['10', '8-9', '7-8', '5-6', '3-4', '0-2'];
-const OBJECTION_COUNTS = { easy: 1, medium: 2, hard: 2 };
 
 function normalizeScoringCategories(categories) {
   if (!Array.isArray(categories)) return [];
@@ -75,17 +74,17 @@ function normalizeScoringCategories(categories) {
 
 function normalizeObjectionFocus(objectionFocus) {
   return {
-    easy: Array.isArray(objectionFocus?.easy) ? objectionFocus.easy.join('\n') : '',
-    medium: Array.isArray(objectionFocus?.medium) ? objectionFocus.medium.join('\n') : '',
-    hard: Array.isArray(objectionFocus?.hard) ? objectionFocus.hard.join('\n') : '',
+    easy: Array.isArray(objectionFocus?.easy) ? objectionFocus.easy : [],
+    medium: Array.isArray(objectionFocus?.medium) ? objectionFocus.medium : [],
+    hard: Array.isArray(objectionFocus?.hard) ? objectionFocus.hard : [],
   };
 }
 
 function parseObjectionFocus(objectionFocus) {
   return {
-    easy: String(objectionFocus.easy || '').split('\n').map((line) => line.trim()).filter(Boolean),
-    medium: String(objectionFocus.medium || '').split('\n').map((line) => line.trim()).filter(Boolean),
-    hard: String(objectionFocus.hard || '').split('\n').map((line) => line.trim()).filter(Boolean),
+    easy: (Array.isArray(objectionFocus.easy) ? objectionFocus.easy : []).map((line) => String(line).trim()).filter(Boolean),
+    medium: (Array.isArray(objectionFocus.medium) ? objectionFocus.medium : []).map((line) => String(line).trim()).filter(Boolean),
+    hard: (Array.isArray(objectionFocus.hard) ? objectionFocus.hard : []).map((line) => String(line).trim()).filter(Boolean),
   };
 }
 
@@ -229,8 +228,8 @@ export function CustomScenariosPage() {
   const builtInRubricWeightTotal = builtInForm.scoringCategories.reduce((sum, category) => sum + Number(category.weight || 0), 0);
   const builtInObjectionCounts = parseObjectionFocus(builtInForm.objectionFocus);
   const builtInObjectionsValid = builtInObjectionCounts.easy.length >= 1
-    && builtInObjectionCounts.medium.length >= 2
-    && builtInObjectionCounts.hard.length >= 2;
+    && builtInObjectionCounts.medium.length >= 1
+    && builtInObjectionCounts.hard.length >= 1;
 
   const updateBuiltInCategory = (index, patch) => {
     setBuiltInForm((f) => ({
@@ -273,6 +272,38 @@ export function CustomScenariosPage() {
     }));
   };
 
+  const updateBuiltInObjection = (difficulty, index, value) => {
+    setBuiltInForm((f) => ({
+      ...f,
+      objectionFocus: {
+        ...f.objectionFocus,
+        [difficulty]: f.objectionFocus[difficulty].map((objection, i) => (
+          i === index ? value : objection
+        )),
+      },
+    }));
+  };
+
+  const addBuiltInObjection = (difficulty) => {
+    setBuiltInForm((f) => ({
+      ...f,
+      objectionFocus: {
+        ...f.objectionFocus,
+        [difficulty]: [...f.objectionFocus[difficulty], ''],
+      },
+    }));
+  };
+
+  const removeBuiltInObjection = (difficulty, index) => {
+    setBuiltInForm((f) => ({
+      ...f,
+      objectionFocus: {
+        ...f.objectionFocus,
+        [difficulty]: f.objectionFocus[difficulty].filter((_, i) => i !== index),
+      },
+    }));
+  };
+
   const saveBuiltIn = (status = builtInForm.status) => {
     if (!editingBuiltIn?.slug) return;
     if (builtInForm.scoringCategories.length === 0) {
@@ -289,8 +320,8 @@ export function CustomScenariosPage() {
       }), {}),
     }));
     const objectionFocus = parseObjectionFocus(builtInForm.objectionFocus);
-    if (objectionFocus.easy.length < 1 || objectionFocus.medium.length < 2 || objectionFocus.hard.length < 2) {
-      toast.error('Objections need at least 1 easy, 2 medium, and 2 hard entries.');
+    if (objectionFocus.easy.length < 1 || objectionFocus.medium.length < 1 || objectionFocus.hard.length < 1) {
+      toast.error('Add at least one objection for easy, medium, and hard.');
       return;
     }
     updateBuiltInMutation.mutate({
@@ -539,20 +570,29 @@ export function CustomScenariosPage() {
               <div>
                 <Label>Objection pool</Label>
                 <p className="text-xs text-muted-foreground">
-                  Add one objection per line. For each call, the AI randomly uses 1 easy objection, 2 medium objections, or 2 hard objections from these lists.
+                  Add each objection as its own item. For each call, the AI uses every objection listed for the selected difficulty.
                 </p>
               </div>
               <div className="grid gap-3 md:grid-cols-3">
                 {['easy', 'medium', 'hard'].map((difficulty) => (
-                  <div key={difficulty} className="space-y-1.5">
-                    <Label className="capitalize">{difficulty} ({OBJECTION_COUNTS[difficulty]} used)</Label>
-                    <Textarea value={builtInForm.objectionFocus[difficulty]}
-                      onChange={(e) => setBuiltInForm((f) => ({
-                        ...f,
-                        objectionFocus: { ...f.objectionFocus, [difficulty]: e.target.value },
-                      }))}
-                      rows={7}
-                      placeholder="One objection per line" />
+                  <div key={difficulty} className="space-y-2 rounded-lg border border-border bg-background p-3">
+                    <Label className="capitalize">{difficulty} ({parseObjectionFocus(builtInForm.objectionFocus)[difficulty].length || 0} used)</Label>
+                    <div className="space-y-2">
+                      {builtInForm.objectionFocus[difficulty].map((objection, index) => (
+                        <div key={`${difficulty}-${index}`} className="flex items-center gap-2">
+                          <Input value={objection}
+                            onChange={(e) => updateBuiltInObjection(difficulty, index, e.target.value)}
+                            placeholder="Price concern, schedule conflict, decision maker..." />
+                          <Button type="button" variant="ghost" size="sm" onClick={() => removeBuiltInObjection(difficulty, index)}
+                            className="shrink-0 text-destructive hover:text-destructive">
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                    <Button type="button" variant="outline" size="sm" onClick={() => addBuiltInObjection(difficulty)} className="w-full gap-2">
+                      <Plus className="w-4 h-4" />Add objection
+                    </Button>
                   </div>
                 ))}
               </div>

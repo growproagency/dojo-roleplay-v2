@@ -37,8 +37,8 @@ export const updateBuiltInScenarioSchema = Joi.object({
   })).min(1).max(12).required(),
   objectionFocus: Joi.object({
     easy: Joi.array().items(Joi.string().min(1).max(500)).min(1).required(),
-    medium: Joi.array().items(Joi.string().min(1).max(500)).min(2).required(),
-    hard: Joi.array().items(Joi.string().min(1).max(500)).min(2).required(),
+    medium: Joi.array().items(Joi.string().min(1).max(500)).min(1).required(),
+    hard: Joi.array().items(Joi.string().min(1).max(500)).min(1).required(),
   }).required(),
   status: Joi.string().valid('draft', 'published').default('draft'),
 }).options({ stripUnknown: true, convert: true, abortEarly: false });

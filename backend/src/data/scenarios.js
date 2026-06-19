@@ -353,12 +353,6 @@ export function getBuiltInScenarioDefault(slug) {
   return BUILT_IN_SCENARIO_DEFAULTS[slug] ?? null;
 }
 
-const OBJECTIONS_PER_DIFFICULTY = {
-  easy: 1,
-  medium: 2,
-  hard: 2,
-};
-
 const OBJECTION_FOCUS = {
   easy: {
     new_student: [
@@ -483,14 +477,13 @@ function selectObjectionFocus(scenarioId, difficulty, objectionFocusOverride = n
     ? source[difficulty]
     : source?.[difficulty]?.[scenarioId];
   if (!options?.length) return '';
-  const count = OBJECTIONS_PER_DIFFICULTY[difficulty] ?? 1;
   const selected = [...options]
-    .sort(() => Math.random() - 0.5)
-    .slice(0, Math.min(count, options.length));
+    .sort(() => Math.random() - 0.5);
   return `
 ## Selected Objections for This Call
 ${selected.map((objection, index) => `${index + 1}. ${objection}`).join('\n')}
 - Use only these selected objections for this call.
+- If multiple objections are listed, raise them naturally across the conversation instead of all at once.
 - Do not invent a different main objection unless the staff member directly creates a new concern.
 - Do not default to schedule unless a selected objection specifically says schedule.
 `;
