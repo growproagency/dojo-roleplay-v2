@@ -515,7 +515,7 @@ export function CustomScenariosPage() {
 
       {/* Built-in scenario edit modal */}
       <Dialog open={editingBuiltIn !== null} onOpenChange={(open) => { if (!open) setEditingBuiltIn(null); }}>
-        <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-5xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Edit built-in scenario</DialogTitle>
             <DialogDescription>
@@ -573,20 +573,22 @@ export function CustomScenariosPage() {
                   Add each objection as its own item. For each call, the AI uses every objection listed for the selected difficulty.
                 </p>
               </div>
-              <div className="grid gap-3 md:grid-cols-3">
+              <div className="grid gap-3 xl:grid-cols-3">
                 {['easy', 'medium', 'hard'].map((difficulty) => (
                   <div key={difficulty} className="space-y-2 rounded-lg border border-border bg-background p-3">
                     <Label className="capitalize">{difficulty} ({parseObjectionFocus(builtInForm.objectionFocus)[difficulty].length || 0} used)</Label>
                     <div className="space-y-2">
                       {builtInForm.objectionFocus[difficulty].map((objection, index) => (
-                        <div key={`${difficulty}-${index}`} className="flex items-center gap-2">
+                        <div key={`${difficulty}-${index}`} className="grid gap-2 rounded-lg border border-border bg-secondary/20 p-2 sm:grid-cols-[1fr_auto]">
                           <Input value={objection}
                             onChange={(e) => updateBuiltInObjection(difficulty, index, e.target.value)}
+                            className="h-auto min-h-10 rounded-md bg-background px-3 py-2 whitespace-normal"
                             placeholder="Price concern, schedule conflict, decision maker..." />
                           <Button type="button" variant="ghost" size="sm" onClick={() => removeBuiltInObjection(difficulty, index)}
                             className="shrink-0 text-destructive hover:text-destructive">
                             <Trash2 className="w-4 h-4" />
                           </Button>
+                          <p className="sm:col-span-2 text-xs leading-5 text-muted-foreground break-words">{objection || 'Empty objection'}</p>
                         </div>
                       ))}
                     </div>
