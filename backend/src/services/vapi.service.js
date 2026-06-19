@@ -15,10 +15,24 @@ import { countWords, isScoreableTranscriptTurns } from '../utils/transcriptQuali
 import { canUseCustomScenarios } from '../utils/plans.js';
 
 const callContextCache = new Map();
+const LIVEKIT_START_SPEAKING_PLAN = Object.freeze({
+  waitSeconds: 2.7,
+  smartEndpointingPlan: {
+    provider: 'livekit',
+    waitFunction: '2000 / (1 + exp(-10 * (x - 0.5)))',
+  },
+});
 
 function setCtx(id, ctx) { if (id && ctx) callContextCache.set(id, ctx); }
 function getCtx(id) { return id ? (callContextCache.get(id) || null) : null; }
 function clearCtx(id) { if (id) callContextCache.delete(id); }
+
+function getLiveKitStartSpeakingPlan() {
+  return {
+    waitSeconds: LIVEKIT_START_SPEAKING_PLAN.waitSeconds,
+    smartEndpointingPlan: { ...LIVEKIT_START_SPEAKING_PLAN.smartEndpointingPlan },
+  };
+}
 
 async function schoolCanUseCustomScenarios(schoolId) {
   if (!schoolId) return false;
@@ -294,6 +308,7 @@ async function buildReceptionistAssistant(userName, webhookUrl, schoolId = null,
     voice: { provider: 'vapi', voiceId: 'Elliot' },
     firstMessage: greeting,
     firstMessageInterruptionsEnabled: true,
+    startSpeakingPlan: getLiveKitStartSpeakingPlan(),
     serverMessages: ['end-of-call-report', 'status-update', 'handoff-destination-request'],
     silenceTimeoutSeconds: 60,
   };
@@ -406,6 +421,7 @@ export async function buildScenarioWebAssistant({ user, scenario, difficulty }) 
     model: { provider: 'openai', model: config.openaiModel, messages: [{ role: 'system', content: systemPrompt }] },
     voice: scenarioConfig.voice,
     firstMessage: scenarioConfig.firstMessage,
+    startSpeakingPlan: getLiveKitStartSpeakingPlan(),
     silenceTimeoutSeconds: 30,
     maxDurationSeconds: 600,
     serverMessages: ['end-of-call-report', 'status-update'],
@@ -619,6 +635,7 @@ async function buildDestinationResponse(message) {
     model: { provider: 'openai', model: config.openaiModel, messages: [{ role: 'system', content: systemPrompt }] },
     voice: scenarioConfig.voice,
     firstMessage: scenarioConfig.firstMessage,
+    startSpeakingPlan: getLiveKitStartSpeakingPlan(),
     silenceTimeoutSeconds: 30,
     maxDurationSeconds: 600,
     serverMessages: ['end-of-call-report', 'status-update'],
