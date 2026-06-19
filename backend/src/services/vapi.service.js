@@ -694,6 +694,14 @@ async function backgroundScore(callId, transcript, scenario, schoolId = null, di
     await updateCall(callId, { status: 'scoring' });
     let scenarioTitle = SCENARIOS[scenario]?.title || scenario;
     let customScoringPrompt = null;
+    let scoringCategories = null;
+    if (SCENARIOS[scenario]) {
+      const builtIn = (await getPublishedBuiltInScenarios()).find((item) => item.slug === scenario);
+      if (builtIn) {
+        scenarioTitle = builtIn.title;
+        scoringCategories = builtIn.scoringCategories;
+      }
+    }
     if (!SCENARIOS[scenario] && await schoolCanUseCustomScenarios(schoolId)) {
       const custom = await findCustomScenarioBySlug(scenario, schoolId).catch(() => null);
       if (custom) {
@@ -701,7 +709,7 @@ async function backgroundScore(callId, transcript, scenario, schoolId = null, di
         customScoringPrompt = custom.scoringPrompt;
       }
     }
-    const result = await scoreCallTranscript(transcript, scenarioTitle, customScoringPrompt, difficulty);
+    const result = await scoreCallTranscript(transcript, scenarioTitle, customScoringPrompt, difficulty, scoringCategories);
     await insertScorecard({
       callId,
       overallScore: result.overallScore,

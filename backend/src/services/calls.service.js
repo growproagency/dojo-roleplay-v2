@@ -3,6 +3,7 @@ import { findScorecardByCallId, insertScorecard } from '../db/scorecards.queries
 import { findCustomScenarioBySlug } from '../db/scenarios.queries.js';
 import { findSchoolById } from '../db/schools.queries.js';
 import { scoreCallTranscript } from './scoring.service.js';
+import { getPublishedBuiltInScenarios } from './scenarios.service.js';
 import { SCENARIOS } from '../data/scenarios.js';
 import { canUseCustomScenarios } from '../utils/plans.js';
 import { isScoreableTranscriptTurns, parseTranscriptTurns } from '../utils/transcriptQuality.js';
@@ -56,6 +57,15 @@ export async function triggerScoring(callId, user) {
 
   let scenarioTitle = SCENARIOS[call.scenario]?.title || call.scenario;
   let customScoringPrompt = null;
+  let scoringCategories = null;
+
+  if (SCENARIOS[call.scenario]) {
+    const builtIn = (await getPublishedBuiltInScenarios()).find((scenario) => scenario.slug === call.scenario);
+    if (builtIn) {
+      scenarioTitle = builtIn.title;
+      scoringCategories = builtIn.scoringCategories;
+    }
+  }
 
   if (!SCENARIOS[call.scenario] && await schoolCanUseCustomScenarios(call.schoolId ?? null)) {
     const custom = await findCustomScenarioBySlug(call.scenario, call.schoolId ?? null).catch(() => null);
@@ -68,7 +78,7 @@ export async function triggerScoring(callId, user) {
   await updateCall(call.id, { status: 'scoring' });
 
   try {
-    const result = await scoreCallTranscript(call.transcription, scenarioTitle, customScoringPrompt, call.difficulty);
+    const result = await scoreCallTranscript(call.transcription, scenarioTitle, customScoringPrompt, call.difficulty, scoringCategories);
     await insertScorecard({
       callId: call.id,
       overallScore: result.overallScore,

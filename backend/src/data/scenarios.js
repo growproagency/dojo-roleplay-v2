@@ -220,6 +220,61 @@ export const SCENARIOS = {
 
 export const BUILT_IN_SCENARIO_IDS = Object.keys(SCENARIOS);
 
+const DEFAULT_SCORE_ANCHORS = {
+  '10': 'Excellent execution. The staff member fully demonstrates the category behavior with clear transcript evidence, natural delivery, and no meaningful misses.',
+  '8-9': 'Strong execution. The staff member covers the important behavior with only minor omissions, light awkwardness, or one missed follow-up.',
+  '7-8': 'Good but incomplete. The staff member shows the behavior, but misses a meaningful detail, asks too shallowly, or does not fully connect it to the prospect.',
+  '5-6': 'Partial execution. The staff member attempts the behavior but it is thin, generic, rushed, or only loosely connected to the prospect.',
+  '3-4': 'Weak execution. The behavior is barely present, mostly implied, or handled in a way that does not meaningfully advance the call.',
+  '0-2': 'Missing or harmful. The staff member skips the behavior, gives incorrect guidance, ignores the prospect, or creates pressure/confusion.',
+};
+
+function scoringCategory(name, weight) {
+  return { name, weight, anchors: DEFAULT_SCORE_ANCHORS };
+}
+
+const SCORING_RUBRICS = {
+  inbound: [
+    scoringCategory('Rapport & Greeting', 10),
+    scoringCategory('Needs Discovery', 20),
+    scoringCategory('School Positioning & Offer', 20),
+    scoringCategory('Objection Handling', 20),
+    scoringCategory('Appointment Setting', 20),
+    scoringCategory('Information Gathering & Referrals', 10),
+  ],
+  outbound: [
+    scoringCategory('Rapport & Introduction', 20),
+    scoringCategory('Needs Discovery', 20),
+    scoringCategory('School Positioning & Offer', 15),
+    scoringCategory('Objection Handling', 20),
+    scoringCategory('Appointment Setting', 15),
+    scoringCategory('Information & Next Steps', 10),
+  ],
+  salesEnrollment: [
+    scoringCategory('Needs Discovery / Go Fishing', 25),
+    scoringCategory('Benefit Teaching / Over Time', 20),
+    scoringCategory('Upgrade Pre-Frame', 15),
+    scoringCategory('Pricing Presentation', 15),
+    scoringCategory('Objection Handling', 15),
+    scoringCategory('Closing Technique', 10),
+  ],
+  renewal: [
+    scoringCategory('Progress Check Framing', 15),
+    scoringCategory('The 3 Questions', 30),
+    scoringCategory('Specific Progress Highlight', 20),
+    scoringCategory('Renewal Ask', 20),
+    scoringCategory('Objection Handling', 10),
+    scoringCategory('Follow-Up Discipline', 5),
+  ],
+  cancellation: [
+    scoringCategory('Universal Opening', 20),
+    scoringCategory('Reason Discovery', 25),
+    scoringCategory('Save Strategy', 25),
+    scoringCategory('ETG Deployment', 15),
+    scoringCategory('Close or Exit Quality', 15),
+  ],
+};
+
 export const BUILT_IN_SCENARIO_DEFAULTS = {
   new_student: {
     slug: 'new_student',
@@ -229,6 +284,8 @@ export const BUILT_IN_SCENARIO_DEFAULTS = {
     firstMessage: 'Hey, I was just calling to get some info about your adult classes?',
     voiceProvider: 'vapi',
     voiceId: 'Elliot',
+    scoringRubricType: 'inbound',
+    scoringCategories: SCORING_RUBRICS.inbound,
     status: 'published',
   },
   parent_enrollment: {
@@ -239,6 +296,8 @@ export const BUILT_IN_SCENARIO_DEFAULTS = {
     firstMessage: "Hi, yeah - I'm calling about your kids' program? I'm thinking about enrolling my son.",
     voiceProvider: 'vapi',
     voiceId: 'Emma',
+    scoringRubricType: 'inbound',
+    scoringCategories: SCORING_RUBRICS.inbound,
     status: 'published',
   },
   web_lead_callback: {
@@ -249,6 +308,8 @@ export const BUILT_IN_SCENARIO_DEFAULTS = {
     firstMessage: null,
     voiceProvider: 'vapi',
     voiceId: 'Rohan',
+    scoringRubricType: 'outbound',
+    scoringCategories: SCORING_RUBRICS.outbound,
     status: 'published',
   },
   sales_enrollment: {
@@ -259,6 +320,8 @@ export const BUILT_IN_SCENARIO_DEFAULTS = {
     firstMessage: 'Yeah, the class was really good! I liked it.',
     voiceProvider: 'vapi',
     voiceId: 'Nico',
+    scoringRubricType: 'salesEnrollment',
+    scoringCategories: SCORING_RUBRICS.salesEnrollment,
     status: 'published',
   },
   renewal_conference: {
@@ -269,6 +332,8 @@ export const BUILT_IN_SCENARIO_DEFAULTS = {
     firstMessage: "Yeah, Tyler's been really enjoying it. I'm glad we tried it.",
     voiceProvider: 'vapi',
     voiceId: 'Savannah',
+    scoringRubricType: 'renewal',
+    scoringCategories: SCORING_RUBRICS.renewal,
     status: 'published',
   },
   cancellation_save: {
@@ -279,6 +344,8 @@ export const BUILT_IN_SCENARIO_DEFAULTS = {
     firstMessage: "Hi, I'm calling because I need to cancel Cameron's membership.",
     voiceProvider: 'vapi',
     voiceId: 'Clara',
+    scoringRubricType: 'cancellation',
+    scoringCategories: SCORING_RUBRICS.cancellation,
     status: 'published',
   },
 };

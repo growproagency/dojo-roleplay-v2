@@ -50,6 +50,8 @@ function mergeBuiltInDefault(row) {
     firstMessage: row.firstMessage ?? defaults.firstMessage,
     voiceProvider: row.voiceProvider || defaults.voiceProvider,
     voiceId: row.voiceId || defaults.voiceId,
+    scoringRubricType: row.scoringRubricType || defaults.scoringRubricType,
+    scoringCategories: row.scoringCategories || defaults.scoringCategories,
   };
 }
 
@@ -73,6 +75,8 @@ export async function getPublishedBuiltInScenarios() {
       firstMessage: merged.firstMessage,
       voiceProvider: merged.voiceProvider,
       voiceId: merged.voiceId,
+      scoringRubricType: merged.scoringRubricType,
+      scoringCategories: merged.scoringCategories,
       status: 'published',
       isBuiltIn: true,
       isActive: true,
@@ -121,6 +125,8 @@ export async function updateBuiltInScenario(slug, req, data) {
     firstMessage: data.firstMessage ?? defaults.firstMessage,
     voiceId: data.voiceId ?? defaults.voiceId,
     voiceProvider: data.voiceProvider ?? defaults.voiceProvider,
+    scoringRubricType: data.scoringRubricType ?? defaults.scoringRubricType,
+    scoringCategories: data.scoringCategories ?? defaults.scoringCategories,
     status: data.status ?? 'draft',
     updatedBy: req.user.id,
   });

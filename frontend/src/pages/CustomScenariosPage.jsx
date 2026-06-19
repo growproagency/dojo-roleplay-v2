@@ -54,7 +54,8 @@ const DEFAULT_FORM = {
 
 const DEFAULT_BUILT_IN_FORM = {
   title: '', description: '', systemPromptBase: '', firstMessage: '',
-  voiceId: 'Elliot', voiceProvider: 'vapi', status: 'draft',
+  voiceId: 'Elliot', voiceProvider: 'vapi', scoringRubricType: 'inbound',
+  scoringCategoriesText: '[]', status: 'draft',
 };
 
 const REQUIRED_FIELDS = {
@@ -148,6 +149,8 @@ export function CustomScenariosPage() {
       firstMessage: s.firstMessage || '',
       voiceId: s.voiceId || 'Elliot',
       voiceProvider: s.voiceProvider || 'vapi',
+      scoringRubricType: s.scoringRubricType || 'inbound',
+      scoringCategoriesText: JSON.stringify(s.scoringCategories || [], null, 2),
       status: s.status || 'draft',
     });
     setEditingBuiltIn(s);
@@ -194,10 +197,16 @@ export function CustomScenariosPage() {
 
   const saveBuiltIn = (status = builtInForm.status) => {
     if (!editingBuiltIn?.slug) return;
+    let scoringCategories;
+    try {
+      scoringCategories = JSON.parse(builtInForm.scoringCategoriesText || '[]');
+    } catch {
+      toast.error('Scoring categories must be valid JSON.');
+      return;
+    }
     updateBuiltInMutation.mutate({
       slug: editingBuiltIn.slug,
       data: {
-        ...builtInForm,
         status,
         title: builtInForm.title.trim(),
         description: builtInForm.description.trim(),
@@ -205,6 +214,8 @@ export function CustomScenariosPage() {
         firstMessage: builtInForm.firstMessage?.trim() || null,
         voiceId: builtInForm.voiceId,
         voiceProvider: builtInForm.voiceProvider || 'vapi',
+        scoringRubricType: builtInForm.scoringRubricType,
+        scoringCategories,
       },
     }, {
       onSuccess: () => { setEditingBuiltIn(null); toast.success(status === 'published' ? 'Built-in scenario published' : 'Draft saved'); },
@@ -432,6 +443,35 @@ export function CustomScenariosPage() {
             <div className="space-y-1.5">
               <Label htmlFor="builtInPrompt">System prompt</Label>
               <Textarea id="builtInPrompt" value={builtInForm.systemPromptBase} onChange={(e) => setBuiltInForm((f) => ({ ...f, systemPromptBase: e.target.value }))} rows={16} className="font-mono text-xs" />
+            </div>
+
+            <div className="grid sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label>Scoring rubric type</Label>
+                <Select value={builtInForm.scoringRubricType} onValueChange={(val) => setBuiltInForm((f) => ({ ...f, scoringRubricType: val }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="inbound">Inbound</SelectItem>
+                    <SelectItem value="outbound">Outbound</SelectItem>
+                    <SelectItem value="salesEnrollment">Sales Enrollment</SelectItem>
+                    <SelectItem value="renewal">Renewal</SelectItem>
+                    <SelectItem value="cancellation">Cancellation</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="rounded-lg border border-border bg-secondary/20 p-3 text-sm text-muted-foreground">
+                Scores are still 0-10 per category. The backend calculates the final 0-100 score from these weights.
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="builtInScoring">Scoring categories and score bands</Label>
+              <Textarea id="builtInScoring" value={builtInForm.scoringCategoriesText}
+                onChange={(e) => setBuiltInForm((f) => ({ ...f, scoringCategoriesText: e.target.value }))}
+                rows={14} className="font-mono text-xs" />
+              <p className="text-xs text-muted-foreground">
+                Each category needs a name, weight, and anchors such as 10, 8-9, 7-8, 5-6, 3-4, and 0-2.
+              </p>
             </div>
           </div>
           <DialogFooter className="gap-2">

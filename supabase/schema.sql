@@ -161,6 +161,8 @@ CREATE TABLE IF NOT EXISTS built_in_scenarios (
   first_message      TEXT,
   voice_id           VARCHAR(100) NOT NULL DEFAULT 'Elliot',
   voice_provider     VARCHAR(50) NOT NULL DEFAULT 'vapi',
+  scoring_rubric_type VARCHAR(40),
+  scoring_categories JSONB,
   status             VARCHAR(20) NOT NULL DEFAULT 'published'
                        CHECK (status IN ('draft', 'published')),
   updated_by         INTEGER REFERENCES users(id) ON DELETE SET NULL,
