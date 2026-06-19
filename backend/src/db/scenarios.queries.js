@@ -1,6 +1,7 @@
 import { supabase } from './supabase.js';
 
 const COLS = 'id, slug, title, description, context_type, character_name, character_blurb, topics, school_id, character_prompt, opening_line, voice_id, voice_provider, scoring_prompt, is_active, created_by, created_at, updated_at';
+const BUILT_IN_COLS = 'slug, title, description, system_prompt_base, first_message, voice_id, voice_provider, status, updated_by, created_at, updated_at';
 
 function toScenario(row) {
   if (!row) return null;
@@ -24,6 +25,63 @@ function toScenario(row) {
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
+}
+
+function toBuiltInScenario(row) {
+  if (!row) return null;
+  return {
+    slug: row.slug,
+    title: row.title,
+    description: row.description,
+    systemPromptBase: row.system_prompt_base,
+    firstMessage: row.first_message,
+    voiceId: row.voice_id,
+    voiceProvider: row.voice_provider,
+    status: row.status,
+    updatedBy: row.updated_by,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+export async function findBuiltInScenarios() {
+  const { data, error } = await supabase
+    .from('built_in_scenarios')
+    .select(BUILT_IN_COLS)
+    .order('slug', { ascending: true })
+    .limit(100);
+  if (error) throw error;
+  return (data || []).map(toBuiltInScenario);
+}
+
+export async function findBuiltInScenarioBySlug(slug) {
+  const { data, error } = await supabase
+    .from('built_in_scenarios')
+    .select(BUILT_IN_COLS)
+    .eq('slug', slug)
+    .maybeSingle();
+  if (error) throw error;
+  return toBuiltInScenario(data);
+}
+
+export async function upsertBuiltInScenario(fields) {
+  const { data, error } = await supabase
+    .from('built_in_scenarios')
+    .upsert({
+      slug: fields.slug,
+      title: fields.title,
+      description: fields.description,
+      system_prompt_base: fields.systemPromptBase,
+      first_message: fields.firstMessage ?? null,
+      voice_id: fields.voiceId,
+      voice_provider: fields.voiceProvider ?? 'vapi',
+      status: fields.status ?? 'draft',
+      updated_by: fields.updatedBy ?? null,
+    }, { onConflict: 'slug' })
+    .select(BUILT_IN_COLS)
+    .single();
+  if (error) throw error;
+  return toBuiltInScenario(data);
 }
 
 export async function findCustomScenarios(schoolId) {

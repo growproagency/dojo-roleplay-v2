@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useAllCustomScenarios, useCreateCustomScenario, useUpdateCustomScenario, useDeleteCustomScenario, useToggleCustomScenario } from '../hooks/useScenarios';
+import { useAllCustomScenarios, useBuiltInScenarios, useCreateCustomScenario, useUpdateCustomScenario, useDeleteCustomScenario, useToggleCustomScenario, useUpdateBuiltInScenario, usePublishBuiltInScenario, useResetBuiltInScenario } from '../hooks/useScenarios';
 import { useAdminSchools } from '../hooks/useAdmin';
 import { useAuth } from '../hooks/useAuth';
 import { canUseCustomScenarios } from '../utils/plans';
@@ -12,7 +12,8 @@ import { Textarea } from '../components/ui/textarea';
 import { Badge } from '../components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../components/ui/dialog';
-import { BookOpen, CheckCircle2, Loader2, Lock, Plus, Pencil, Trash2, Drama, ToggleLeft, ToggleRight, X } from 'lucide-react';
+import { Tabs, TabsList, TabsTrigger } from '../components/ui/tabs';
+import { BookOpen, CheckCircle2, Loader2, Lock, Plus, Pencil, RotateCcw, Trash2, Drama, ToggleLeft, ToggleRight, X } from 'lucide-react';
 import { toast } from 'sonner';
 
 const VOICE_OPTIONS = [
@@ -51,6 +52,11 @@ const DEFAULT_FORM = {
   openingLine: '', voiceId: 'Elliot', voiceProvider: 'vapi', scoringPrompt: '', isActive: true,
 };
 
+const DEFAULT_BUILT_IN_FORM = {
+  title: '', description: '', systemPromptBase: '', firstMessage: '',
+  voiceId: 'Elliot', voiceProvider: 'vapi', status: 'draft',
+};
+
 const REQUIRED_FIELDS = {
   title: 'Title',
   characterName: 'Character name',
@@ -80,8 +86,12 @@ export function CustomScenariosPage() {
   const [showScoringPrompt, setShowScoringPrompt] = useState(false);
   const [guideOpen, setGuideOpen] = useState(false);
   const [topicInput, setTopicInput] = useState('');
+  const [adminScenarioTab, setAdminScenarioTab] = useState('built-in');
+  const [editingBuiltIn, setEditingBuiltIn] = useState(null);
+  const [builtInForm, setBuiltInForm] = useState(DEFAULT_BUILT_IN_FORM);
 
   const { data: scenarios, isLoading } = useAllCustomScenarios(customScenariosEnabled);
+  const { data: builtInScenarios, isLoading: builtInLoading } = useBuiltInScenarios(isGlobalAdmin);
   const { data: schools } = useAdminSchools(isGlobalAdmin);
 
   const createMutation = useCreateCustomScenario();
@@ -89,6 +99,9 @@ export function CustomScenariosPage() {
   const deleteMutation = useDeleteCustomScenario();
 
   const toggleActiveMutation = useToggleCustomScenario();
+  const updateBuiltInMutation = useUpdateBuiltInScenario();
+  const publishBuiltInMutation = usePublishBuiltInScenario();
+  const resetBuiltInMutation = useResetBuiltInScenario();
 
   const addTopic = () => {
     const val = topicInput.trim();
@@ -125,6 +138,19 @@ export function CustomScenariosPage() {
     setShowScoringPrompt(!!s.scoringPrompt);
     setTopicInput('');
     setEditingScenario(s);
+  };
+
+  const openBuiltInEdit = (s) => {
+    setBuiltInForm({
+      title: s.title || '',
+      description: s.description || '',
+      systemPromptBase: s.systemPromptBase || '',
+      firstMessage: s.firstMessage || '',
+      voiceId: s.voiceId || 'Elliot',
+      voiceProvider: s.voiceProvider || 'vapi',
+      status: s.status || 'draft',
+    });
+    setEditingBuiltIn(s);
   };
 
   const handleSubmit = (e) => {
@@ -164,6 +190,27 @@ export function CustomScenariosPage() {
   };
 
   const isSaving = createMutation.isPending || updateMutation.isPending;
+  const isBuiltInSaving = updateBuiltInMutation.isPending || publishBuiltInMutation.isPending || resetBuiltInMutation.isPending;
+
+  const saveBuiltIn = (status = builtInForm.status) => {
+    if (!editingBuiltIn?.slug) return;
+    updateBuiltInMutation.mutate({
+      slug: editingBuiltIn.slug,
+      data: {
+        ...builtInForm,
+        status,
+        title: builtInForm.title.trim(),
+        description: builtInForm.description.trim(),
+        systemPromptBase: builtInForm.systemPromptBase.trim(),
+        firstMessage: builtInForm.firstMessage?.trim() || null,
+        voiceId: builtInForm.voiceId,
+        voiceProvider: builtInForm.voiceProvider || 'vapi',
+      },
+    }, {
+      onSuccess: () => { setEditingBuiltIn(null); toast.success(status === 'published' ? 'Built-in scenario published' : 'Draft saved'); },
+      onError: (err) => toast.error(err.message),
+    });
+  };
 
   return (
     <DashboardLayout>
@@ -181,6 +228,62 @@ export function CustomScenariosPage() {
             </CardContent>
           </Card>
         ) : (
+          <>
+        {isGlobalAdmin && (
+          <Tabs value={adminScenarioTab} onValueChange={setAdminScenarioTab}>
+            <TabsList>
+              <TabsTrigger value="built-in">Built-In Scenarios</TabsTrigger>
+              <TabsTrigger value="custom">Custom Scenarios</TabsTrigger>
+            </TabsList>
+          </Tabs>
+        )}
+
+        {isGlobalAdmin && adminScenarioTab === 'built-in' && (
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Drama className="w-4 h-4 text-primary" />Built-In Scenarios
+                {builtInScenarios && <span className="text-xs text-muted-foreground font-normal">({builtInScenarios.length})</span>}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {builtInLoading ? (
+                <div className="flex items-center justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-muted-foreground" /></div>
+              ) : (
+                <div className="divide-y divide-border">
+                  {(builtInScenarios ?? []).map((s) => (
+                    <div key={s.slug} className="flex items-center justify-between gap-3 py-3">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-sm font-medium">{s.title}</span>
+                          <Badge variant="outline" className="text-xs font-mono">{s.slug}</Badge>
+                          <Badge className={s.status === 'published' ? 'bg-green-500/10 text-green-500 border-green-500/20 border' : 'bg-amber-500/10 text-amber-500 border-amber-500/20 border'}>
+                            {s.status === 'published' ? 'Published' : 'Draft'}
+                          </Badge>
+                          {s.hasDatabaseOverride && <Badge variant="secondary">DB override</Badge>}
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1 truncate">{s.description}</p>
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0">
+                        {s.status !== 'published' && (
+                          <Button variant="ghost" size="sm" onClick={() => publishBuiltInMutation.mutate(s.slug, { onSuccess: () => toast.success('Published'), onError: (err) => toast.error(err.message) })}>
+                            <CheckCircle2 className="w-4 h-4" />
+                          </Button>
+                        )}
+                        <Button variant="ghost" size="sm" onClick={() => openBuiltInEdit(s)}><Pencil className="w-4 h-4" /></Button>
+                        <Button variant="ghost" size="sm" onClick={() => resetBuiltInMutation.mutate(s.slug, { onSuccess: () => toast.success('Reset to default'), onError: (err) => toast.error(err.message) })}>
+                          <RotateCcw className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {(!isGlobalAdmin || adminScenarioTab === 'custom') && (
           <>
         <div className="flex items-center justify-between">
           <p className="text-muted-foreground">
@@ -274,7 +377,73 @@ export function CustomScenariosPage() {
         </Card>
           </>
         )}
+          </>
+        )}
       </div>
+
+      {/* Built-in scenario edit modal */}
+      <Dialog open={editingBuiltIn !== null} onOpenChange={(open) => { if (!open) setEditingBuiltIn(null); }}>
+        <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit built-in scenario</DialogTitle>
+            <DialogDescription>
+              Draft changes stay admin-only. Published changes affect every school.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="grid sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="builtInTitle">Title</Label>
+                <Input id="builtInTitle" value={builtInForm.title} onChange={(e) => setBuiltInForm((f) => ({ ...f, title: e.target.value }))} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>State</Label>
+                <Select value={builtInForm.status} onValueChange={(val) => setBuiltInForm((f) => ({ ...f, status: val }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="draft">Draft</SelectItem>
+                    <SelectItem value="published">Published</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="builtInDescription">Description</Label>
+              <Textarea id="builtInDescription" value={builtInForm.description} onChange={(e) => setBuiltInForm((f) => ({ ...f, description: e.target.value }))} rows={2} />
+            </div>
+
+            <div className="grid sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="builtInOpening">Opening line</Label>
+                <Input id="builtInOpening" value={builtInForm.firstMessage} onChange={(e) => setBuiltInForm((f) => ({ ...f, firstMessage: e.target.value }))} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Voice</Label>
+                <Select value={builtInForm.voiceId} onValueChange={(val) => setBuiltInForm((f) => ({ ...f, voiceId: val }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {VOICE_OPTIONS.map((v) => <SelectItem key={v.id} value={v.id}>{v.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="builtInPrompt">System prompt</Label>
+              <Textarea id="builtInPrompt" value={builtInForm.systemPromptBase} onChange={(e) => setBuiltInForm((f) => ({ ...f, systemPromptBase: e.target.value }))} rows={16} className="font-mono text-xs" />
+            </div>
+          </div>
+          <DialogFooter className="gap-2">
+            <Button type="button" variant="outline" onClick={() => setEditingBuiltIn(null)}>Cancel</Button>
+            <Button type="button" variant="outline" disabled={isBuiltInSaving} onClick={() => saveBuiltIn('draft')}>Save draft</Button>
+            <Button type="button" disabled={isBuiltInSaving} onClick={() => saveBuiltIn('published')} className="gap-2">
+              {isBuiltInSaving && <Loader2 className="w-4 h-4 animate-spin" />}
+              Publish
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Create/Edit modal */}
       <Dialog open={editingScenario !== null} onOpenChange={(open) => { if (!open) setEditingScenario(null); }}>

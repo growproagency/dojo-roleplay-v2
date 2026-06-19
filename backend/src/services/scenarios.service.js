@@ -1,6 +1,6 @@
-import { findCustomScenarios, findManagedCustomScenarios, findAllCustomScenarios, findCustomScenarioById, insertCustomScenario, updateCustomScenario, deleteCustomScenario } from '../db/scenarios.queries.js';
+import { findBuiltInScenarios, findCustomScenarios, findManagedCustomScenarios, findAllCustomScenarios, findCustomScenarioById, insertCustomScenario, updateCustomScenario, deleteCustomScenario, upsertBuiltInScenario } from '../db/scenarios.queries.js';
 import { findSchoolById } from '../db/schools.queries.js';
-import { SCENARIOS, BUILT_IN_SCENARIO_IDS } from '../data/scenarios.js';
+import { BUILT_IN_SCENARIO_IDS, BUILT_IN_SCENARIO_DEFAULTS, getBuiltInScenarioDefault } from '../data/scenarios.js';
 import { effectiveSchoolId } from '../middleware/auth.middleware.js';
 import { canUseCustomScenarios } from '../utils/plans.js';
 
@@ -40,20 +40,104 @@ function slugify(value) {
     .slice(0, 100);
 }
 
+function mergeBuiltInDefault(row) {
+  const defaults = getBuiltInScenarioDefault(row.slug);
+  if (!defaults) return null;
+  return {
+    ...defaults,
+    ...row,
+    systemPromptBase: row.systemPromptBase || defaults.systemPromptBase,
+    firstMessage: row.firstMessage ?? defaults.firstMessage,
+    voiceProvider: row.voiceProvider || defaults.voiceProvider,
+    voiceId: row.voiceId || defaults.voiceId,
+  };
+}
+
+async function findBuiltInRowsSafe() {
+  return findBuiltInScenarios().catch(() => []);
+}
+
+export async function getPublishedBuiltInScenarios() {
+  const rows = await findBuiltInRowsSafe();
+  const rowBySlug = new Map(rows.map((row) => [row.slug, row]));
+  return Object.values(BUILT_IN_SCENARIO_DEFAULTS).map((defaults) => {
+    const row = rowBySlug.get(defaults.slug);
+    const merged = row?.status === 'published' ? mergeBuiltInDefault(row) : defaults;
+    return {
+      id: merged.slug,
+      slug: merged.slug,
+      title: merged.title,
+      description: merged.description,
+      systemPrompt: merged.systemPromptBase,
+      systemPromptBase: merged.systemPromptBase,
+      firstMessage: merged.firstMessage,
+      voiceProvider: merged.voiceProvider,
+      voiceId: merged.voiceId,
+      status: 'published',
+      isBuiltIn: true,
+      isActive: true,
+    };
+  });
+}
+
+export async function listBuiltInScenariosForAdmin() {
+  const rows = await findBuiltInRowsSafe();
+  const rowBySlug = new Map(rows.map((row) => [row.slug, row]));
+  return Object.values(BUILT_IN_SCENARIO_DEFAULTS).map((defaults) => {
+    const row = rowBySlug.get(defaults.slug);
+    const merged = row ? mergeBuiltInDefault(row) : defaults;
+    return {
+      ...merged,
+      id: merged.slug,
+      isBuiltIn: true,
+      hasDatabaseOverride: !!row,
+      updatedBy: row?.updatedBy ?? null,
+      createdAt: row?.createdAt ?? null,
+      updatedAt: row?.updatedAt ?? null,
+    };
+  });
+}
+
 export async function listScenarios(req) {
   const schoolId = effectiveSchoolId(req);
   const customScenarios = (await hasCustomScenarioAccess(schoolId))
     ? await findCustomScenarios(schoolId)
     : [];
-  const builtIn = Object.values(SCENARIOS).map(s => ({
-    ...s,
-    isBuiltIn: true,
-    isActive: true,
-  }));
+  const builtIn = await getPublishedBuiltInScenarios();
   return {
     builtIn,
     custom: customScenarios.map(s => ({ ...s, isBuiltIn: false })),
   };
+}
+
+export async function updateBuiltInScenario(slug, req, data) {
+  const defaults = getBuiltInScenarioDefault(slug);
+  if (!defaults) throw new Error('NOT_FOUND');
+  return upsertBuiltInScenario({
+    slug,
+    title: data.title ?? defaults.title,
+    description: data.description ?? defaults.description,
+    systemPromptBase: data.systemPromptBase ?? defaults.systemPromptBase,
+    firstMessage: data.firstMessage ?? defaults.firstMessage,
+    voiceId: data.voiceId ?? defaults.voiceId,
+    voiceProvider: data.voiceProvider ?? defaults.voiceProvider,
+    status: data.status ?? 'draft',
+    updatedBy: req.user.id,
+  });
+}
+
+export async function publishBuiltInScenario(slug, req) {
+  const rows = await findBuiltInRowsSafe();
+  const existing = rows.find((row) => row.slug === slug);
+  const source = existing ? mergeBuiltInDefault(existing) : getBuiltInScenarioDefault(slug);
+  if (!source) throw new Error('NOT_FOUND');
+  return upsertBuiltInScenario({ ...source, status: 'published', updatedBy: req.user.id });
+}
+
+export async function resetBuiltInScenario(slug, req) {
+  const defaults = getBuiltInScenarioDefault(slug);
+  if (!defaults) throw new Error('NOT_FOUND');
+  return upsertBuiltInScenario({ ...defaults, status: 'published', updatedBy: req.user.id });
 }
 
 export async function listAllCustomScenarios() {

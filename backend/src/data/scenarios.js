@@ -220,6 +220,73 @@ export const SCENARIOS = {
 
 export const BUILT_IN_SCENARIO_IDS = Object.keys(SCENARIOS);
 
+export const BUILT_IN_SCENARIO_DEFAULTS = {
+  new_student: {
+    slug: 'new_student',
+    title: SCENARIOS.new_student.title,
+    description: SCENARIOS.new_student.description,
+    systemPromptBase: SCENARIOS.new_student.systemPrompt,
+    firstMessage: 'Hey, I was just calling to get some info about your adult classes?',
+    voiceProvider: 'vapi',
+    voiceId: 'Elliot',
+    status: 'published',
+  },
+  parent_enrollment: {
+    slug: 'parent_enrollment',
+    title: SCENARIOS.parent_enrollment.title,
+    description: SCENARIOS.parent_enrollment.description,
+    systemPromptBase: SCENARIOS.parent_enrollment.systemPrompt,
+    firstMessage: "Hi, yeah - I'm calling about your kids' program? I'm thinking about enrolling my son.",
+    voiceProvider: 'vapi',
+    voiceId: 'Emma',
+    status: 'published',
+  },
+  web_lead_callback: {
+    slug: 'web_lead_callback',
+    title: SCENARIOS.web_lead_callback.title,
+    description: SCENARIOS.web_lead_callback.description,
+    systemPromptBase: SCENARIOS.web_lead_callback.systemPrompt,
+    firstMessage: null,
+    voiceProvider: 'vapi',
+    voiceId: 'Rohan',
+    status: 'published',
+  },
+  sales_enrollment: {
+    slug: 'sales_enrollment',
+    title: SCENARIOS.sales_enrollment.title,
+    description: SCENARIOS.sales_enrollment.description,
+    systemPromptBase: SCENARIOS.sales_enrollment.systemPrompt,
+    firstMessage: 'Yeah, the class was really good! I liked it.',
+    voiceProvider: 'vapi',
+    voiceId: 'Nico',
+    status: 'published',
+  },
+  renewal_conference: {
+    slug: 'renewal_conference',
+    title: SCENARIOS.renewal_conference.title,
+    description: SCENARIOS.renewal_conference.description,
+    systemPromptBase: SCENARIOS.renewal_conference.systemPrompt,
+    firstMessage: "Yeah, Tyler's been really enjoying it. I'm glad we tried it.",
+    voiceProvider: 'vapi',
+    voiceId: 'Savannah',
+    status: 'published',
+  },
+  cancellation_save: {
+    slug: 'cancellation_save',
+    title: SCENARIOS.cancellation_save.title,
+    description: SCENARIOS.cancellation_save.description,
+    systemPromptBase: SCENARIOS.cancellation_save.systemPrompt,
+    firstMessage: "Hi, I'm calling because I need to cancel Cameron's membership.",
+    voiceProvider: 'vapi',
+    voiceId: 'Clara',
+    status: 'published',
+  },
+};
+
+export function getBuiltInScenarioDefault(slug) {
+  return BUILT_IN_SCENARIO_DEFAULTS[slug] ?? null;
+}
+
 const OBJECTION_FOCUS = {
   medium: {
     new_student: [

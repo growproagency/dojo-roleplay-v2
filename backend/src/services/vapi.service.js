@@ -1,13 +1,14 @@
 import { findCallByVapiId, insertCall, updateCall } from '../db/calls.queries.js';
 import { insertScorecard } from '../db/scorecards.queries.js';
-import { findCustomScenarioBySlug, findCustomScenarios } from '../db/scenarios.queries.js';
+import { findBuiltInScenarioBySlug, findCustomScenarioBySlug, findCustomScenarios } from '../db/scenarios.queries.js';
 import { findSchoolById } from '../db/schools.queries.js';
 import { countRecentPhoneAttempts, logPhoneCallAttempt } from '../db/phoneCallAttempts.queries.js';
 import { findUserByPhoneNumber } from '../db/users.queries.js';
 import { verifySessionToken } from '../utils/sessionToken.js';
 import { scoreCallTranscript } from './scoring.service.js';
 import { assertSchoolMonthlyMinutesAvailable } from './usageLimits.service.js';
-import { SCENARIOS, getScenarioSystemPrompt } from '../data/scenarios.js';
+import { getPublishedBuiltInScenarios } from './scenarios.service.js';
+import { SCENARIOS, getBuiltInScenarioDefault, getScenarioSystemPrompt } from '../data/scenarios.js';
 import { logger } from '../utils/logger.js';
 import { config } from '../config/env.js';
 import { countWords, isScoreableTranscriptTurns } from '../utils/transcriptQuality.js';
@@ -223,7 +224,7 @@ async function buildReceptionistAssistant(userName, webhookUrl, schoolId = null,
     ? await findCustomScenarios(schoolId).catch(() => [])
     : [];
   const allScenarios = [
-    ...Object.values(SCENARIOS).map(s => ({ id: s.id, title: s.title, description: s.description })),
+    ...(await getPublishedBuiltInScenarios()).map(s => ({ id: s.slug, title: s.title, description: s.description })),
     ...customScenarios.map(s => ({ id: s.slug, title: s.title, description: s.description })),
   ];
 
@@ -340,12 +341,23 @@ Say only this, then wait: "${scenario.openingLine || 'Hello?'}"
 async function resolveScenarioForCall(scenarioSlug, schoolId) {
   const builtIn = SCENARIOS[scenarioSlug];
   if (builtIn) {
+    const dbBuiltIn = await findBuiltInScenarioBySlug(scenarioSlug).catch(() => null);
+    const defaults = getBuiltInScenarioDefault(scenarioSlug);
+    const published = dbBuiltIn?.status === 'published' ? dbBuiltIn : null;
+    const title = published?.title || defaults?.title || builtIn.title;
+    const systemPromptBase = published?.systemPromptBase || defaults?.systemPromptBase || builtIn.systemPrompt;
+    const firstMessage = published
+      ? published.firstMessage ?? defaults?.firstMessage ?? 'Hello?'
+      : defaults?.firstMessage ?? 'Hello?';
     return {
       slug: scenarioSlug,
-      title: builtIn.title,
-      systemPromptBase: builtIn.systemPrompt,
-      voice: BUILT_IN_VOICES[scenarioSlug] || { provider: 'vapi', voiceId: 'Elliot' },
-      firstMessage: BUILT_IN_FIRST_MESSAGES[scenarioSlug] ?? 'Hello?',
+      title,
+      systemPromptBase,
+      voice: {
+        provider: published?.voiceProvider || defaults?.voiceProvider || 'vapi',
+        voiceId: published?.voiceId || defaults?.voiceId || 'Elliot',
+      },
+      firstMessage,
       scoringPrompt: null,
     };
   }
@@ -447,24 +459,6 @@ async function ensureCallStarted(message, fallback = {}) {
     status: 'in_progress',
   };
 }
-
-const BUILT_IN_VOICES = {
-  new_student: { provider: 'vapi', voiceId: 'Elliot' },
-  parent_enrollment: { provider: 'vapi', voiceId: 'Emma' },
-  web_lead_callback: { provider: 'vapi', voiceId: 'Rohan' },
-  sales_enrollment: { provider: 'vapi', voiceId: 'Nico' },
-  renewal_conference: { provider: 'vapi', voiceId: 'Savannah' },
-  cancellation_save: { provider: 'vapi', voiceId: 'Clara' },
-};
-
-const BUILT_IN_FIRST_MESSAGES = {
-  new_student: 'Hey, I was just calling to get some info about your adult classes?',
-  parent_enrollment: "Hi, yeah - I'm calling about your kids' program? I'm thinking about enrolling my son.",
-  web_lead_callback: null,
-  sales_enrollment: 'Yeah, the class was really good! I liked it.',
-  renewal_conference: "Yeah, Tyler's been really enjoying it. I'm glad we tried it.",
-  cancellation_save: "Hi, I'm calling because I need to cancel Cameron's membership.",
-};
 
 function parseToolArguments(args) {
   if (!args) return {};

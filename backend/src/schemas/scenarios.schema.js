@@ -21,3 +21,13 @@ export const updateScenarioSchema = createScenarioSchema.fork(
   ['title', 'description', 'characterName', 'characterPrompt', 'openingLine', 'voiceId'],
   f => f.optional()
 );
+
+export const updateBuiltInScenarioSchema = Joi.object({
+  title: Joi.string().min(1).max(255).required(),
+  description: Joi.string().min(1).max(1000).required(),
+  systemPromptBase: Joi.string().min(1).required(),
+  firstMessage: Joi.string().max(500).allow('', null).optional(),
+  voiceId: Joi.string().min(1).required(),
+  voiceProvider: Joi.string().default('vapi'),
+  status: Joi.string().valid('draft', 'published').default('draft'),
+}).options({ stripUnknown: true, convert: true, abortEarly: false });
