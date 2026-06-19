@@ -52,6 +52,7 @@ function mergeBuiltInDefault(row) {
     voiceId: row.voiceId || defaults.voiceId,
     scoringRubricType: row.scoringRubricType || defaults.scoringRubricType,
     scoringCategories: row.scoringCategories || defaults.scoringCategories,
+    objectionFocus: row.objectionFocus || defaults.objectionFocus,
   };
 }
 
@@ -77,6 +78,7 @@ export async function getPublishedBuiltInScenarios() {
       voiceId: merged.voiceId,
       scoringRubricType: merged.scoringRubricType,
       scoringCategories: merged.scoringCategories,
+      objectionFocus: merged.objectionFocus,
       status: 'published',
       isBuiltIn: true,
       isActive: true,
@@ -117,6 +119,11 @@ export async function listScenarios(req) {
 export async function updateBuiltInScenario(slug, req, data) {
   const defaults = getBuiltInScenarioDefault(slug);
   if (!defaults) throw new Error('NOT_FOUND');
+  const scoringCategories = data.scoringCategories ?? defaults.scoringCategories;
+  const totalWeight = Array.isArray(scoringCategories)
+    ? scoringCategories.reduce((sum, category) => sum + Number(category?.weight || 0), 0)
+    : 0;
+  if (Math.round(totalWeight * 100) / 100 !== 100) throw new Error('VALIDATION');
   return upsertBuiltInScenario({
     slug,
     title: data.title ?? defaults.title,
@@ -126,7 +133,8 @@ export async function updateBuiltInScenario(slug, req, data) {
     voiceId: data.voiceId ?? defaults.voiceId,
     voiceProvider: data.voiceProvider ?? defaults.voiceProvider,
     scoringRubricType: data.scoringRubricType ?? defaults.scoringRubricType,
-    scoringCategories: data.scoringCategories ?? defaults.scoringCategories,
+    scoringCategories,
+    objectionFocus: data.objectionFocus ?? defaults.objectionFocus,
     status: data.status ?? 'draft',
     updatedBy: req.user.id,
   });

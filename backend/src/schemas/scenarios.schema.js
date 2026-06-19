@@ -35,5 +35,10 @@ export const updateBuiltInScenarioSchema = Joi.object({
     weight: Joi.number().min(0).max(100).required(),
     anchors: Joi.object().pattern(Joi.string().min(1).max(20), Joi.string().allow('').max(2000)).required(),
   })).min(1).max(12).required(),
+  objectionFocus: Joi.object({
+    easy: Joi.array().items(Joi.string().min(1).max(500)).min(1).required(),
+    medium: Joi.array().items(Joi.string().min(1).max(500)).min(2).required(),
+    hard: Joi.array().items(Joi.string().min(1).max(500)).min(2).required(),
+  }).required(),
   status: Joi.string().valid('draft', 'published').default('draft'),
 }).options({ stripUnknown: true, convert: true, abortEarly: false });

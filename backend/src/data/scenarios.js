@@ -3,7 +3,7 @@ const DIFFICULTY_MODIFIERS = {
 ## Difficulty: Easy
 You are friendly, open, and easy to talk to. You warm up quickly.
 - You answer questions willingly and give helpful responses.
-- You raise NO objections about cost, schedule, or commitment unless directly pushed.
+- You raise ONE light objection from the selected objection list. Keep it easy to resolve.
 - If the staff member offers an appointment time, you agree immediately.
 - You are forgiving if they skip steps or stumble — you stay engaged.
 - Your goal is to make the staff member feel confident and successful.
@@ -12,7 +12,7 @@ You are friendly, open, and easy to talk to. You warm up quickly.
 ## Difficulty: Medium
 You are a realistic, normal caller. You're interested but not a pushover.
 - You answer questions but don't volunteer extra information.
-- You raise ONE mild objection naturally during the conversation. Use the selected objection focus if one is provided.
+- You raise TWO mild objections naturally during the conversation. Use the selected objections if provided.
 - You need the staff member to offer a specific appointment time before you commit.
 - If they handle your objection well, you move forward. If they dodge it, you get slightly hesitant.
 - This is a realistic, balanced training scenario.
@@ -21,8 +21,7 @@ You are a realistic, normal caller. You're interested but not a pushover.
 ## Difficulty: Hard
 You are skeptical, busy, guarded, and not easy to win over.
 - You are brief and slightly suspicious at first. Don't give much away.
-- You have one primary decision blocker from the selected objection focus or scenario-specific hard-mode list. Do not reveal it until the staff member asks thoughtful discovery questions.
-- You also raise one secondary objection naturally if the conversation gets far enough.
+- You have TWO decision blockers from the selected objection list. Do not reveal them until the staff member asks thoughtful discovery questions.
 - Good answers make you warmer and more cooperative, but they do not automatically make you book.
 - Do not agree to book just because the staff member asks for an appointment.
 - If they pitch too hard, skip rapport, or pressure you after you explain a blocker, respond with: "I think I need to think about it" and go quiet.
@@ -354,7 +353,45 @@ export function getBuiltInScenarioDefault(slug) {
   return BUILT_IN_SCENARIO_DEFAULTS[slug] ?? null;
 }
 
+const OBJECTIONS_PER_DIFFICULTY = {
+  easy: 1,
+  medium: 2,
+  hard: 2,
+};
+
 const OBJECTION_FOCUS = {
+  easy: {
+    new_student: [
+      'Light schedule question: ask which evenings are available.',
+      'Light confidence concern: mention you are a little nervous about starting.',
+      'Light price question: ask if there is an intro offer.',
+    ],
+    parent_enrollment: [
+      'Light schedule question: ask what days kids classes usually run.',
+      'Light child-fit concern: ask if shy kids usually do okay.',
+      'Light price question: ask whether there is a trial or intro offer.',
+    ],
+    web_lead_callback: [
+      'Light context question: ask what the intro offer includes.',
+      'Light schedule question: ask what class times are usually available.',
+      'Light comfort concern: mention you have never tried martial arts before.',
+    ],
+    sales_enrollment: [
+      'Light schedule question: ask which class times are best after the trial.',
+      'Light commitment concern: ask how often most kids attend.',
+      'Light price question: ask what the starter option is.',
+    ],
+    renewal_conference: [
+      'Light schedule question: ask if class times will stay the same.',
+      'Light value question: ask what the next stage of progress looks like.',
+      'Light price question: ask whether renewal pricing changes.',
+    ],
+    cancellation_save: [
+      'Light schedule concern: Cameron started another activity, but a different class time might help.',
+      'Light motivation concern: Cameron has been less excited lately.',
+      'Light budget question: ask if there are any short-term options.',
+    ],
+  },
   medium: {
     new_student: [
       'Mild price question: ask whether there is an intro offer or what the monthly range usually is.',
@@ -419,25 +456,50 @@ const OBJECTION_FOCUS = {
       "Primary blocker: schedule uncertainty. Tyler's school schedule may change soon, so you need to confirm class times.",
       'Primary blocker: progress doubt. You like the program, but you are not fully convinced the progress is strong enough to renew yet.',
     ],
+    cancellation_save: [
+      'Primary blocker: motivation. Cameron has been resistant about coming for a month.',
+      'Primary blocker: schedule conflict. Cameron started another activity and the current class time no longer works.',
+      'Primary blocker: budget pressure. Money is tight and you are looking for expenses to cut.',
+      'Primary blocker: value doubt. You are not sure Cameron is getting enough out of the program anymore.',
+    ],
   },
 };
 
-function selectObjectionFocus(scenarioId, difficulty) {
-  const options = OBJECTION_FOCUS[difficulty]?.[scenarioId];
+function getDefaultObjectionFocus(slug) {
+  return {
+    easy: OBJECTION_FOCUS.easy?.[slug] ?? [],
+    medium: OBJECTION_FOCUS.medium?.[slug] ?? [],
+    hard: OBJECTION_FOCUS.hard?.[slug] ?? [],
+  };
+}
+
+for (const scenario of Object.values(BUILT_IN_SCENARIO_DEFAULTS)) {
+  scenario.objectionFocus = getDefaultObjectionFocus(scenario.slug);
+}
+
+function selectObjectionFocus(scenarioId, difficulty, objectionFocusOverride = null) {
+  const source = objectionFocusOverride || OBJECTION_FOCUS;
+  const options = Array.isArray(source?.[difficulty])
+    ? source[difficulty]
+    : source?.[difficulty]?.[scenarioId];
   if (!options?.length) return '';
-  const selected = options[Math.floor(Math.random() * options.length)];
+  const count = OBJECTIONS_PER_DIFFICULTY[difficulty] ?? 1;
+  const selected = [...options]
+    .sort(() => Math.random() - 0.5)
+    .slice(0, Math.min(count, options.length));
   return `
-## Selected Objection Focus for This Call
-${selected}
-- Use this as your main objection theme if an objection is appropriate for the difficulty.
-- Do not default to schedule unless this focus specifically says schedule.
+## Selected Objections for This Call
+${selected.map((objection, index) => `${index + 1}. ${objection}`).join('\n')}
+- Use only these selected objections for this call.
+- Do not invent a different main objection unless the staff member directly creates a new concern.
+- Do not default to schedule unless a selected objection specifically says schedule.
 `;
 }
 
-export function getScenarioSystemPrompt(scenarioId, school, difficulty = 'medium', basePromptOverride = null) {
+export function getScenarioSystemPrompt(scenarioId, school, difficulty = 'medium', basePromptOverride = null, objectionFocusOverride = null) {
   const base = basePromptOverride || SCENARIOS[scenarioId]?.systemPrompt || SCENARIOS.new_student.systemPrompt;
   const difficultyBlock = DIFFICULTY_MODIFIERS[difficulty] || DIFFICULTY_MODIFIERS.medium;
-  const objectionFocus = selectObjectionFocus(scenarioId, difficulty);
+  const objectionFocus = selectObjectionFocus(scenarioId, difficulty, objectionFocusOverride);
   if (!school) return base + objectionFocus + difficultyBlock;
 
   const schoolName = school.schoolName || school.name || 'the school';

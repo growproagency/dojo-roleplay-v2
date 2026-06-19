@@ -55,8 +55,39 @@ const DEFAULT_FORM = {
 const DEFAULT_BUILT_IN_FORM = {
   title: '', description: '', systemPromptBase: '', firstMessage: '',
   voiceId: 'Elliot', voiceProvider: 'vapi', scoringRubricType: 'inbound',
-  scoringCategoriesText: '[]', status: 'draft',
+  scoringCategories: [], objectionFocus: { easy: '', medium: '', hard: '' }, status: 'draft',
 };
+
+const SCORE_BANDS = ['10', '8-9', '7-8', '5-6', '3-4', '0-2'];
+const OBJECTION_COUNTS = { easy: 1, medium: 2, hard: 2 };
+
+function normalizeScoringCategories(categories) {
+  if (!Array.isArray(categories)) return [];
+  return categories.map((category) => ({
+    name: category?.name || '',
+    weight: Number(category?.weight || 0),
+    anchors: SCORE_BANDS.reduce((anchors, band) => ({
+      ...anchors,
+      [band]: category?.anchors?.[band] || '',
+    }), {}),
+  }));
+}
+
+function normalizeObjectionFocus(objectionFocus) {
+  return {
+    easy: Array.isArray(objectionFocus?.easy) ? objectionFocus.easy.join('\n') : '',
+    medium: Array.isArray(objectionFocus?.medium) ? objectionFocus.medium.join('\n') : '',
+    hard: Array.isArray(objectionFocus?.hard) ? objectionFocus.hard.join('\n') : '',
+  };
+}
+
+function parseObjectionFocus(objectionFocus) {
+  return {
+    easy: String(objectionFocus.easy || '').split('\n').map((line) => line.trim()).filter(Boolean),
+    medium: String(objectionFocus.medium || '').split('\n').map((line) => line.trim()).filter(Boolean),
+    hard: String(objectionFocus.hard || '').split('\n').map((line) => line.trim()).filter(Boolean),
+  };
+}
 
 const REQUIRED_FIELDS = {
   title: 'Title',
@@ -150,7 +181,8 @@ export function CustomScenariosPage() {
       voiceId: s.voiceId || 'Elliot',
       voiceProvider: s.voiceProvider || 'vapi',
       scoringRubricType: s.scoringRubricType || 'inbound',
-      scoringCategoriesText: JSON.stringify(s.scoringCategories || [], null, 2),
+      scoringCategories: normalizeScoringCategories(s.scoringCategories),
+      objectionFocus: normalizeObjectionFocus(s.objectionFocus),
       status: s.status || 'draft',
     });
     setEditingBuiltIn(s);
@@ -194,14 +226,71 @@ export function CustomScenariosPage() {
 
   const isSaving = createMutation.isPending || updateMutation.isPending;
   const isBuiltInSaving = updateBuiltInMutation.isPending || publishBuiltInMutation.isPending || resetBuiltInMutation.isPending;
+  const builtInRubricWeightTotal = builtInForm.scoringCategories.reduce((sum, category) => sum + Number(category.weight || 0), 0);
+  const builtInObjectionCounts = parseObjectionFocus(builtInForm.objectionFocus);
+  const builtInObjectionsValid = builtInObjectionCounts.easy.length >= 1
+    && builtInObjectionCounts.medium.length >= 2
+    && builtInObjectionCounts.hard.length >= 2;
+
+  const updateBuiltInCategory = (index, patch) => {
+    setBuiltInForm((f) => ({
+      ...f,
+      scoringCategories: f.scoringCategories.map((category, i) => (
+        i === index ? { ...category, ...patch } : category
+      )),
+    }));
+  };
+
+  const updateBuiltInAnchor = (index, band, value) => {
+    setBuiltInForm((f) => ({
+      ...f,
+      scoringCategories: f.scoringCategories.map((category, i) => (
+        i === index
+          ? { ...category, anchors: { ...(category.anchors || {}), [band]: value } }
+          : category
+      )),
+    }));
+  };
+
+  const addBuiltInCategory = () => {
+    setBuiltInForm((f) => ({
+      ...f,
+      scoringCategories: [
+        ...f.scoringCategories,
+        {
+          name: '',
+          weight: 0,
+          anchors: SCORE_BANDS.reduce((anchors, band) => ({ ...anchors, [band]: '' }), {}),
+        },
+      ],
+    }));
+  };
+
+  const removeBuiltInCategory = (index) => {
+    setBuiltInForm((f) => ({
+      ...f,
+      scoringCategories: f.scoringCategories.filter((_, i) => i !== index),
+    }));
+  };
 
   const saveBuiltIn = (status = builtInForm.status) => {
     if (!editingBuiltIn?.slug) return;
-    let scoringCategories;
-    try {
-      scoringCategories = JSON.parse(builtInForm.scoringCategoriesText || '[]');
-    } catch {
-      toast.error('Scoring categories must be valid JSON.');
+    if (builtInForm.scoringCategories.length === 0) {
+      toast.error('Add at least one scoring category.');
+      return;
+    }
+    const scoringCategories = builtInForm.scoringCategories.map((category) => ({
+      ...category,
+      name: category.name.trim(),
+      weight: Number(category.weight || 0),
+      anchors: SCORE_BANDS.reduce((anchors, band) => ({
+        ...anchors,
+        [band]: category.anchors?.[band]?.trim() || '',
+      }), {}),
+    }));
+    const objectionFocus = parseObjectionFocus(builtInForm.objectionFocus);
+    if (objectionFocus.easy.length < 1 || objectionFocus.medium.length < 2 || objectionFocus.hard.length < 2) {
+      toast.error('Objections need at least 1 easy, 2 medium, and 2 hard entries.');
       return;
     }
     updateBuiltInMutation.mutate({
@@ -216,6 +305,7 @@ export function CustomScenariosPage() {
         voiceProvider: builtInForm.voiceProvider || 'vapi',
         scoringRubricType: builtInForm.scoringRubricType,
         scoringCategories,
+        objectionFocus,
       },
     }, {
       onSuccess: () => { setEditingBuiltIn(null); toast.success(status === 'published' ? 'Built-in scenario published' : 'Draft saved'); },
@@ -445,6 +535,29 @@ export function CustomScenariosPage() {
               <Textarea id="builtInPrompt" value={builtInForm.systemPromptBase} onChange={(e) => setBuiltInForm((f) => ({ ...f, systemPromptBase: e.target.value }))} rows={16} className="font-mono text-xs" />
             </div>
 
+            <div className="space-y-3 rounded-lg border border-border bg-secondary/10 p-4">
+              <div>
+                <Label>Objection pool</Label>
+                <p className="text-xs text-muted-foreground">
+                  Add one objection per line. For each call, the AI randomly uses 1 easy objection, 2 medium objections, or 2 hard objections from these lists.
+                </p>
+              </div>
+              <div className="grid gap-3 md:grid-cols-3">
+                {['easy', 'medium', 'hard'].map((difficulty) => (
+                  <div key={difficulty} className="space-y-1.5">
+                    <Label className="capitalize">{difficulty} ({OBJECTION_COUNTS[difficulty]} used)</Label>
+                    <Textarea value={builtInForm.objectionFocus[difficulty]}
+                      onChange={(e) => setBuiltInForm((f) => ({
+                        ...f,
+                        objectionFocus: { ...f.objectionFocus, [difficulty]: e.target.value },
+                      }))}
+                      rows={7}
+                      placeholder="One objection per line" />
+                  </div>
+                ))}
+              </div>
+            </div>
+
             <div className="grid sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label>Scoring rubric type</Label>
@@ -460,24 +573,65 @@ export function CustomScenariosPage() {
                 </Select>
               </div>
               <div className="rounded-lg border border-border bg-secondary/20 p-3 text-sm text-muted-foreground">
-                Scores are still 0-10 per category. The backend calculates the final 0-100 score from these weights.
+                The AI scores the transcript against the scenario script/process and these score bands. The backend calculates the final 0-100 score from the category weights.
               </div>
             </div>
 
-            <div className="space-y-1.5">
-              <Label htmlFor="builtInScoring">Scoring categories and score bands</Label>
-              <Textarea id="builtInScoring" value={builtInForm.scoringCategoriesText}
-                onChange={(e) => setBuiltInForm((f) => ({ ...f, scoringCategoriesText: e.target.value }))}
-                rows={14} className="font-mono text-xs" />
-              <p className="text-xs text-muted-foreground">
-                Each category needs a name, weight, and anchors such as 10, 8-9, 7-8, 5-6, 3-4, and 0-2.
-              </p>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <Label>Scoring categories and score bands</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Define what each score range means for this scenario. CAP can tighten these descriptions over time.
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Badge className={builtInRubricWeightTotal === 100 ? 'bg-green-500/10 text-green-500 border-green-500/20 border' : 'bg-amber-500/10 text-amber-500 border-amber-500/20 border'}>
+                    {builtInRubricWeightTotal}% total
+                  </Badge>
+                  <Button type="button" variant="outline" size="sm" onClick={addBuiltInCategory} className="gap-2">
+                    <Plus className="w-4 h-4" />Add category
+                  </Button>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                {builtInForm.scoringCategories.map((category, index) => (
+                  <div key={`${category.name}-${index}`} className="rounded-lg border border-border bg-background p-4 space-y-3">
+                    <div className="grid gap-3 sm:grid-cols-[1fr_110px_auto]">
+                      <div className="space-y-1.5">
+                        <Label>Category name</Label>
+                        <Input value={category.name} onChange={(e) => updateBuiltInCategory(index, { name: e.target.value })} placeholder="Needs Discovery" />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label>Weight %</Label>
+                        <Input type="number" min="0" max="100" value={category.weight} onChange={(e) => updateBuiltInCategory(index, { weight: Number(e.target.value) })} />
+                      </div>
+                      <div className="flex items-end">
+                        <Button type="button" variant="ghost" size="sm" onClick={() => removeBuiltInCategory(index)} className="text-destructive hover:text-destructive">
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      {SCORE_BANDS.map((band) => (
+                        <div key={band} className="space-y-1.5">
+                          <Label>{band}</Label>
+                          <Textarea value={category.anchors?.[band] || ''} onChange={(e) => updateBuiltInAnchor(index, band, e.target.value)} rows={2}
+                            placeholder={band === '10' ? 'Excellent execution with clear evidence.' : 'Describe what this score range means.'} />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
           <DialogFooter className="gap-2">
             <Button type="button" variant="outline" onClick={() => setEditingBuiltIn(null)}>Cancel</Button>
-            <Button type="button" variant="outline" disabled={isBuiltInSaving} onClick={() => saveBuiltIn('draft')}>Save draft</Button>
-            <Button type="button" disabled={isBuiltInSaving} onClick={() => saveBuiltIn('published')} className="gap-2">
+            <Button type="button" variant="outline" disabled={isBuiltInSaving || builtInRubricWeightTotal !== 100 || !builtInObjectionsValid} onClick={() => saveBuiltIn('draft')}>Save draft</Button>
+            <Button type="button" disabled={isBuiltInSaving || builtInRubricWeightTotal !== 100 || !builtInObjectionsValid} onClick={() => saveBuiltIn('published')} className="gap-2">
               {isBuiltInSaving && <Loader2 className="w-4 h-4 animate-spin" />}
               Publish
             </Button>

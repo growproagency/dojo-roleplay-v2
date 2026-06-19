@@ -9,8 +9,8 @@ test('web lead callbacks vary medium objections beyond schedule', () => {
   try {
     const prompt = getScenarioSystemPrompt('web_lead_callback', null, 'medium');
 
-    assert.match(prompt, /Selected Objection Focus/);
-    assert.match(prompt, /check with your partner/);
+    assert.match(prompt, /Selected Objections/);
+    assert.match(prompt, /(check with your partner|usually costs|couple of schools|class time options)/);
     assert.match(prompt, /Do not default to schedule/);
   } finally {
     Math.random = originalRandom;
@@ -24,8 +24,8 @@ test('hard adult inbound can use a non-schedule blocker', () => {
   try {
     const prompt = getScenarioSystemPrompt('new_student', null, 'hard');
 
-    assert.match(prompt, /Selected Objection Focus/);
-    assert.match(prompt, /price\/budget/);
+    assert.match(prompt, /Selected Objections/);
+    assert.match(prompt, /(price\/budget|schedule uncertainty|commitment concern|comparison shopping)/);
     assert.match(prompt, /Do not default to schedule/);
   } finally {
     Math.random = originalRandom;
@@ -39,8 +39,8 @@ test('hard parent enrollment can use a non-schedule blocker', () => {
   try {
     const prompt = getScenarioSystemPrompt('parent_enrollment', null, 'hard');
 
-    assert.match(prompt, /Selected Objection Focus/);
-    assert.match(prompt, /family's budget/);
+    assert.match(prompt, /Selected Objections/);
+    assert.match(prompt, /(other-parent decision|family's budget|schedule uncertainty|child fit)/);
     assert.match(prompt, /Do not default to schedule/);
   } finally {
     Math.random = originalRandom;
@@ -54,8 +54,8 @@ test('hard sales enrollment can use a random blocker', () => {
   try {
     const prompt = getScenarioSystemPrompt('sales_enrollment', null, 'hard');
 
-    assert.match(prompt, /Selected Objection Focus/);
-    assert.match(prompt, /commitment length/);
+    assert.match(prompt, /Selected Objections/);
+    assert.match(prompt, /(price\/budget|other-parent decision|schedule uncertainty|commitment length)/);
     assert.match(prompt, /Do not default to schedule/);
   } finally {
     Math.random = originalRandom;
@@ -69,8 +69,8 @@ test('hard renewal conference can use a random blocker', () => {
   try {
     const prompt = getScenarioSystemPrompt('renewal_conference', null, 'hard');
 
-    assert.match(prompt, /Selected Objection Focus/);
-    assert.match(prompt, /progress doubt/);
+    assert.match(prompt, /Selected Objections/);
+    assert.match(prompt, /(price\/value|other-parent decision|schedule uncertainty|progress doubt)/);
     assert.match(prompt, /Do not default to schedule/);
   } finally {
     Math.random = originalRandom;

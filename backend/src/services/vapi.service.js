@@ -358,6 +358,7 @@ async function resolveScenarioForCall(scenarioSlug, schoolId) {
         voiceId: published?.voiceId || defaults?.voiceId || 'Elliot',
       },
       firstMessage,
+      objectionFocus: published?.objectionFocus || defaults?.objectionFocus || null,
       scoringPrompt: null,
     };
   }
@@ -399,7 +400,7 @@ export async function buildScenarioWebAssistant({ user, scenario, difficulty }) 
   } : null;
   const systemPrompt = scenarioConfig.custom
     ? buildCustomScenarioPrompt(scenarioConfig.custom, schoolSettings, normalizedDifficulty)
-    : getScenarioSystemPrompt(scenario, schoolSettings, normalizedDifficulty, scenarioConfig.systemPromptBase);
+    : getScenarioSystemPrompt(scenario, schoolSettings, normalizedDifficulty, scenarioConfig.systemPromptBase, scenarioConfig.objectionFocus);
   const assistant = {
     name: scenarioConfig.title.slice(0, 40),
     model: { provider: 'openai', model: config.openaiModel, messages: [{ role: 'system', content: systemPrompt }] },
@@ -545,7 +546,7 @@ async function handleToolCalls(message) {
 
       const systemPrompt = scenarioConfig?.custom
         ? buildCustomScenarioPrompt(scenarioConfig.custom, null, difficulty)
-        : getScenarioSystemPrompt(scenario, null, difficulty, scenarioConfig?.systemPromptBase || null);
+        : getScenarioSystemPrompt(scenario, null, difficulty, scenarioConfig?.systemPromptBase || null, scenarioConfig?.objectionFocus || null);
       results.push({
         toolCallId: toolCall.id,
         result: dbCall && scenarioConfig
@@ -613,7 +614,7 @@ async function buildDestinationResponse(message) {
 
   const systemPrompt = scenarioConfig.custom
     ? buildCustomScenarioPrompt(scenarioConfig.custom, schoolSettings, difficulty)
-    : getScenarioSystemPrompt(scenarioSlug, schoolSettings, difficulty, scenarioConfig.systemPromptBase);
+    : getScenarioSystemPrompt(scenarioSlug, schoolSettings, difficulty, scenarioConfig.systemPromptBase, scenarioConfig.objectionFocus);
   const assistant = {
     model: { provider: 'openai', model: config.openaiModel, messages: [{ role: 'system', content: systemPrompt }] },
     voice: scenarioConfig.voice,
