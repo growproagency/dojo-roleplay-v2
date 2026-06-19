@@ -60,7 +60,7 @@ const SHARED_BEHAVIOR_RULES = `
 - NEVER switch roles.
 
 ## Ending the Conversation
-When the conversation reaches a natural close, say ONE warm, brief closing line then go completely silent.
+When the conversation reaches a natural close, say ONE warm, brief closing line.
 `;
 
 function buildSharedBehavior(contextType) {
