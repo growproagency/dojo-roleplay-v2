@@ -22,6 +22,28 @@ const LIVEKIT_START_SPEAKING_PLAN = Object.freeze({
     waitFunction: '2000 / (1 + exp(-10 * (x - 0.5)))',
   },
 });
+const VAPI_VOICE_IDS = new Set([
+  'Elliot',
+  'Kylie',
+  'Rohan',
+  'Lily',
+  'Savannah',
+  'Hana',
+  'Neha',
+  'Cole',
+  'Harry',
+  'Paige',
+  'Spencer',
+  'Leah',
+  'Tara',
+]);
+const LEGACY_VAPI_VOICE_MAP = {
+  Emma: 'Paige',
+  Nico: 'Cole',
+  Clara: 'Leah',
+  Godfrey: 'Harry',
+  Kai: 'Spencer',
+};
 
 function setCtx(id, ctx) { if (id && ctx) callContextCache.set(id, ctx); }
 function getCtx(id) { return id ? (callContextCache.get(id) || null) : null; }
@@ -32,6 +54,14 @@ function getLiveKitStartSpeakingPlan() {
     waitSeconds: LIVEKIT_START_SPEAKING_PLAN.waitSeconds,
     smartEndpointingPlan: { ...LIVEKIT_START_SPEAKING_PLAN.smartEndpointingPlan },
   };
+}
+
+function normalizeVapiVoice(voice) {
+  if (!voice || voice.provider !== 'vapi') return voice;
+  const voiceId = VAPI_VOICE_IDS.has(voice.voiceId)
+    ? voice.voiceId
+    : LEGACY_VAPI_VOICE_MAP[voice.voiceId] || 'Elliot';
+  return { ...voice, voiceId };
 }
 
 async function schoolCanUseCustomScenarios(schoolId) {
@@ -419,7 +449,7 @@ export async function buildScenarioWebAssistant({ user, scenario, difficulty }) 
   const assistant = {
     name: scenarioConfig.title.slice(0, 40),
     model: { provider: 'openai', model: config.openaiModel, messages: [{ role: 'system', content: systemPrompt }] },
-    voice: scenarioConfig.voice,
+    voice: normalizeVapiVoice(scenarioConfig.voice),
     firstMessage: scenarioConfig.firstMessage,
     startSpeakingPlan: getLiveKitStartSpeakingPlan(),
     silenceTimeoutSeconds: 30,
@@ -633,7 +663,7 @@ async function buildDestinationResponse(message) {
     : getScenarioSystemPrompt(scenarioSlug, schoolSettings, difficulty, scenarioConfig.systemPromptBase, scenarioConfig.objectionFocus);
   const assistant = {
     model: { provider: 'openai', model: config.openaiModel, messages: [{ role: 'system', content: systemPrompt }] },
-    voice: scenarioConfig.voice,
+    voice: normalizeVapiVoice(scenarioConfig.voice),
     firstMessage: scenarioConfig.firstMessage,
     startSpeakingPlan: getLiveKitStartSpeakingPlan(),
     silenceTimeoutSeconds: 30,
