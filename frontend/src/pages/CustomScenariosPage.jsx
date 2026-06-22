@@ -18,13 +18,13 @@ import { toast } from 'sonner';
 
 const VOICE_OPTIONS = [
   { id: 'Elliot', label: 'Elliot (Male, Canadian)' },
-  { id: 'Emma', label: 'Emma (Female, American)' },
+  { id: 'Paige', label: 'Paige (Female, American)' },
   { id: 'Rohan', label: 'Rohan (Male, Indian American)' },
-  { id: 'Nico', label: 'Nico (Male, American)' },
+  { id: 'Cole', label: 'Cole (Male, American)' },
   { id: 'Savannah', label: 'Savannah (Female, American)' },
-  { id: 'Clara', label: 'Clara (Female, American)' },
-  { id: 'Godfrey', label: 'Godfrey (Male, American)' },
-  { id: 'Kai', label: 'Kai (Male, American)' },
+  { id: 'Leah', label: 'Leah (Female, American)' },
+  { id: 'Harry', label: 'Harry (Male, American)' },
+  { id: 'Spencer', label: 'Spencer (Male, American)' },
 ];
 
 const CONTEXT_TYPES = [

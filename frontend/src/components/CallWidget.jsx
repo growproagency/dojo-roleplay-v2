@@ -15,6 +15,14 @@ const emitCallScenario = (scenario) => {
   window.dispatchEvent(new CustomEvent('dojo:call-scenario', { detail: { scenario } }));
 };
 
+const getVapiErrorMessage = (err) => (
+  err?.error?.message
+  || err?.error?.error
+  || err?.message
+  || err?.reason
+  || 'Something went wrong'
+);
+
 const SCENARIO_ALIASES = {
   new_student: 'new_student',
   parent_enrollment: 'parent_enrollment',
@@ -135,7 +143,12 @@ export function CallWidget() {
         setWebCallConnecting(false);
         vapiRef.current = null;
         emitCallState('idle');
-        toast.error('Call error: ' + (err?.message || 'Something went wrong'));
+        toast.error('Call error: ' + getVapiErrorMessage(err));
+      });
+      vapi.on('call-start-failed', (err) => {
+        if (import.meta.env.DEV) {
+          console.error('[Vapi call start failed]', err);
+        }
       });
       vapi.on('message', (message) => {
         const scenario = findScenarioValue(message);
@@ -174,7 +187,7 @@ export function CallWidget() {
       }
       setWebCallConnecting(false);
       emitCallState('idle');
-      toast.error('Failed to start web call: ' + (err?.message || 'Unknown error'));
+      toast.error('Failed to start web call: ' + getVapiErrorMessage(err));
     }
   }, [getScenarioAssistant, getSessionToken, vapiConfig]);
 
