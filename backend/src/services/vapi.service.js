@@ -16,7 +16,7 @@ import { canUseCustomScenarios } from '../utils/plans.js';
 
 const callContextCache = new Map();
 const LIVEKIT_START_SPEAKING_PLAN = Object.freeze({
-  waitSeconds: 5.7,
+  waitSeconds: 1.3,
   smartEndpointingPlan: {
     provider: 'livekit',
     waitFunction: '2000 / (1 + exp(-10 * (x - 0.5)))',
