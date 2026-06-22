@@ -120,6 +120,7 @@ export function CustomScenariosPage() {
   const [adminScenarioTab, setAdminScenarioTab] = useState('built-in');
   const [editingBuiltIn, setEditingBuiltIn] = useState(null);
   const [builtInForm, setBuiltInForm] = useState(DEFAULT_BUILT_IN_FORM);
+  const [resetBuiltInTarget, setResetBuiltInTarget] = useState(null);
 
   const { data: scenarios, isLoading } = useAllCustomScenarios(customScenariosEnabled);
   const { data: builtInScenarios, isLoading: builtInLoading } = useBuiltInScenarios(isGlobalAdmin);
@@ -403,7 +404,7 @@ export function CustomScenariosPage() {
                           </Button>
                         )}
                         <Button variant="ghost" size="sm" onClick={() => openBuiltInEdit(s)}><Pencil className="w-4 h-4" /></Button>
-                        <Button variant="ghost" size="sm" onClick={() => resetBuiltInMutation.mutate(s.slug, { onSuccess: () => toast.success('Reset to default'), onError: (err) => toast.error(err.message) })}>
+                        <Button variant="ghost" size="sm" onClick={() => setResetBuiltInTarget(s)} title="Reset to default">
                           <RotateCcw className="w-4 h-4" />
                         </Button>
                       </div>
@@ -906,6 +907,38 @@ Hard: You are skeptical about price and need strong reassurance.`}</pre>
 - Asked for the next step or booking`}</pre>
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!resetBuiltInTarget} onOpenChange={(open) => { if (!open) setResetBuiltInTarget(null); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Reset built-in scenario?</DialogTitle>
+            <DialogDescription>
+              This will discard the database override for <strong>{resetBuiltInTarget?.title}</strong> and restore the packaged default.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="rounded-lg border border-amber-500/20 bg-amber-500/10 p-3 text-sm text-muted-foreground">
+            Any unpublished edits or custom script changes for this built-in scenario will be lost.
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setResetBuiltInTarget(null)}>Cancel</Button>
+            <Button
+              variant="destructive"
+              onClick={() => resetBuiltInMutation.mutate(resetBuiltInTarget?.slug, {
+                onSuccess: () => {
+                  setResetBuiltInTarget(null);
+                  toast.success('Reset to default');
+                },
+                onError: (err) => toast.error(err.message),
+              })}
+              disabled={!resetBuiltInTarget?.slug || resetBuiltInMutation.isPending}
+              className="gap-2"
+            >
+              {resetBuiltInMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <RotateCcw className="w-4 h-4" />}
+              Reset scenario
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
