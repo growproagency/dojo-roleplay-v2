@@ -198,7 +198,28 @@ ${customScoringPrompt}
 Return JSON: { overallScore, categories: [{name, score, feedback}], highlights, missedOpportunities, suggestions, summary }`;
 }
 
-function selectScoringPrompt(scenarioTitle, customScoringPrompt, difficulty = null) {
+function buildStructuredScoringDetail(scoringCategories) {
+  if (!Array.isArray(scoringCategories) || scoringCategories.length === 0) return '';
+
+  const lines = scoringCategories.map((category, index) => {
+    const anchors = category.anchors && typeof category.anchors === 'object'
+      ? Object.entries(category.anchors)
+          .map(([band, description]) => `  - ${band}: ${description}`)
+          .join('\n')
+      : '';
+    return `${index + 1}. ${category.name} (${category.weight}%)
+${anchors}`;
+  }).join('\n\n');
+
+  return `
+
+## Detailed Category Score Anchors
+Use these category weights and score-band definitions when assigning 0-10 category scores. The backend calculates the final overall score from these weights.
+
+${lines}`;
+}
+
+function selectScoringPrompt(scenarioTitle, customScoringPrompt, difficulty = null, scoringCategories = null) {
   if (customScoringPrompt) return buildCustomPrompt(customScoringPrompt) + SCORE_SCALE_INSTRUCTIONS;
 
   const t = (scenarioTitle || '').toLowerCase();
@@ -212,11 +233,11 @@ function selectScoringPrompt(scenarioTitle, customScoringPrompt, difficulty = nu
     : difficulty === 'easy'
       ? EASY_DIFFICULTY_SCORING_INSTRUCTIONS
       : '';
-  return basePrompt + CATEGORY_INDEPENDENCE_SCORING_INSTRUCTIONS + HIGH_SCORE_CALIBRATION_SCORING_INSTRUCTIONS + difficultyPrompt + SCORE_SCALE_INSTRUCTIONS;
+  return basePrompt + buildStructuredScoringDetail(scoringCategories) + CATEGORY_INDEPENDENCE_SCORING_INSTRUCTIONS + HIGH_SCORE_CALIBRATION_SCORING_INSTRUCTIONS + difficultyPrompt + SCORE_SCALE_INSTRUCTIONS;
 }
 
-export async function scoreCallTranscript(transcript, scenarioTitle, customScoringPrompt = null, difficulty = null) {
-  const systemPrompt = selectScoringPrompt(scenarioTitle, customScoringPrompt, difficulty);
+export async function scoreCallTranscript(transcript, scenarioTitle, customScoringPrompt = null, difficulty = null, scoringCategories = null) {
+  const systemPrompt = selectScoringPrompt(scenarioTitle, customScoringPrompt, difficulty, scoringCategories);
 
   const settings = await findPlatformSettings().catch(() => null);
   const model = settings?.defaultLlmModel || config.openaiModel;
@@ -266,6 +287,7 @@ export async function scoreCallTranscript(transcript, scenarioTitle, customScori
     categories: parsed.categories,
     scenarioTitle,
     customScoringPrompt,
+    scoringCategories,
   });
   if (parsed.overallScore == null) throw new Error('Invalid scoring response from LLM');
   parsed._meta = { model: response.model, promptTokens: response.usage?.prompt_tokens, completionTokens: response.usage?.completion_tokens };

@@ -3,7 +3,7 @@ const DIFFICULTY_MODIFIERS = {
 ## Difficulty: Easy
 You are friendly, open, and easy to talk to. You warm up quickly.
 - You answer questions willingly and give helpful responses.
-- You raise NO objections about cost, schedule, or commitment unless directly pushed.
+- You raise ONE light objection from the selected objection list. Keep it easy to resolve.
 - If the staff member offers an appointment time, you agree immediately.
 - You are forgiving if they skip steps or stumble — you stay engaged.
 - Your goal is to make the staff member feel confident and successful.
@@ -12,7 +12,7 @@ You are friendly, open, and easy to talk to. You warm up quickly.
 ## Difficulty: Medium
 You are a realistic, normal caller. You're interested but not a pushover.
 - You answer questions but don't volunteer extra information.
-- You raise ONE mild objection naturally during the conversation. Use the selected objection focus if one is provided.
+- You raise TWO mild objections naturally during the conversation. Use the selected objections if provided.
 - You need the staff member to offer a specific appointment time before you commit.
 - If they handle your objection well, you move forward. If they dodge it, you get slightly hesitant.
 - This is a realistic, balanced training scenario.
@@ -21,8 +21,7 @@ You are a realistic, normal caller. You're interested but not a pushover.
 ## Difficulty: Hard
 You are skeptical, busy, guarded, and not easy to win over.
 - You are brief and slightly suspicious at first. Don't give much away.
-- You have one primary decision blocker from the selected objection focus or scenario-specific hard-mode list. Do not reveal it until the staff member asks thoughtful discovery questions.
-- You also raise one secondary objection naturally if the conversation gets far enough.
+- You have TWO decision blockers from the selected objection list. Do not reveal them until the staff member asks thoughtful discovery questions.
 - Good answers make you warmer and more cooperative, but they do not automatically make you book.
 - Do not agree to book just because the staff member asks for an appointment.
 - If they pitch too hard, skip rapport, or pressure you after you explain a blocker, respond with: "I think I need to think about it" and go quiet.
@@ -220,7 +219,173 @@ export const SCENARIOS = {
 
 export const BUILT_IN_SCENARIO_IDS = Object.keys(SCENARIOS);
 
+const DEFAULT_SCORE_ANCHORS = {
+  '10': 'Excellent execution. The staff member fully demonstrates the category behavior with clear transcript evidence, natural delivery, and no meaningful misses.',
+  '8-9': 'Strong execution. The staff member covers the important behavior with only minor omissions, light awkwardness, or one missed follow-up.',
+  '7-8': 'Good but incomplete. The staff member shows the behavior, but misses a meaningful detail, asks too shallowly, or does not fully connect it to the prospect.',
+  '5-6': 'Partial execution. The staff member attempts the behavior but it is thin, generic, rushed, or only loosely connected to the prospect.',
+  '3-4': 'Weak execution. The behavior is barely present, mostly implied, or handled in a way that does not meaningfully advance the call.',
+  '0-2': 'Missing or harmful. The staff member skips the behavior, gives incorrect guidance, ignores the prospect, or creates pressure/confusion.',
+};
+
+function scoringCategory(name, weight) {
+  return { name, weight, anchors: DEFAULT_SCORE_ANCHORS };
+}
+
+const SCORING_RUBRICS = {
+  inbound: [
+    scoringCategory('Rapport & Greeting', 10),
+    scoringCategory('Needs Discovery', 20),
+    scoringCategory('School Positioning & Offer', 20),
+    scoringCategory('Objection Handling', 20),
+    scoringCategory('Appointment Setting', 20),
+    scoringCategory('Information Gathering & Referrals', 10),
+  ],
+  outbound: [
+    scoringCategory('Rapport & Introduction', 20),
+    scoringCategory('Needs Discovery', 20),
+    scoringCategory('School Positioning & Offer', 15),
+    scoringCategory('Objection Handling', 20),
+    scoringCategory('Appointment Setting', 15),
+    scoringCategory('Information & Next Steps', 10),
+  ],
+  salesEnrollment: [
+    scoringCategory('Needs Discovery / Go Fishing', 25),
+    scoringCategory('Benefit Teaching / Over Time', 20),
+    scoringCategory('Upgrade Pre-Frame', 15),
+    scoringCategory('Pricing Presentation', 15),
+    scoringCategory('Objection Handling', 15),
+    scoringCategory('Closing Technique', 10),
+  ],
+  renewal: [
+    scoringCategory('Progress Check Framing', 15),
+    scoringCategory('The 3 Questions', 30),
+    scoringCategory('Specific Progress Highlight', 20),
+    scoringCategory('Renewal Ask', 20),
+    scoringCategory('Objection Handling', 10),
+    scoringCategory('Follow-Up Discipline', 5),
+  ],
+  cancellation: [
+    scoringCategory('Universal Opening', 20),
+    scoringCategory('Reason Discovery', 25),
+    scoringCategory('Save Strategy', 25),
+    scoringCategory('ETG Deployment', 15),
+    scoringCategory('Close or Exit Quality', 15),
+  ],
+};
+
+export const BUILT_IN_SCENARIO_DEFAULTS = {
+  new_student: {
+    slug: 'new_student',
+    title: SCENARIOS.new_student.title,
+    description: SCENARIOS.new_student.description,
+    systemPromptBase: SCENARIOS.new_student.systemPrompt,
+    firstMessage: 'Hey, I was just calling to get some info about your adult classes?',
+    voiceProvider: 'vapi',
+    voiceId: 'Elliot',
+    scoringRubricType: 'inbound',
+    scoringCategories: SCORING_RUBRICS.inbound,
+    status: 'published',
+  },
+  parent_enrollment: {
+    slug: 'parent_enrollment',
+    title: SCENARIOS.parent_enrollment.title,
+    description: SCENARIOS.parent_enrollment.description,
+    systemPromptBase: SCENARIOS.parent_enrollment.systemPrompt,
+    firstMessage: "Hi, yeah - I'm calling about your kids' program? I'm thinking about enrolling my son.",
+    voiceProvider: 'vapi',
+    voiceId: 'Emma',
+    scoringRubricType: 'inbound',
+    scoringCategories: SCORING_RUBRICS.inbound,
+    status: 'published',
+  },
+  web_lead_callback: {
+    slug: 'web_lead_callback',
+    title: SCENARIOS.web_lead_callback.title,
+    description: SCENARIOS.web_lead_callback.description,
+    systemPromptBase: SCENARIOS.web_lead_callback.systemPrompt,
+    firstMessage: null,
+    voiceProvider: 'vapi',
+    voiceId: 'Rohan',
+    scoringRubricType: 'outbound',
+    scoringCategories: SCORING_RUBRICS.outbound,
+    status: 'published',
+  },
+  sales_enrollment: {
+    slug: 'sales_enrollment',
+    title: SCENARIOS.sales_enrollment.title,
+    description: SCENARIOS.sales_enrollment.description,
+    systemPromptBase: SCENARIOS.sales_enrollment.systemPrompt,
+    firstMessage: 'Yeah, the class was really good! I liked it.',
+    voiceProvider: 'vapi',
+    voiceId: 'Nico',
+    scoringRubricType: 'salesEnrollment',
+    scoringCategories: SCORING_RUBRICS.salesEnrollment,
+    status: 'published',
+  },
+  renewal_conference: {
+    slug: 'renewal_conference',
+    title: SCENARIOS.renewal_conference.title,
+    description: SCENARIOS.renewal_conference.description,
+    systemPromptBase: SCENARIOS.renewal_conference.systemPrompt,
+    firstMessage: "Yeah, Tyler's been really enjoying it. I'm glad we tried it.",
+    voiceProvider: 'vapi',
+    voiceId: 'Savannah',
+    scoringRubricType: 'renewal',
+    scoringCategories: SCORING_RUBRICS.renewal,
+    status: 'published',
+  },
+  cancellation_save: {
+    slug: 'cancellation_save',
+    title: SCENARIOS.cancellation_save.title,
+    description: SCENARIOS.cancellation_save.description,
+    systemPromptBase: SCENARIOS.cancellation_save.systemPrompt,
+    firstMessage: "Hi, I'm calling because I need to cancel Cameron's membership.",
+    voiceProvider: 'vapi',
+    voiceId: 'Clara',
+    scoringRubricType: 'cancellation',
+    scoringCategories: SCORING_RUBRICS.cancellation,
+    status: 'published',
+  },
+};
+
+export function getBuiltInScenarioDefault(slug) {
+  return BUILT_IN_SCENARIO_DEFAULTS[slug] ?? null;
+}
+
 const OBJECTION_FOCUS = {
+  easy: {
+    new_student: [
+      'Light schedule question: ask which evenings are available.',
+      'Light confidence concern: mention you are a little nervous about starting.',
+      'Light price question: ask if there is an intro offer.',
+    ],
+    parent_enrollment: [
+      'Light schedule question: ask what days kids classes usually run.',
+      'Light child-fit concern: ask if shy kids usually do okay.',
+      'Light price question: ask whether there is a trial or intro offer.',
+    ],
+    web_lead_callback: [
+      'Light context question: ask what the intro offer includes.',
+      'Light schedule question: ask what class times are usually available.',
+      'Light comfort concern: mention you have never tried martial arts before.',
+    ],
+    sales_enrollment: [
+      'Light schedule question: ask which class times are best after the trial.',
+      'Light commitment concern: ask how often most kids attend.',
+      'Light price question: ask what the starter option is.',
+    ],
+    renewal_conference: [
+      'Light schedule question: ask if class times will stay the same.',
+      'Light value question: ask what the next stage of progress looks like.',
+      'Light price question: ask whether renewal pricing changes.',
+    ],
+    cancellation_save: [
+      'Light schedule concern: Cameron started another activity, but a different class time might help.',
+      'Light motivation concern: Cameron has been less excited lately.',
+      'Light budget question: ask if there are any short-term options.',
+    ],
+  },
   medium: {
     new_student: [
       'Mild price question: ask whether there is an intro offer or what the monthly range usually is.',
@@ -285,25 +450,49 @@ const OBJECTION_FOCUS = {
       "Primary blocker: schedule uncertainty. Tyler's school schedule may change soon, so you need to confirm class times.",
       'Primary blocker: progress doubt. You like the program, but you are not fully convinced the progress is strong enough to renew yet.',
     ],
+    cancellation_save: [
+      'Primary blocker: motivation. Cameron has been resistant about coming for a month.',
+      'Primary blocker: schedule conflict. Cameron started another activity and the current class time no longer works.',
+      'Primary blocker: budget pressure. Money is tight and you are looking for expenses to cut.',
+      'Primary blocker: value doubt. You are not sure Cameron is getting enough out of the program anymore.',
+    ],
   },
 };
 
-function selectObjectionFocus(scenarioId, difficulty) {
-  const options = OBJECTION_FOCUS[difficulty]?.[scenarioId];
+function getDefaultObjectionFocus(slug) {
+  return {
+    easy: OBJECTION_FOCUS.easy?.[slug] ?? [],
+    medium: OBJECTION_FOCUS.medium?.[slug] ?? [],
+    hard: OBJECTION_FOCUS.hard?.[slug] ?? [],
+  };
+}
+
+for (const scenario of Object.values(BUILT_IN_SCENARIO_DEFAULTS)) {
+  scenario.objectionFocus = getDefaultObjectionFocus(scenario.slug);
+}
+
+function selectObjectionFocus(scenarioId, difficulty, objectionFocusOverride = null) {
+  const source = objectionFocusOverride || OBJECTION_FOCUS;
+  const options = Array.isArray(source?.[difficulty])
+    ? source[difficulty]
+    : source?.[difficulty]?.[scenarioId];
   if (!options?.length) return '';
-  const selected = options[Math.floor(Math.random() * options.length)];
+  const selected = [...options]
+    .sort(() => Math.random() - 0.5);
   return `
-## Selected Objection Focus for This Call
-${selected}
-- Use this as your main objection theme if an objection is appropriate for the difficulty.
-- Do not default to schedule unless this focus specifically says schedule.
+## Selected Objections for This Call
+${selected.map((objection, index) => `${index + 1}. ${objection}`).join('\n')}
+- Use only these selected objections for this call.
+- If multiple objections are listed, raise them naturally across the conversation instead of all at once.
+- Do not invent a different main objection unless the staff member directly creates a new concern.
+- Do not default to schedule unless a selected objection specifically says schedule.
 `;
 }
 
-export function getScenarioSystemPrompt(scenarioId, school, difficulty = 'medium', basePromptOverride = null) {
+export function getScenarioSystemPrompt(scenarioId, school, difficulty = 'medium', basePromptOverride = null, objectionFocusOverride = null) {
   const base = basePromptOverride || SCENARIOS[scenarioId]?.systemPrompt || SCENARIOS.new_student.systemPrompt;
   const difficultyBlock = DIFFICULTY_MODIFIERS[difficulty] || DIFFICULTY_MODIFIERS.medium;
-  const objectionFocus = selectObjectionFocus(scenarioId, difficulty);
+  const objectionFocus = selectObjectionFocus(scenarioId, difficulty, objectionFocusOverride);
   if (!school) return base + objectionFocus + difficultyBlock;
 
   const schoolName = school.schoolName || school.name || 'the school';

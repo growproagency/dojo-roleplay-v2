@@ -21,3 +21,24 @@ export const updateScenarioSchema = createScenarioSchema.fork(
   ['title', 'description', 'characterName', 'characterPrompt', 'openingLine', 'voiceId'],
   f => f.optional()
 );
+
+export const updateBuiltInScenarioSchema = Joi.object({
+  title: Joi.string().min(1).max(255).required(),
+  description: Joi.string().min(1).max(1000).required(),
+  systemPromptBase: Joi.string().min(1).required(),
+  firstMessage: Joi.string().max(500).allow('', null).optional(),
+  voiceId: Joi.string().min(1).required(),
+  voiceProvider: Joi.string().default('vapi'),
+  scoringRubricType: Joi.string().valid('inbound', 'outbound', 'salesEnrollment', 'renewal', 'cancellation').required(),
+  scoringCategories: Joi.array().items(Joi.object({
+    name: Joi.string().min(1).max(120).required(),
+    weight: Joi.number().min(0).max(100).required(),
+    anchors: Joi.object().pattern(Joi.string().min(1).max(20), Joi.string().allow('').max(2000)).required(),
+  })).min(1).max(12).required(),
+  objectionFocus: Joi.object({
+    easy: Joi.array().items(Joi.string().min(1).max(500)).min(1).required(),
+    medium: Joi.array().items(Joi.string().min(1).max(500)).min(1).required(),
+    hard: Joi.array().items(Joi.string().min(1).max(500)).min(1).required(),
+  }).required(),
+  status: Joi.string().valid('draft', 'published').default('draft'),
+}).options({ stripUnknown: true, convert: true, abortEarly: false });
