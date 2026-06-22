@@ -164,6 +164,7 @@ CREATE TABLE IF NOT EXISTS built_in_scenarios (
   scoring_rubric_type VARCHAR(40),
   scoring_categories JSONB,
   objection_focus     JSONB,
+  objection_counts    JSONB,
   status             VARCHAR(20) NOT NULL DEFAULT 'published'
                        CHECK (status IN ('draft', 'published')),
   updated_by         INTEGER REFERENCES users(id) ON DELETE SET NULL,

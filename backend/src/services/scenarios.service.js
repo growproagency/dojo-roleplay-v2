@@ -53,6 +53,7 @@ function mergeBuiltInDefault(row) {
     scoringRubricType: row.scoringRubricType || defaults.scoringRubricType,
     scoringCategories: row.scoringCategories || defaults.scoringCategories,
     objectionFocus: row.objectionFocus || defaults.objectionFocus,
+    objectionCounts: row.objectionCounts || defaults.objectionCounts,
   };
 }
 
@@ -79,6 +80,7 @@ export async function getPublishedBuiltInScenarios() {
       scoringRubricType: merged.scoringRubricType,
       scoringCategories: merged.scoringCategories,
       objectionFocus: merged.objectionFocus,
+      objectionCounts: merged.objectionCounts,
       status: 'published',
       isBuiltIn: true,
       isActive: true,
@@ -135,6 +137,7 @@ export async function updateBuiltInScenario(slug, req, data) {
     scoringRubricType: data.scoringRubricType ?? defaults.scoringRubricType,
     scoringCategories,
     objectionFocus: data.objectionFocus ?? defaults.objectionFocus,
+    objectionCounts: data.objectionCounts ?? defaults.objectionCounts,
     status: data.status ?? 'draft',
     updatedBy: req.user.id,
   });

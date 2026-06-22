@@ -16,7 +16,7 @@ import { canUseCustomScenarios } from '../utils/plans.js';
 
 const callContextCache = new Map();
 const LIVEKIT_START_SPEAKING_PLAN = Object.freeze({
-  waitSeconds: 1,
+  waitSeconds: 0.9,
   smartEndpointingPlan: {
     provider: 'livekit',
     waitFunction: '2000 / (1 + exp(-10 * (x - 0.5)))',
@@ -404,6 +404,7 @@ async function resolveScenarioForCall(scenarioSlug, schoolId) {
       },
       firstMessage,
       objectionFocus: published?.objectionFocus || defaults?.objectionFocus || null,
+      objectionCounts: published?.objectionCounts || defaults?.objectionCounts || null,
       scoringPrompt: null,
     };
   }
@@ -445,7 +446,7 @@ export async function buildScenarioWebAssistant({ user, scenario, difficulty }) 
   } : null;
   const systemPrompt = scenarioConfig.custom
     ? buildCustomScenarioPrompt(scenarioConfig.custom, schoolSettings, normalizedDifficulty)
-    : getScenarioSystemPrompt(scenario, schoolSettings, normalizedDifficulty, scenarioConfig.systemPromptBase, scenarioConfig.objectionFocus);
+    : getScenarioSystemPrompt(scenario, schoolSettings, normalizedDifficulty, scenarioConfig.systemPromptBase, scenarioConfig.objectionFocus, scenarioConfig.objectionCounts);
   const assistant = {
     name: scenarioConfig.title.slice(0, 40),
     model: { provider: 'openai', model: config.openaiModel, messages: [{ role: 'system', content: systemPrompt }] },
@@ -592,7 +593,7 @@ async function handleToolCalls(message) {
 
       const systemPrompt = scenarioConfig?.custom
         ? buildCustomScenarioPrompt(scenarioConfig.custom, null, difficulty)
-        : getScenarioSystemPrompt(scenario, null, difficulty, scenarioConfig?.systemPromptBase || null, scenarioConfig?.objectionFocus || null);
+        : getScenarioSystemPrompt(scenario, null, difficulty, scenarioConfig?.systemPromptBase || null, scenarioConfig?.objectionFocus || null, scenarioConfig?.objectionCounts || null);
       results.push({
         toolCallId: toolCall.id,
         result: dbCall && scenarioConfig
@@ -660,7 +661,7 @@ async function buildDestinationResponse(message) {
 
   const systemPrompt = scenarioConfig.custom
     ? buildCustomScenarioPrompt(scenarioConfig.custom, schoolSettings, difficulty)
-    : getScenarioSystemPrompt(scenarioSlug, schoolSettings, difficulty, scenarioConfig.systemPromptBase, scenarioConfig.objectionFocus);
+    : getScenarioSystemPrompt(scenarioSlug, schoolSettings, difficulty, scenarioConfig.systemPromptBase, scenarioConfig.objectionFocus, scenarioConfig.objectionCounts);
   const assistant = {
     model: { provider: 'openai', model: config.openaiModel, messages: [{ role: 'system', content: systemPrompt }] },
     voice: normalizeVapiVoice(scenarioConfig.voice),

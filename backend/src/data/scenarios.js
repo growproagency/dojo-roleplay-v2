@@ -1,27 +1,52 @@
+export const DEFAULT_OBJECTION_COUNTS = {
+  easy: 1,
+  medium: 2,
+  hard: 2,
+};
+
+function normalizeObjectionCounts(counts = {}) {
+  const normalize = (difficulty) => {
+    const value = Number(counts?.[difficulty] ?? DEFAULT_OBJECTION_COUNTS[difficulty]);
+    if (!Number.isFinite(value)) return DEFAULT_OBJECTION_COUNTS[difficulty];
+    return Math.max(0, Math.min(10, Math.trunc(value)));
+  };
+  return {
+    easy: normalize('easy'),
+    medium: normalize('medium'),
+    hard: normalize('hard'),
+  };
+}
+
+function objectionInstruction(count, label, mode = 'raise') {
+  if (count <= 0) return '- Do not raise a planned objection unless the staff member directly creates a new concern.';
+  const noun = count === 1 ? 'objection' : 'objections';
+  return `- You ${mode} up to ${count} ${label} ${noun} from the selected objection list.`;
+}
+
 const DIFFICULTY_MODIFIERS = {
-  easy: `
+  easy: (count) => `
 ## Difficulty: Easy
 You are friendly, open, and easy to talk to. You warm up quickly.
 - You answer questions willingly and give helpful responses.
-- You raise ONE light objection from the selected objection list. Keep it easy to resolve.
+${objectionInstruction(count, 'light', 'raise')}
 - If the staff member offers an appointment time, you agree immediately.
 - You are forgiving if they skip steps or stumble — you stay engaged.
 - Your goal is to make the staff member feel confident and successful.
 `,
-  medium: `
+  medium: (count) => `
 ## Difficulty: Medium
 You are a realistic, normal caller. You're interested but not a pushover.
 - You answer questions but don't volunteer extra information.
-- You raise TWO mild objections naturally during the conversation. Use the selected objections if provided.
+${objectionInstruction(count, 'mild', 'raise')}
 - You need the staff member to offer a specific appointment time before you commit.
 - If they handle your objection well, you move forward. If they dodge it, you get slightly hesitant.
 - This is a realistic, balanced training scenario.
 `,
-  hard: `
+  hard: (count) => `
 ## Difficulty: Hard
 You are skeptical, busy, guarded, and not easy to win over.
 - You are brief and slightly suspicious at first. Don't give much away.
-- You have TWO decision blockers from the selected objection list. Do not reveal them until the staff member asks thoughtful discovery questions.
+${objectionInstruction(count, 'decision-blocking', 'have')}
 - Good answers make you warmer and more cooperative, but they do not automatically make you book.
 - Do not agree to book just because the staff member asks for an appointment.
 - If they pitch too hard, skip rapport, or pressure you after you explain a blocker, respond with: "I think I need to think about it" and go quiet.
@@ -469,31 +494,38 @@ function getDefaultObjectionFocus(slug) {
 
 for (const scenario of Object.values(BUILT_IN_SCENARIO_DEFAULTS)) {
   scenario.objectionFocus = getDefaultObjectionFocus(scenario.slug);
+  scenario.objectionCounts = normalizeObjectionCounts();
 }
 
-function selectObjectionFocus(scenarioId, difficulty, objectionFocusOverride = null) {
+function selectObjectionFocus(scenarioId, difficulty, objectionFocusOverride = null, objectionCountsOverride = null) {
   const source = objectionFocusOverride || OBJECTION_FOCUS;
   const options = Array.isArray(source?.[difficulty])
     ? source[difficulty]
     : source?.[difficulty]?.[scenarioId];
-  if (!options?.length) return '';
+  const count = normalizeObjectionCounts(objectionCountsOverride)[difficulty];
+  if (!options?.length || count <= 0) return { prompt: '', selectedCount: 0 };
   const selected = [...options]
-    .sort(() => Math.random() - 0.5);
-  return `
+    .sort(() => Math.random() - 0.5)
+    .slice(0, count);
+  return {
+    prompt: `
 ## Selected Objections for This Call
 ${selected.map((objection, index) => `${index + 1}. ${objection}`).join('\n')}
 - Use only these selected objections for this call.
 - If multiple objections are listed, raise them naturally across the conversation instead of all at once.
 - Do not invent a different main objection unless the staff member directly creates a new concern.
 - Do not default to schedule unless a selected objection specifically says schedule.
-`;
+`,
+    selectedCount: selected.length,
+  };
 }
 
-export function getScenarioSystemPrompt(scenarioId, school, difficulty = 'medium', basePromptOverride = null, objectionFocusOverride = null) {
+export function getScenarioSystemPrompt(scenarioId, school, difficulty = 'medium', basePromptOverride = null, objectionFocusOverride = null, objectionCountsOverride = null) {
   const base = basePromptOverride || SCENARIOS[scenarioId]?.systemPrompt || SCENARIOS.new_student.systemPrompt;
-  const difficultyBlock = DIFFICULTY_MODIFIERS[difficulty] || DIFFICULTY_MODIFIERS.medium;
-  const objectionFocus = selectObjectionFocus(scenarioId, difficulty, objectionFocusOverride);
-  if (!school) return base + objectionFocus + difficultyBlock;
+  const selectedDifficulty = DIFFICULTY_MODIFIERS[difficulty] ? difficulty : 'medium';
+  const objectionFocus = selectObjectionFocus(scenarioId, selectedDifficulty, objectionFocusOverride, objectionCountsOverride);
+  const difficultyBlock = DIFFICULTY_MODIFIERS[selectedDifficulty](objectionFocus.selectedCount);
+  if (!school) return base + objectionFocus.prompt + difficultyBlock;
 
   const schoolName = school.schoolName || school.name || 'the school';
   const address = [school.streetAddress, school.city, school.state].filter(Boolean).join(', ') || 'their location';
@@ -511,5 +543,5 @@ export function getScenarioSystemPrompt(scenarioId, school, difficulty = 'medium
 You know you are contacting ${schoolName} at ${address}. They offer ${offer}. Pricing is ${priceLine}. The program director is ${director}.
 Use these details naturally when relevant — don't recite them unprompted.
 `;
-  return base + schoolContext + objectionFocus + difficultyBlock;
+  return base + schoolContext + objectionFocus.prompt + difficultyBlock;
 }

@@ -40,5 +40,10 @@ export const updateBuiltInScenarioSchema = Joi.object({
     medium: Joi.array().items(Joi.string().min(1).max(500)).min(1).required(),
     hard: Joi.array().items(Joi.string().min(1).max(500)).min(1).required(),
   }).required(),
+  objectionCounts: Joi.object({
+    easy: Joi.number().integer().min(0).max(10).required(),
+    medium: Joi.number().integer().min(0).max(10).required(),
+    hard: Joi.number().integer().min(0).max(10).required(),
+  }).required(),
   status: Joi.string().valid('draft', 'published').default('draft'),
 }).options({ stripUnknown: true, convert: true, abortEarly: false });

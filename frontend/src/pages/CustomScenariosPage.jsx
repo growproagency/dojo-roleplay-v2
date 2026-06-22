@@ -55,7 +55,8 @@ const DEFAULT_FORM = {
 const DEFAULT_BUILT_IN_FORM = {
   title: '', description: '', systemPromptBase: '', firstMessage: '',
   voiceId: 'Elliot', voiceProvider: 'vapi', scoringRubricType: 'inbound',
-  scoringCategories: [], objectionFocus: { easy: [], medium: [], hard: [] }, status: 'draft',
+  scoringCategories: [], objectionFocus: { easy: [], medium: [], hard: [] },
+  objectionCounts: { easy: 1, medium: 2, hard: 2 }, status: 'draft',
 };
 
 const SCORE_BANDS = ['10', '8-9', '7-8', '5-6', '3-4', '0-2'];
@@ -77,6 +78,19 @@ function normalizeObjectionFocus(objectionFocus) {
     easy: Array.isArray(objectionFocus?.easy) ? objectionFocus.easy : [],
     medium: Array.isArray(objectionFocus?.medium) ? objectionFocus.medium : [],
     hard: Array.isArray(objectionFocus?.hard) ? objectionFocus.hard : [],
+  };
+}
+
+function normalizeObjectionCounts(objectionCounts) {
+  const normalize = (difficulty, fallback) => {
+    const value = Number(objectionCounts?.[difficulty]);
+    if (!Number.isFinite(value)) return fallback;
+    return Math.max(0, Math.min(10, Math.trunc(value)));
+  };
+  return {
+    easy: normalize('easy', 1),
+    medium: normalize('medium', 2),
+    hard: normalize('hard', 2),
   };
 }
 
@@ -183,6 +197,7 @@ export function CustomScenariosPage() {
       scoringRubricType: s.scoringRubricType || 'inbound',
       scoringCategories: normalizeScoringCategories(s.scoringCategories),
       objectionFocus: normalizeObjectionFocus(s.objectionFocus),
+      objectionCounts: normalizeObjectionCounts(s.objectionCounts),
       status: s.status || 'draft',
     });
     setEditingBuiltIn(s);
@@ -305,6 +320,17 @@ export function CustomScenariosPage() {
     }));
   };
 
+  const updateBuiltInObjectionCount = (difficulty, value) => {
+    const count = Math.max(0, Math.min(10, Math.trunc(Number(value || 0))));
+    setBuiltInForm((f) => ({
+      ...f,
+      objectionCounts: {
+        ...f.objectionCounts,
+        [difficulty]: count,
+      },
+    }));
+  };
+
   const saveBuiltIn = (status = builtInForm.status) => {
     if (!editingBuiltIn?.slug) return;
     if (builtInForm.scoringCategories.length === 0) {
@@ -338,6 +364,7 @@ export function CustomScenariosPage() {
         scoringRubricType: builtInForm.scoringRubricType,
         scoringCategories,
         objectionFocus,
+        objectionCounts: normalizeObjectionCounts(builtInForm.objectionCounts),
       },
     }, {
       onSuccess: () => { setEditingBuiltIn(null); toast.success(status === 'published' ? 'Built-in scenario published' : 'Draft saved'); },
@@ -571,13 +598,30 @@ export function CustomScenariosPage() {
               <div>
                 <Label>Objection pool</Label>
                 <p className="text-xs text-muted-foreground">
-                  Add each objection as its own item. For each call, the AI uses every objection listed for the selected difficulty.
+                  Add each objection as its own item, then choose how many the AI can use for each call.
                 </p>
               </div>
               <div className="grid gap-3 xl:grid-cols-3">
                 {['easy', 'medium', 'hard'].map((difficulty) => (
                   <div key={difficulty} className="space-y-2 rounded-lg border border-border bg-background p-3">
-                    <Label className="capitalize">{difficulty} ({parseObjectionFocus(builtInForm.objectionFocus)[difficulty].length || 0} used)</Label>
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <Label className="capitalize">{difficulty}</Label>
+                        <p className="text-xs text-muted-foreground">
+                          {parseObjectionFocus(builtInForm.objectionFocus)[difficulty].length || 0} in pool
+                        </p>
+                      </div>
+                      <div className="w-24 space-y-1">
+                        <Label className="text-xs">Per call</Label>
+                        <Input
+                          type="number"
+                          min="0"
+                          max="10"
+                          value={builtInForm.objectionCounts[difficulty]}
+                          onChange={(e) => updateBuiltInObjectionCount(difficulty, e.target.value)}
+                        />
+                      </div>
+                    </div>
                     <div className="space-y-2">
                       {builtInForm.objectionFocus[difficulty].map((objection, index) => (
                         <div key={`${difficulty}-${index}`} className="grid gap-2 rounded-lg border border-border bg-secondary/20 p-2 sm:grid-cols-[1fr_auto]">

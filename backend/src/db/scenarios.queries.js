@@ -1,7 +1,7 @@
 import { supabase } from './supabase.js';
 
 const COLS = 'id, slug, title, description, context_type, character_name, character_blurb, topics, school_id, character_prompt, opening_line, voice_id, voice_provider, scoring_prompt, is_active, created_by, created_at, updated_at';
-const BUILT_IN_COLS = 'slug, title, description, system_prompt_base, first_message, voice_id, voice_provider, scoring_rubric_type, scoring_categories, objection_focus, status, updated_by, created_at, updated_at';
+const BUILT_IN_COLS = 'slug, title, description, system_prompt_base, first_message, voice_id, voice_provider, scoring_rubric_type, scoring_categories, objection_focus, objection_counts, status, updated_by, created_at, updated_at';
 
 function toScenario(row) {
   if (!row) return null;
@@ -40,6 +40,7 @@ function toBuiltInScenario(row) {
     scoringRubricType: row.scoring_rubric_type,
     scoringCategories: row.scoring_categories,
     objectionFocus: row.objection_focus,
+    objectionCounts: row.objection_counts,
     status: row.status,
     updatedBy: row.updated_by,
     createdAt: row.created_at,
@@ -81,6 +82,7 @@ export async function upsertBuiltInScenario(fields) {
       scoring_rubric_type: fields.scoringRubricType ?? null,
       scoring_categories: fields.scoringCategories ?? null,
       objection_focus: fields.objectionFocus ?? null,
+      objection_counts: fields.objectionCounts ?? null,
       status: fields.status ?? 'draft',
       updated_by: fields.updatedBy ?? null,
     }, { onConflict: 'slug' })
