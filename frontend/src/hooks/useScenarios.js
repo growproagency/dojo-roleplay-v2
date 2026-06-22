@@ -6,6 +6,7 @@ export const scenarioKeys = {
   all: ['scenarios'],
   list: ['scenarios', 'list'],
   custom: ['scenarios', 'custom'],
+  builtIn: ['scenarios', 'built-in'],
 };
 
 export function useScenarios() {
@@ -29,6 +30,39 @@ export function useAllCustomScenarios(enabled = true) {
     queryKey: [...scenarioKeys.custom, userId, schoolId],
     queryFn: () => scenariosApi.listManagedCustom().then(r => r.data),
     enabled: enabled && !!userId,
+  });
+}
+
+export function useBuiltInScenarios(enabled = true) {
+  const userId = useAuthStore((s) => s.user?.id ?? null);
+  return useQuery({
+    queryKey: [...scenarioKeys.builtIn, userId],
+    queryFn: () => scenariosApi.listBuiltIn().then(r => r.data),
+    enabled: enabled && !!userId,
+  });
+}
+
+export function useUpdateBuiltInScenario() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ slug, data }) => scenariosApi.updateBuiltIn(slug, data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: scenarioKeys.all }),
+  });
+}
+
+export function usePublishBuiltInScenario() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (slug) => scenariosApi.publishBuiltIn(slug),
+    onSuccess: () => qc.invalidateQueries({ queryKey: scenarioKeys.all }),
+  });
+}
+
+export function useResetBuiltInScenario() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (slug) => scenariosApi.resetBuiltIn(slug),
+    onSuccess: () => qc.invalidateQueries({ queryKey: scenarioKeys.all }),
   });
 }
 

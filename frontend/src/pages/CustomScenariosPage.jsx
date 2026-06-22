@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useAllCustomScenarios, useCreateCustomScenario, useUpdateCustomScenario, useDeleteCustomScenario, useToggleCustomScenario } from '../hooks/useScenarios';
+import { useAllCustomScenarios, useBuiltInScenarios, useCreateCustomScenario, useUpdateCustomScenario, useDeleteCustomScenario, useToggleCustomScenario, useUpdateBuiltInScenario, usePublishBuiltInScenario, useResetBuiltInScenario } from '../hooks/useScenarios';
 import { useAdminSchools } from '../hooks/useAdmin';
 import { useAuth } from '../hooks/useAuth';
 import { canUseCustomScenarios } from '../utils/plans';
@@ -12,18 +12,19 @@ import { Textarea } from '../components/ui/textarea';
 import { Badge } from '../components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../components/ui/dialog';
-import { BookOpen, CheckCircle2, Loader2, Lock, Plus, Pencil, Trash2, Drama, ToggleLeft, ToggleRight, X } from 'lucide-react';
+import { Tabs, TabsList, TabsTrigger } from '../components/ui/tabs';
+import { BookOpen, CheckCircle2, Loader2, Lock, Plus, Pencil, RotateCcw, Trash2, Drama, ToggleLeft, ToggleRight, X } from 'lucide-react';
 import { toast } from 'sonner';
 
 const VOICE_OPTIONS = [
   { id: 'Elliot', label: 'Elliot (Male, Canadian)' },
-  { id: 'Emma', label: 'Emma (Female, American)' },
+  { id: 'Paige', label: 'Paige (Female, American)' },
   { id: 'Rohan', label: 'Rohan (Male, Indian American)' },
-  { id: 'Nico', label: 'Nico (Male, American)' },
+  { id: 'Cole', label: 'Cole (Male, American)' },
   { id: 'Savannah', label: 'Savannah (Female, American)' },
-  { id: 'Clara', label: 'Clara (Female, American)' },
-  { id: 'Godfrey', label: 'Godfrey (Male, American)' },
-  { id: 'Kai', label: 'Kai (Male, American)' },
+  { id: 'Leah', label: 'Leah (Female, American)' },
+  { id: 'Harry', label: 'Harry (Male, American)' },
+  { id: 'Spencer', label: 'Spencer (Male, American)' },
 ];
 
 const CONTEXT_TYPES = [
@@ -50,6 +51,56 @@ const DEFAULT_FORM = {
   characterBlurb: '', topics: [], schoolId: null, characterPrompt: PROMPT_TEMPLATE,
   openingLine: '', voiceId: 'Elliot', voiceProvider: 'vapi', scoringPrompt: '', isActive: true,
 };
+
+const DEFAULT_BUILT_IN_FORM = {
+  title: '', description: '', systemPromptBase: '', firstMessage: '',
+  voiceId: 'Elliot', voiceProvider: 'vapi', scoringRubricType: 'inbound',
+  scoringCategories: [], objectionFocus: { easy: [], medium: [], hard: [] },
+  objectionCounts: { easy: 1, medium: 2, hard: 2 }, status: 'draft',
+};
+
+const SCORE_BANDS = ['10', '8-9', '7-8', '5-6', '3-4', '0-2'];
+
+function normalizeScoringCategories(categories) {
+  if (!Array.isArray(categories)) return [];
+  return categories.map((category) => ({
+    name: category?.name || '',
+    weight: Number(category?.weight || 0),
+    anchors: SCORE_BANDS.reduce((anchors, band) => ({
+      ...anchors,
+      [band]: category?.anchors?.[band] || '',
+    }), {}),
+  }));
+}
+
+function normalizeObjectionFocus(objectionFocus) {
+  return {
+    easy: Array.isArray(objectionFocus?.easy) ? objectionFocus.easy : [],
+    medium: Array.isArray(objectionFocus?.medium) ? objectionFocus.medium : [],
+    hard: Array.isArray(objectionFocus?.hard) ? objectionFocus.hard : [],
+  };
+}
+
+function normalizeObjectionCounts(objectionCounts) {
+  const normalize = (difficulty, fallback) => {
+    const value = Number(objectionCounts?.[difficulty]);
+    if (!Number.isFinite(value)) return fallback;
+    return Math.max(0, Math.min(10, Math.trunc(value)));
+  };
+  return {
+    easy: normalize('easy', 1),
+    medium: normalize('medium', 2),
+    hard: normalize('hard', 2),
+  };
+}
+
+function parseObjectionFocus(objectionFocus) {
+  return {
+    easy: (Array.isArray(objectionFocus.easy) ? objectionFocus.easy : []).map((line) => String(line).trim()).filter(Boolean),
+    medium: (Array.isArray(objectionFocus.medium) ? objectionFocus.medium : []).map((line) => String(line).trim()).filter(Boolean),
+    hard: (Array.isArray(objectionFocus.hard) ? objectionFocus.hard : []).map((line) => String(line).trim()).filter(Boolean),
+  };
+}
 
 const REQUIRED_FIELDS = {
   title: 'Title',
@@ -80,8 +131,13 @@ export function CustomScenariosPage() {
   const [showScoringPrompt, setShowScoringPrompt] = useState(false);
   const [guideOpen, setGuideOpen] = useState(false);
   const [topicInput, setTopicInput] = useState('');
+  const [adminScenarioTab, setAdminScenarioTab] = useState('built-in');
+  const [editingBuiltIn, setEditingBuiltIn] = useState(null);
+  const [builtInForm, setBuiltInForm] = useState(DEFAULT_BUILT_IN_FORM);
+  const [resetBuiltInTarget, setResetBuiltInTarget] = useState(null);
 
   const { data: scenarios, isLoading } = useAllCustomScenarios(customScenariosEnabled);
+  const { data: builtInScenarios, isLoading: builtInLoading } = useBuiltInScenarios(isGlobalAdmin);
   const { data: schools } = useAdminSchools(isGlobalAdmin);
 
   const createMutation = useCreateCustomScenario();
@@ -89,6 +145,9 @@ export function CustomScenariosPage() {
   const deleteMutation = useDeleteCustomScenario();
 
   const toggleActiveMutation = useToggleCustomScenario();
+  const updateBuiltInMutation = useUpdateBuiltInScenario();
+  const publishBuiltInMutation = usePublishBuiltInScenario();
+  const resetBuiltInMutation = useResetBuiltInScenario();
 
   const addTopic = () => {
     const val = topicInput.trim();
@@ -125,6 +184,23 @@ export function CustomScenariosPage() {
     setShowScoringPrompt(!!s.scoringPrompt);
     setTopicInput('');
     setEditingScenario(s);
+  };
+
+  const openBuiltInEdit = (s) => {
+    setBuiltInForm({
+      title: s.title || '',
+      description: s.description || '',
+      systemPromptBase: s.systemPromptBase || '',
+      firstMessage: s.firstMessage || '',
+      voiceId: s.voiceId || 'Elliot',
+      voiceProvider: s.voiceProvider || 'vapi',
+      scoringRubricType: s.scoringRubricType || 'inbound',
+      scoringCategories: normalizeScoringCategories(s.scoringCategories),
+      objectionFocus: normalizeObjectionFocus(s.objectionFocus),
+      objectionCounts: normalizeObjectionCounts(s.objectionCounts),
+      status: s.status || 'draft',
+    });
+    setEditingBuiltIn(s);
   };
 
   const handleSubmit = (e) => {
@@ -164,6 +240,137 @@ export function CustomScenariosPage() {
   };
 
   const isSaving = createMutation.isPending || updateMutation.isPending;
+  const isBuiltInSaving = updateBuiltInMutation.isPending || publishBuiltInMutation.isPending || resetBuiltInMutation.isPending;
+  const builtInRubricWeightTotal = builtInForm.scoringCategories.reduce((sum, category) => sum + Number(category.weight || 0), 0);
+  const builtInObjectionCounts = parseObjectionFocus(builtInForm.objectionFocus);
+  const builtInObjectionsValid = builtInObjectionCounts.easy.length >= 1
+    && builtInObjectionCounts.medium.length >= 1
+    && builtInObjectionCounts.hard.length >= 1;
+
+  const updateBuiltInCategory = (index, patch) => {
+    setBuiltInForm((f) => ({
+      ...f,
+      scoringCategories: f.scoringCategories.map((category, i) => (
+        i === index ? { ...category, ...patch } : category
+      )),
+    }));
+  };
+
+  const updateBuiltInAnchor = (index, band, value) => {
+    setBuiltInForm((f) => ({
+      ...f,
+      scoringCategories: f.scoringCategories.map((category, i) => (
+        i === index
+          ? { ...category, anchors: { ...(category.anchors || {}), [band]: value } }
+          : category
+      )),
+    }));
+  };
+
+  const addBuiltInCategory = () => {
+    setBuiltInForm((f) => ({
+      ...f,
+      scoringCategories: [
+        ...f.scoringCategories,
+        {
+          name: '',
+          weight: 0,
+          anchors: SCORE_BANDS.reduce((anchors, band) => ({ ...anchors, [band]: '' }), {}),
+        },
+      ],
+    }));
+  };
+
+  const removeBuiltInCategory = (index) => {
+    setBuiltInForm((f) => ({
+      ...f,
+      scoringCategories: f.scoringCategories.filter((_, i) => i !== index),
+    }));
+  };
+
+  const updateBuiltInObjection = (difficulty, index, value) => {
+    setBuiltInForm((f) => ({
+      ...f,
+      objectionFocus: {
+        ...f.objectionFocus,
+        [difficulty]: f.objectionFocus[difficulty].map((objection, i) => (
+          i === index ? value : objection
+        )),
+      },
+    }));
+  };
+
+  const addBuiltInObjection = (difficulty) => {
+    setBuiltInForm((f) => ({
+      ...f,
+      objectionFocus: {
+        ...f.objectionFocus,
+        [difficulty]: [...f.objectionFocus[difficulty], ''],
+      },
+    }));
+  };
+
+  const removeBuiltInObjection = (difficulty, index) => {
+    setBuiltInForm((f) => ({
+      ...f,
+      objectionFocus: {
+        ...f.objectionFocus,
+        [difficulty]: f.objectionFocus[difficulty].filter((_, i) => i !== index),
+      },
+    }));
+  };
+
+  const updateBuiltInObjectionCount = (difficulty, value) => {
+    const count = Math.max(0, Math.min(10, Math.trunc(Number(value || 0))));
+    setBuiltInForm((f) => ({
+      ...f,
+      objectionCounts: {
+        ...f.objectionCounts,
+        [difficulty]: count,
+      },
+    }));
+  };
+
+  const saveBuiltIn = (status = builtInForm.status) => {
+    if (!editingBuiltIn?.slug) return;
+    if (builtInForm.scoringCategories.length === 0) {
+      toast.error('Add at least one scoring category.');
+      return;
+    }
+    const scoringCategories = builtInForm.scoringCategories.map((category) => ({
+      ...category,
+      name: category.name.trim(),
+      weight: Number(category.weight || 0),
+      anchors: SCORE_BANDS.reduce((anchors, band) => ({
+        ...anchors,
+        [band]: category.anchors?.[band]?.trim() || '',
+      }), {}),
+    }));
+    const objectionFocus = parseObjectionFocus(builtInForm.objectionFocus);
+    if (objectionFocus.easy.length < 1 || objectionFocus.medium.length < 1 || objectionFocus.hard.length < 1) {
+      toast.error('Add at least one objection for easy, medium, and hard.');
+      return;
+    }
+    updateBuiltInMutation.mutate({
+      slug: editingBuiltIn.slug,
+      data: {
+        status,
+        title: builtInForm.title.trim(),
+        description: builtInForm.description.trim(),
+        systemPromptBase: builtInForm.systemPromptBase.trim(),
+        firstMessage: builtInForm.firstMessage?.trim() || null,
+        voiceId: builtInForm.voiceId,
+        voiceProvider: builtInForm.voiceProvider || 'vapi',
+        scoringRubricType: builtInForm.scoringRubricType,
+        scoringCategories,
+        objectionFocus,
+        objectionCounts: normalizeObjectionCounts(builtInForm.objectionCounts),
+      },
+    }, {
+      onSuccess: () => { setEditingBuiltIn(null); toast.success(status === 'published' ? 'Built-in scenario published' : 'Draft saved'); },
+      onError: (err) => toast.error(err.message),
+    });
+  };
 
   return (
     <DashboardLayout>
@@ -181,6 +388,62 @@ export function CustomScenariosPage() {
             </CardContent>
           </Card>
         ) : (
+          <>
+        {isGlobalAdmin && (
+          <Tabs value={adminScenarioTab} onValueChange={setAdminScenarioTab}>
+            <TabsList>
+              <TabsTrigger value="built-in">Built-In Scenarios</TabsTrigger>
+              <TabsTrigger value="custom">Custom Scenarios</TabsTrigger>
+            </TabsList>
+          </Tabs>
+        )}
+
+        {isGlobalAdmin && adminScenarioTab === 'built-in' && (
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Drama className="w-4 h-4 text-primary" />Built-In Scenarios
+                {builtInScenarios && <span className="text-xs text-muted-foreground font-normal">({builtInScenarios.length})</span>}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {builtInLoading ? (
+                <div className="flex items-center justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-muted-foreground" /></div>
+              ) : (
+                <div className="divide-y divide-border">
+                  {(builtInScenarios ?? []).map((s) => (
+                    <div key={s.slug} className="flex items-center justify-between gap-3 py-3">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-sm font-medium">{s.title}</span>
+                          <Badge variant="outline" className="text-xs font-mono">{s.slug}</Badge>
+                          <Badge className={s.status === 'published' ? 'bg-green-500/10 text-green-500 border-green-500/20 border' : 'bg-amber-500/10 text-amber-500 border-amber-500/20 border'}>
+                            {s.status === 'published' ? 'Published' : 'Draft'}
+                          </Badge>
+                          {s.hasDatabaseOverride && <Badge variant="secondary">DB override</Badge>}
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1 truncate">{s.description}</p>
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0">
+                        {s.status !== 'published' && (
+                          <Button variant="ghost" size="sm" onClick={() => publishBuiltInMutation.mutate(s.slug, { onSuccess: () => toast.success('Published'), onError: (err) => toast.error(err.message) })}>
+                            <CheckCircle2 className="w-4 h-4" />
+                          </Button>
+                        )}
+                        <Button variant="ghost" size="sm" onClick={() => openBuiltInEdit(s)}><Pencil className="w-4 h-4" /></Button>
+                        <Button variant="ghost" size="sm" onClick={() => setResetBuiltInTarget(s)} title="Reset to default">
+                          <RotateCcw className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {(!isGlobalAdmin || adminScenarioTab === 'custom') && (
           <>
         <div className="flex items-center justify-between">
           <p className="text-muted-foreground">
@@ -274,7 +537,194 @@ export function CustomScenariosPage() {
         </Card>
           </>
         )}
+          </>
+        )}
       </div>
+
+      {/* Built-in scenario edit modal */}
+      <Dialog open={editingBuiltIn !== null} onOpenChange={(open) => { if (!open) setEditingBuiltIn(null); }}>
+        <DialogContent className="sm:max-w-5xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit built-in scenario</DialogTitle>
+            <DialogDescription>
+              Draft changes stay admin-only. Published changes affect every school.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="grid sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="builtInTitle">Title</Label>
+                <Input id="builtInTitle" value={builtInForm.title} onChange={(e) => setBuiltInForm((f) => ({ ...f, title: e.target.value }))} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>State</Label>
+                <Select value={builtInForm.status} onValueChange={(val) => setBuiltInForm((f) => ({ ...f, status: val }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="draft">Draft</SelectItem>
+                    <SelectItem value="published">Published</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="builtInDescription">Description</Label>
+              <Textarea id="builtInDescription" value={builtInForm.description} onChange={(e) => setBuiltInForm((f) => ({ ...f, description: e.target.value }))} rows={2} />
+            </div>
+
+            <div className="grid sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="builtInOpening">Opening line</Label>
+                <Input id="builtInOpening" value={builtInForm.firstMessage} onChange={(e) => setBuiltInForm((f) => ({ ...f, firstMessage: e.target.value }))} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Voice</Label>
+                <Select value={builtInForm.voiceId} onValueChange={(val) => setBuiltInForm((f) => ({ ...f, voiceId: val }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {VOICE_OPTIONS.map((v) => <SelectItem key={v.id} value={v.id}>{v.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="builtInPrompt">System prompt</Label>
+              <Textarea id="builtInPrompt" value={builtInForm.systemPromptBase} onChange={(e) => setBuiltInForm((f) => ({ ...f, systemPromptBase: e.target.value }))} rows={16} className="font-mono text-xs" />
+            </div>
+
+            <div className="space-y-3 rounded-lg border border-border bg-secondary/10 p-4">
+              <div>
+                <Label>Objection pool</Label>
+                <p className="text-xs text-muted-foreground">
+                  Add each objection as its own item, then choose how many the AI can use for each call.
+                </p>
+              </div>
+              <div className="grid gap-3 xl:grid-cols-3">
+                {['easy', 'medium', 'hard'].map((difficulty) => (
+                  <div key={difficulty} className="space-y-2 rounded-lg border border-border bg-background p-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <Label className="capitalize">{difficulty}</Label>
+                        <p className="text-xs text-muted-foreground">
+                          {parseObjectionFocus(builtInForm.objectionFocus)[difficulty].length || 0} in pool
+                        </p>
+                      </div>
+                      <div className="w-24 space-y-1">
+                        <Label className="text-xs">Per call</Label>
+                        <Input
+                          type="number"
+                          min="0"
+                          max="10"
+                          value={builtInForm.objectionCounts[difficulty]}
+                          onChange={(e) => updateBuiltInObjectionCount(difficulty, e.target.value)}
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      {builtInForm.objectionFocus[difficulty].map((objection, index) => (
+                        <div key={`${difficulty}-${index}`} className="grid gap-2 rounded-lg border border-border bg-secondary/20 p-2 sm:grid-cols-[1fr_auto]">
+                          <Input value={objection}
+                            onChange={(e) => updateBuiltInObjection(difficulty, index, e.target.value)}
+                            className="h-auto min-h-10 rounded-md bg-background px-3 py-2 whitespace-normal"
+                            placeholder="Price concern, schedule conflict, decision maker..." />
+                          <Button type="button" variant="ghost" size="sm" onClick={() => removeBuiltInObjection(difficulty, index)}
+                            className="shrink-0 text-destructive hover:text-destructive">
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                          <p className="sm:col-span-2 text-xs leading-5 text-muted-foreground break-words">{objection || 'Empty objection'}</p>
+                        </div>
+                      ))}
+                    </div>
+                    <Button type="button" variant="outline" size="sm" onClick={() => addBuiltInObjection(difficulty)} className="w-full gap-2">
+                      <Plus className="w-4 h-4" />Add objection
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="grid sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label>Scoring rubric type</Label>
+                <Select value={builtInForm.scoringRubricType} onValueChange={(val) => setBuiltInForm((f) => ({ ...f, scoringRubricType: val }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="inbound">Inbound</SelectItem>
+                    <SelectItem value="outbound">Outbound</SelectItem>
+                    <SelectItem value="salesEnrollment">Sales Enrollment</SelectItem>
+                    <SelectItem value="renewal">Renewal</SelectItem>
+                    <SelectItem value="cancellation">Cancellation</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="rounded-lg border border-border bg-secondary/20 p-3 text-sm text-muted-foreground">
+                The AI scores the transcript against the scenario script/process and these score bands. The backend calculates the final 0-100 score from the category weights.
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <Label>Scoring categories and score bands</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Define what each score range means for this scenario. CAP can tighten these descriptions over time.
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Badge className={builtInRubricWeightTotal === 100 ? 'bg-green-500/10 text-green-500 border-green-500/20 border' : 'bg-amber-500/10 text-amber-500 border-amber-500/20 border'}>
+                    {builtInRubricWeightTotal}% total
+                  </Badge>
+                  <Button type="button" variant="outline" size="sm" onClick={addBuiltInCategory} className="gap-2">
+                    <Plus className="w-4 h-4" />Add category
+                  </Button>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                {builtInForm.scoringCategories.map((category, index) => (
+                  <div key={`${category.name}-${index}`} className="rounded-lg border border-border bg-background p-4 space-y-3">
+                    <div className="grid gap-3 sm:grid-cols-[1fr_110px_auto]">
+                      <div className="space-y-1.5">
+                        <Label>Category name</Label>
+                        <Input value={category.name} onChange={(e) => updateBuiltInCategory(index, { name: e.target.value })} placeholder="Needs Discovery" />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label>Weight %</Label>
+                        <Input type="number" min="0" max="100" value={category.weight} onChange={(e) => updateBuiltInCategory(index, { weight: Number(e.target.value) })} />
+                      </div>
+                      <div className="flex items-end">
+                        <Button type="button" variant="ghost" size="sm" onClick={() => removeBuiltInCategory(index)} className="text-destructive hover:text-destructive">
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      {SCORE_BANDS.map((band) => (
+                        <div key={band} className="space-y-1.5">
+                          <Label>{band}</Label>
+                          <Textarea value={category.anchors?.[band] || ''} onChange={(e) => updateBuiltInAnchor(index, band, e.target.value)} rows={2}
+                            placeholder={band === '10' ? 'Excellent execution with clear evidence.' : 'Describe what this score range means.'} />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+          <DialogFooter className="gap-2">
+            <Button type="button" variant="outline" onClick={() => setEditingBuiltIn(null)}>Cancel</Button>
+            <Button type="button" variant="outline" disabled={isBuiltInSaving || builtInRubricWeightTotal !== 100 || !builtInObjectionsValid} onClick={() => saveBuiltIn('draft')}>Save draft</Button>
+            <Button type="button" disabled={isBuiltInSaving || builtInRubricWeightTotal !== 100 || !builtInObjectionsValid} onClick={() => saveBuiltIn('published')} className="gap-2">
+              {isBuiltInSaving && <Loader2 className="w-4 h-4 animate-spin" />}
+              Publish
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Create/Edit modal */}
       <Dialog open={editingScenario !== null} onOpenChange={(open) => { if (!open) setEditingScenario(null); }}>
@@ -501,6 +951,38 @@ Hard: You are skeptical about price and need strong reassurance.`}</pre>
 - Asked for the next step or booking`}</pre>
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!resetBuiltInTarget} onOpenChange={(open) => { if (!open) setResetBuiltInTarget(null); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Reset built-in scenario?</DialogTitle>
+            <DialogDescription>
+              This will discard the database override for <strong>{resetBuiltInTarget?.title}</strong> and restore the packaged default.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="rounded-lg border border-amber-500/20 bg-amber-500/10 p-3 text-sm text-muted-foreground">
+            Any unpublished edits or custom script changes for this built-in scenario will be lost.
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setResetBuiltInTarget(null)}>Cancel</Button>
+            <Button
+              variant="destructive"
+              onClick={() => resetBuiltInMutation.mutate(resetBuiltInTarget?.slug, {
+                onSuccess: () => {
+                  setResetBuiltInTarget(null);
+                  toast.success('Reset to default');
+                },
+                onError: (err) => toast.error(err.message),
+              })}
+              disabled={!resetBuiltInTarget?.slug || resetBuiltInMutation.isPending}
+              className="gap-2"
+            >
+              {resetBuiltInMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <RotateCcw className="w-4 h-4" />}
+              Reset scenario
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 

@@ -33,7 +33,13 @@ export function getRubricType(scenarioTitle) {
 
 export function calculateWeightedOverallScore(categories, scenarioTitle) {
   const weights = RUBRIC_WEIGHTS[getRubricType(scenarioTitle)];
+  return calculateWeightedOverallScoreWithWeights(categories, weights);
+}
+
+export function calculateWeightedOverallScoreWithWeights(categories, weights) {
   if (!Array.isArray(categories) || categories.length < weights.length) return null;
+  const totalWeight = weights.reduce((sum, weight) => sum + Number(weight || 0), 0);
+  if (!Number.isFinite(totalWeight) || totalWeight <= 0) return null;
 
   const weighted = weights.reduce((sum, weight, index) => {
     const categoryScore = clampScore(categories[index]?.score, 0, 10);
@@ -42,7 +48,14 @@ export function calculateWeightedOverallScore(categories, scenarioTitle) {
   }, 0);
 
   if (!Number.isFinite(weighted)) return null;
-  return roundScore(weighted / 10);
+  return roundScore((weighted / totalWeight) * 10);
+}
+
+export function calculateWeightedOverallScoreFromCategories(categories, scoringCategories) {
+  if (!Array.isArray(scoringCategories) || scoringCategories.length === 0) return null;
+  const weights = scoringCategories.map((category) => Number(category?.weight));
+  if (weights.some((weight) => !Number.isFinite(weight))) return null;
+  return calculateWeightedOverallScoreWithWeights(categories, weights);
 }
 
 export function calculateAverageOverallScore(categories) {
@@ -55,8 +68,11 @@ export function calculateAverageOverallScore(categories) {
   return roundScore(average * 10);
 }
 
-export function resolveOverallScore({ overallScore, categories, scenarioTitle, customScoringPrompt }) {
+export function resolveOverallScore({ overallScore, categories, scenarioTitle, customScoringPrompt, scoringCategories }) {
   if (!customScoringPrompt) {
+    const customWeights = calculateWeightedOverallScoreFromCategories(categories, scoringCategories);
+    if (customWeights != null) return customWeights;
+
     const calculated = calculateWeightedOverallScore(categories, scenarioTitle);
     if (calculated != null) return calculated;
   }
