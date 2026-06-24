@@ -417,7 +417,7 @@ function UsageAreaChart({ data }) {
   if (data.length === 0) return <EmptyChart />;
   return (
     <div className="h-72">
-      <ResponsiveContainer width="100%" height="100%">
+      <ResponsiveContainer width="100%" height="100%" minWidth={0}>
         <AreaChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
           <CartesianGrid strokeDasharray="3 3" className="stroke-border" vertical={false} />
           <XAxis dataKey="label" tick={{ fontSize: 11 }} tickLine={false} axisLine={false} />
@@ -436,7 +436,7 @@ function UsageBarChart({ data }) {
   if (data.length === 0) return <EmptyChart />;
   return (
     <div className="h-72">
-      <ResponsiveContainer width="100%" height="100%">
+      <ResponsiveContainer width="100%" height="100%" minWidth={0}>
         <BarChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
           <CartesianGrid strokeDasharray="3 3" className="stroke-border" vertical={false} />
           <XAxis dataKey="label" tick={{ fontSize: 11 }} tickLine={false} axisLine={false} interval={0} />
