@@ -73,7 +73,7 @@ const PRACTICE_SCENARIO_LABELS = {
   new_student: 'Inbound Lead - Adult Inquiry',
   parent_enrollment: 'Inbound Lead - Parent Inquiry',
   web_lead_callback: 'Outbound Lead Callback - Adult',
-  kids_web_lead_callback: 'Outbound Lead - Kids',
+  kids_web_lead_callback: 'Outbound Lead Callback - Kids',
 };
 
 const SCENARIO_ALIASES = {
