@@ -25,6 +25,7 @@ import {
   Drama,
   Settings2,
   BarChart3,
+  AlertTriangle,
   LineChart,
   LogOut,
   MoreVertical,
@@ -46,6 +47,7 @@ const menuItems = [
   { icon: Settings, label: 'School Settings', path: '/settings', requires: 'schoolAdmin' },
   { icon: School, label: 'All Schools', path: '/admin/schools', requires: 'globalAdmin' },
   { icon: BarChart3, label: 'Usage', path: '/admin/usage', requires: 'globalAdmin' },
+  { icon: AlertTriangle, label: 'System Events', path: '/admin/system-events', requires: 'globalAdmin' },
   { icon: Drama, label: 'Scenarios', path: '/admin/scenarios', requires: 'schoolAdmin' },
   { icon: Settings2, label: 'Platform Settings', path: '/admin/platform-settings', requires: 'globalAdmin' },
 ];

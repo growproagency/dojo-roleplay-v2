@@ -17,6 +17,24 @@ test('web lead callbacks vary medium objections beyond schedule', () => {
   }
 });
 
+test('kids web lead callbacks stay parent and child focused', () => {
+  const originalRandom = Math.random;
+  Math.random = () => 0.25;
+
+  try {
+    const prompt = getScenarioSystemPrompt('kids_web_lead_callback', null, 'hard');
+
+    assert.match(prompt, /Melissa/);
+    assert.match(prompt, /Ava/);
+    assert.match(prompt, /kids classes/);
+    assert.match(prompt, /Selected Objections/);
+    assert.match(prompt, /(other-parent decision|child fit|schedule uncertainty|price\/budget)/);
+    assert.match(prompt, /Do not default to schedule/);
+  } finally {
+    Math.random = originalRandom;
+  }
+});
+
 test('hard adult inbound can use a non-schedule blocker', () => {
   const originalRandom = Math.random;
   Math.random = () => 0;

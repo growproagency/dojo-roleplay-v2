@@ -22,4 +22,10 @@ export const adminApi = {
   createPlatformAdminInvite: (data)       => apiClient.post('/api/admin/platform-admins/invites', data),
   revokePlatformAdmin:    (userId)        => apiClient.delete(`/api/admin/platform-admins/${userId}`),
   revokePlatformAdminInvite: (inviteId)   => apiClient.delete(`/api/admin/platform-admins/invites/${inviteId}`),
+  listSystemEvents:       (params = {})   => {
+    const qs = new URLSearchParams(Object.entries(params).filter(([, value]) => value != null && value !== ''));
+    return apiClient.get(`/api/admin/system-events${qs.size ? `?${qs}` : ''}`);
+  },
+  getSystemEvent:         (id)            => apiClient.get(`/api/admin/system-events/${id}`),
+  resolveSystemEvent:     (id)            => apiClient.patch(`/api/admin/system-events/${id}/resolve`, {}),
 };

@@ -1,6 +1,7 @@
 import { findInviteByToken, acceptInvite } from '../db/invites.queries.js';
 import { findSchoolById } from '../db/schools.queries.js';
 import { upsertUser, findUserByEmail, findUsersBySchool, normalizeEmail } from '../db/users.queries.js';
+import { recordSystemEvent } from './systemEvents.service.js';
 import { getEffectivePlanDetails, hasReachedMemberLimit } from '../utils/plans.js';
 
 export async function getInvitePreview(token) {
@@ -15,43 +16,67 @@ export async function getInvitePreview(token) {
 }
 
 export async function acceptInviteToken(token, { user: authUser }) {
-  const invite = await findInviteByToken(token);
-  if (!invite) throw new Error('NOT_FOUND');
-  if (invite.revokedAt || invite.acceptedAt) throw new Error('CONFLICT');
-  if (new Date(invite.expiresAt) < new Date()) throw new Error('NOT_FOUND');
+  let invite = null;
+  try {
+    invite = await findInviteByToken(token);
+    if (!invite) throw new Error('NOT_FOUND');
+    if (invite.revokedAt || invite.acceptedAt) throw new Error('CONFLICT');
+    if (new Date(invite.expiresAt) < new Date()) throw new Error('NOT_FOUND');
 
-  const normalizedEmail = normalizeEmail(authUser?.email);
-  if (!normalizedEmail || normalizedEmail !== normalizeEmail(invite.email)) throw new Error('FORBIDDEN');
+    const normalizedEmail = normalizeEmail(authUser?.email);
+    if (!normalizedEmail || normalizedEmail !== normalizeEmail(invite.email)) throw new Error('FORBIDDEN');
 
-  const [school, members] = invite.schoolId
-    ? await Promise.all([
-      findSchoolById(invite.schoolId),
-      findUsersBySchool(invite.schoolId),
-    ])
-    : [null, []];
-  if (invite.schoolId && !school) throw new Error('NOT_FOUND');
+    const [school, members] = invite.schoolId
+      ? await Promise.all([
+        findSchoolById(invite.schoolId),
+        findUsersBySchool(invite.schoolId),
+      ])
+      : [null, []];
+    if (invite.schoolId && !school) throw new Error('NOT_FOUND');
 
-  const existingMember = members.find(member => member.email.toLowerCase() === normalizedEmail);
-  if (school && !existingMember && hasReachedMemberLimit(school, members.length)) throw new Error('MEMBER_LIMIT_REACHED');
+    const existingMember = members.find(member => member.email.toLowerCase() === normalizedEmail);
+    if (school && !existingMember && hasReachedMemberLimit(school, members.length)) throw new Error('MEMBER_LIMIT_REACHED');
 
-  await upsertUser({
-    email: normalizedEmail,
-    name: invite.fullName || undefined,
-    schoolId: invite.schoolId ?? null,
-    role: invite.role || 'staff',
-    supabaseAuthId: authUser.supabaseAuthId,
-    lastSignedIn: new Date(),
-  });
+    await upsertUser({
+      email: normalizedEmail,
+      name: invite.fullName || undefined,
+      schoolId: invite.schoolId ?? null,
+      role: invite.role || 'staff',
+      supabaseAuthId: authUser.supabaseAuthId,
+      lastSignedIn: new Date(),
+    });
 
-  await acceptInvite(token);
+    await acceptInvite(token);
 
-  const user = await findUserByEmail(normalizedEmail);
-  return {
-    user,
-    profile: {
-      ...user,
-      school: school ? { id: school.id, name: school.name, slug: school.slug, plan: school.plan, memberLimit: school.memberLimit, monthlyRoleplayMinutes: school.monthlyRoleplayMinutes, planDetails: getEffectivePlanDetails(school) } : null,
-    },
-    school,
-  };
+    const user = await findUserByEmail(normalizedEmail);
+    return {
+      user,
+      profile: {
+        ...user,
+        school: school ? { id: school.id, name: school.name, slug: school.slug, plan: school.plan, memberLimit: school.memberLimit, monthlyRoleplayMinutes: school.monthlyRoleplayMinutes, planDetails: getEffectivePlanDetails(school) } : null,
+      },
+      school,
+    };
+  } catch (err) {
+    if (invite) {
+      await recordSystemEvent({
+        source: 'invites',
+        eventType: 'invite_accept_failed',
+        severity: err.message === 'MEMBER_LIMIT_REACHED' ? 'warning' : 'error',
+        message: 'Invite acceptance failed',
+        schoolId: invite.schoolId,
+        details: {
+          inviteId: invite.id,
+          inviteEmail: invite.email,
+          authEmail: authUser?.email ?? null,
+          role: invite.role,
+          errorCode: err.message,
+          revoked: !!invite.revokedAt,
+          accepted: !!invite.acceptedAt,
+          expired: invite.expiresAt ? new Date(invite.expiresAt) < new Date() : false,
+        },
+      });
+    }
+    throw err;
+  }
 }

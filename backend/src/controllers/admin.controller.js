@@ -1,5 +1,6 @@
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { listSchools, createSchool, editSchool, removeSchool, restoreSchool, getSchoolDetail, resetSchoolUsagePeriod, getUsageOverview, getPlatformSettings, updatePlatformSettings, changeUserRole, unassignUserFromSchool, removeUser, getSchoolInvites, createSchoolInvite, readdUserToSchool, revokeSchoolInvite, getPlatformAdmins, createPlatformAdminInvite, revokePlatformAdminInvite, revokePlatformAdmin, createPasswordResetLink } from '../services/admin.service.js';
+import { getSystemEvent, listSystemEvents, markSystemEventResolved } from '../services/systemEvents.service.js';
 import { config } from '../config/env.js';
 
 function buildInviteUrl(token) {
@@ -144,5 +145,31 @@ export const revokePlatformAdminHandler = asyncHandler(async (req, res) => {
 
 export const createPasswordResetLinkHandler = asyncHandler(async (req, res) => {
   const data = await createPasswordResetLink(req.body);
+  res.json({ data });
+});
+
+export const listSystemEventsHandler = asyncHandler(async (req, res) => {
+  const data = await listSystemEvents({
+    status: req.query.status,
+    source: req.query.source,
+    severity: req.query.severity,
+    schoolId: req.query.schoolId ? Number(req.query.schoolId) : undefined,
+    callId: req.query.callId ? Number(req.query.callId) : undefined,
+    limit: req.query.limit ? Number(req.query.limit) : undefined,
+  });
+  res.json({ data });
+});
+
+export const getSystemEventHandler = asyncHandler(async (req, res) => {
+  const eventId = parseInt(req.params.eventId, 10);
+  if (isNaN(eventId)) throw Object.assign(new Error('VALIDATION'), { message: 'Invalid event ID' });
+  const data = await getSystemEvent(eventId);
+  res.json({ data });
+});
+
+export const resolveSystemEventHandler = asyncHandler(async (req, res) => {
+  const eventId = parseInt(req.params.eventId, 10);
+  if (isNaN(eventId)) throw Object.assign(new Error('VALIDATION'), { message: 'Invalid event ID' });
+  const data = await markSystemEventResolved(eventId);
   res.json({ data });
 });

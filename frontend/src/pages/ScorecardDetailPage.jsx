@@ -14,6 +14,7 @@ import { labelScenario } from '../utils/scenarioLabels';
 const SCORECARD_SCENARIO_LABELS = {
   new_student: 'New Student Inquiry',
   web_lead_callback: 'Outbound Web Lead Callback',
+  kids_web_lead_callback: 'Kids Outbound Web Lead Callback',
   sales_enrollment: 'Sales Enrollment Conference',
   renewal_conference: 'Renewal Conference',
 };

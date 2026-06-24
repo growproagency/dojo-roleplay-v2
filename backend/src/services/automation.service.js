@@ -2,6 +2,7 @@ import { config } from '../config/env.js';
 import { insertAutomationEvent, updateAutomationEvent } from '../db/automationEvents.queries.js';
 import { findOpenInviteBySchoolAndEmail, insertInvite, updateInvite } from '../db/invites.queries.js';
 import { findSchoolBySlug, insertSchool, updateSchool } from '../db/schools.queries.js';
+import { recordSystemEvent } from './systemEvents.service.js';
 import { normalizePlan } from '../utils/plans.js';
 
 function slugify(value) {
@@ -83,6 +84,21 @@ export async function processHighLevelPaymentCompleted(payload) {
       status: 'failed',
       errorMessage: err.message,
     }).catch(() => {});
+    await recordSystemEvent({
+      source: 'automation',
+      eventType: 'highlevel_payment_completed_failed',
+      severity: 'error',
+      message: 'HighLevel payment automation failed',
+      externalId: event.externalId,
+      schoolId: event.schoolId,
+      details: {
+        automationEventId: event.id,
+        errorCode: err.message,
+        email: payload.email || null,
+        schoolName: payload.schoolName || null,
+        plan: payload.plan || null,
+      },
+    });
     throw err;
   }
 }

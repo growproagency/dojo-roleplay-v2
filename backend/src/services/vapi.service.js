@@ -8,6 +8,7 @@ import { verifySessionToken } from '../utils/sessionToken.js';
 import { scoreCallTranscript } from './scoring.service.js';
 import { assertSchoolMonthlyMinutesAvailable } from './usageLimits.service.js';
 import { getPublishedBuiltInScenarios } from './scenarios.service.js';
+import { recordSystemEvent } from './systemEvents.service.js';
 import { SCENARIOS, getBuiltInScenarioDefault, getScenarioSystemPrompt } from '../data/scenarios.js';
 import { logger } from '../utils/logger.js';
 import { config } from '../config/env.js';
@@ -148,6 +149,18 @@ async function resolveTenant(message) {
     metadataKeys: Object.keys(metadata),
     hasCustomerNumber: !!callerNumber,
   }, 'Unable to resolve Vapi tenant');
+  await recordSystemEvent({
+    source: 'vapi',
+    eventType: 'tenant_resolution_failed',
+    severity: 'warning',
+    message: 'Vapi webhook could not be matched to a user or school',
+    externalId: vapiCallId,
+    details: {
+      messageType: message?.type ?? null,
+      metadataKeys: Object.keys(metadata),
+      hasCustomerNumber: !!callerNumber,
+    },
+  });
   return null;
 }
 
@@ -161,6 +174,14 @@ async function handleAssistantRequest(message) {
 
     if (!callerNumber) {
       logger.warn({ type: message?.type, vapiCallId }, 'Inbound phone call missing caller number');
+      await recordSystemEvent({
+        source: 'vapi',
+        eventType: 'inbound_phone_missing_number',
+        severity: 'warning',
+        message: 'Inbound Vapi call arrived without a caller phone number',
+        externalId: vapiCallId,
+        details: { messageType: message?.type ?? null },
+      });
       return {
         assistant: buildRejectionAssistant(
           'Sorry, your phone number could not be identified. Please try again from a different phone. Goodbye.'
@@ -202,6 +223,15 @@ async function handleAssistantRequest(message) {
       await logPhoneCallAttempt({ callerNumber, vapiCallId, userId: user.id, outcome: 'rejected_unknown' }).catch((err) => {
         logger.warn({ err, callerNumber, userId: user.id }, 'Failed to log unassigned phone attempt');
       });
+      await recordSystemEvent({
+        source: 'vapi',
+        eventType: 'inbound_phone_user_without_school',
+        severity: 'warning',
+        message: 'Inbound phone user is not assigned to a school',
+        userId: user.id,
+        externalId: vapiCallId,
+        details: { callerNumber },
+      });
       return {
         assistant: buildRejectionAssistant(
           "Sorry, your account isn't assigned to a school yet. Please contact your administrator. Goodbye."
@@ -214,6 +244,16 @@ async function handleAssistantRequest(message) {
       if (usageError) {
         await logPhoneCallAttempt({ callerNumber, vapiCallId, userId: user.id, schoolId: user.schoolId, outcome: 'rejected_usage_cap' }).catch((err) => {
           logger.warn({ err, callerNumber, userId: user.id }, 'Failed to log monthly-minute-limited phone attempt');
+        });
+        await recordSystemEvent({
+          source: 'usage',
+          eventType: 'monthly_minutes_limit_blocked_call',
+          severity: 'warning',
+          message: 'Monthly roleplay minute limit blocked an inbound call',
+          userId: user.id,
+          schoolId: user.schoolId,
+          externalId: vapiCallId,
+          details: { callerNumber, errorCode: usageError.message },
         });
         if (usageError.message === 'MONTHLY_MINUTES_LIMIT_REACHED') {
           return {
@@ -466,6 +506,13 @@ async function ensureCallStarted(message, fallback = {}) {
   const vapiCallId = call?.id;
   if (!vapiCallId) {
     logger.warn({ type: message?.type }, 'Vapi webhook missing call id; cannot create call row');
+    await recordSystemEvent({
+      source: 'vapi',
+      eventType: 'webhook_missing_call_id',
+      severity: 'warning',
+      message: 'Vapi webhook was missing a call ID',
+      details: { messageType: message?.type ?? null },
+    });
     return null;
   }
 
@@ -475,6 +522,14 @@ async function ensureCallStarted(message, fallback = {}) {
   const tenant = await resolveTenant(message);
   if (!tenant?.userId) {
     logger.warn({ type: message?.type, vapiCallId }, 'Skipping call insert because tenant was not resolved');
+    await recordSystemEvent({
+      source: 'vapi',
+      eventType: 'call_insert_skipped_no_tenant',
+      severity: 'warning',
+      message: 'Call row was not created because Vapi tenant resolution failed',
+      externalId: vapiCallId,
+      details: { messageType: message?.type ?? null },
+    });
     return null;
   }
 
@@ -639,6 +694,16 @@ async function buildDestinationResponse(message) {
   const scenarioConfig = await resolveScenarioForCall(scenarioSlug, tenant.schoolId ?? null);
   if (!scenarioConfig) {
     logger.warn({ type: message?.type, vapiCallId, scenario: scenarioSlug }, 'Vapi handoff requested unknown scenario');
+    await recordSystemEvent({
+      source: 'vapi',
+      eventType: 'handoff_unknown_scenario',
+      severity: 'warning',
+      message: 'Vapi handoff requested an unknown scenario',
+      userId: tenant.userId,
+      schoolId: tenant.schoolId,
+      externalId: vapiCallId,
+      details: { scenario: scenarioSlug, messageType: message?.type ?? null },
+    });
     return { error: `Unknown scenario "${scenarioSlug}"` };
   }
 
@@ -693,6 +758,14 @@ async function handleEndOfCallReport(message) {
   if (!dbCall) {
     clearCtx(vapiCallId);
     logger.warn({ type: message?.type, vapiCallId }, 'End-of-call report had no matching scenario call row');
+    await recordSystemEvent({
+      source: 'vapi',
+      eventType: 'end_report_missing_call',
+      severity: 'error',
+      message: 'End-of-call report had no matching call row',
+      externalId: vapiCallId,
+      details: { messageType: message?.type ?? null },
+    });
     return {};
   }
 
@@ -773,6 +846,19 @@ async function backgroundScore(callId, transcript, scenario, schoolId = null, di
     logger.info({ callId, score: result.overallScore }, 'Call scored');
   } catch (err) {
     logger.error({ err, callId }, 'Scoring failed');
+    await recordSystemEvent({
+      source: 'scoring',
+      eventType: 'scorecard_generation_failed',
+      severity: 'error',
+      message: 'Call scoring failed',
+      callId,
+      schoolId,
+      details: {
+        scenario,
+        difficulty,
+        errorCode: err.message,
+      },
+    });
     await updateCall(callId, { status: 'completed' }).catch(() => {});
   }
 }

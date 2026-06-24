@@ -151,6 +151,29 @@ Answer the phone casually: "Hello?" — then when they introduce themselves: "Oh
 - Best realistic outcome: if they handle this well, agree to receive pricing or class options and a specific follow-up, or tentatively hold a time if they make it very low pressure.
 `;
 
+const KIDS_WEB_LEAD_CALLBACK_PROMPT = `${buildSharedBehavior('outbound_callback')}
+
+## Who You Are
+Your name is Melissa. You're the parent of an 8-year-old daughter named Ava. You filled out a form on a martial arts school's website yesterday about kids classes.
+
+## Your Opening Line
+Answer the phone casually: "Hello?" - then when they introduce themselves: "Oh yeah, I filled out the form for my daughter."
+
+## Your Situation (only reveal when asked)
+- Ava is bright but shy, and you want her to build confidence and focus.
+- You found the school while searching for after-school activities near you.
+- Ava tried gymnastics last year but got nervous in big groups and stopped going.
+- You are interested, but you do not want a pushy sales call.
+- If they verify contact info: Melissa Carter, melissa.carter@example.com, 555-456-7890. Ava is 8.
+
+## Hard Mode Decision Blockers
+- Other-parent blocker: you need to talk to Ava's other parent before putting anything on the calendar.
+- Child-fit blocker: you are not sure Ava will participate if the first class feels intimidating.
+- Schedule blocker: weekdays are tight because of school pickup and homework.
+- Price/budget blocker: you want to understand whether there is a trial or intro offer before committing.
+- Best realistic outcome: if they handle this well, agree to a specific trial time or accept class options and a clear follow-up time after talking with the other parent.
+`;
+
 const SALES_ENROLLMENT_PROMPT = `${buildSharedBehavior('in_person')}
 
 ## Who You Are
@@ -221,6 +244,12 @@ export const SCENARIOS = {
     title: 'Outbound Web Lead Callback',
     description: 'Practice calling back Alex, a prospect who submitted a web form. Build rapport quickly, overcome skepticism, and book the appointment.',
     systemPrompt: WEB_LEAD_CALLBACK_PROMPT,
+  },
+  kids_web_lead_callback: {
+    id: 'kids_web_lead_callback',
+    title: 'Kids Outbound Web Lead Callback',
+    description: 'Practice calling back Melissa, a parent who submitted a web form about kids classes for her daughter. Build trust, uncover goals, and book a low-pressure trial.',
+    systemPrompt: KIDS_WEB_LEAD_CALLBACK_PROMPT,
   },
   sales_enrollment: {
     id: 'sales_enrollment',
@@ -336,6 +365,18 @@ export const BUILT_IN_SCENARIO_DEFAULTS = {
     scoringCategories: SCORING_RUBRICS.outbound,
     status: 'published',
   },
+  kids_web_lead_callback: {
+    slug: 'kids_web_lead_callback',
+    title: SCENARIOS.kids_web_lead_callback.title,
+    description: SCENARIOS.kids_web_lead_callback.description,
+    systemPromptBase: SCENARIOS.kids_web_lead_callback.systemPrompt,
+    firstMessage: null,
+    voiceProvider: 'vapi',
+    voiceId: 'Paige',
+    scoringRubricType: 'outbound',
+    scoringCategories: SCORING_RUBRICS.outbound,
+    status: 'published',
+  },
   sales_enrollment: {
     slug: 'sales_enrollment',
     title: SCENARIOS.sales_enrollment.title,
@@ -395,6 +436,11 @@ const OBJECTION_FOCUS = {
       'Light schedule question: ask what class times are usually available.',
       'Light comfort concern: mention you have never tried martial arts before.',
     ],
+    kids_web_lead_callback: [
+      'Light child-fit question: ask if shy kids usually do okay in the first class.',
+      'Light schedule question: ask what kids class times are usually available.',
+      'Light trial question: ask whether there is an intro class or beginner option.',
+    ],
     sales_enrollment: [
       'Light schedule question: ask which class times are best after the trial.',
       'Light commitment concern: ask how often most kids attend.',
@@ -427,6 +473,12 @@ const OBJECTION_FOCUS = {
       'Mild partner concern: say you probably need to check with your partner before putting anything on the calendar.',
       'Mild comparison concern: mention you are looking at a couple of schools.',
       'Mild schedule concern: ask for class time options because work can run late.',
+    ],
+    kids_web_lead_callback: [
+      'Mild price question: ask whether there is a trial or intro offer before booking.',
+      "Mild other-parent concern: say you probably need to check with Ava's other parent before putting anything on the calendar.",
+      'Mild child-fit concern: ask how they help shy kids feel comfortable in the first class.',
+      'Mild schedule concern: ask whether kids classes fit around school pickup and homework.',
     ],
     sales_enrollment: [
       'Mild price concern: say the membership is a little more than expected.',
@@ -462,6 +514,12 @@ const OBJECTION_FOCUS = {
       'Primary blocker: partner decision. You want to check with your partner before committing to a visit.',
       'Primary blocker: comparison shopping. You are comparing several schools and do not want pressure.',
       'Primary blocker: schedule uncertainty. You need class time options before committing.',
+    ],
+    kids_web_lead_callback: [
+      "Primary blocker: other-parent decision. You need to talk to Ava's other parent before booking anything.",
+      'Primary blocker: child fit. Ava is shy, and you are worried she will shut down if the first class feels intimidating.',
+      'Primary blocker: schedule uncertainty. Weekdays are tight because of school pickup and homework, so you need class time options.',
+      'Primary blocker: price/budget. You want to understand the intro offer or trial cost before agreeing to visit.',
     ],
     sales_enrollment: [
       'Primary blocker: price/budget. The membership is more than expected and you need to understand the value before deciding.',

@@ -33,6 +33,12 @@ const BUILT_IN_DETAILS = {
     characterBlurb: "submitted a web form, hasn't responded",
     topics: ['Building rapport', 'Overcoming skepticism', 'Booking the appointment'],
   },
+  kids_web_lead_callback: {
+    contextType: 'outbound_callback',
+    characterName: 'Melissa',
+    characterBlurb: 'parent who submitted a web form for kids classes',
+    topics: ['Parent trust', 'Confidence & focus goals', 'Booking a trial'],
+  },
   sales_enrollment: {
     contextType: 'in_person',
     characterName: 'Jamie',
@@ -57,6 +63,7 @@ const SCENARIO_IMAGES = {
   new_student: '/scenario-new-student.png',
   parent_enrollment: '/scenario-parent-enrollment.png',
   web_lead_callback: '/scenario-web-lead-callback.png',
+  kids_web_lead_callback: '/scenario-parent-enrollment.png',
   sales_enrollment: '/scenario-sales-enrollment.png',
   renewal_conference: '/scenario-renewal-conference.png',
   cancellation_save: '/scenario-cancellation-save.png',
@@ -66,6 +73,7 @@ const PRACTICE_SCENARIO_LABELS = {
   new_student: 'Inbound Lead - Adult Inquiry',
   parent_enrollment: 'Inbound Lead - Parent Inquiry',
   web_lead_callback: 'Outbound Lead Callback',
+  kids_web_lead_callback: 'Outbound Lead - Kids Inquiry',
 };
 
 const SCENARIO_ALIASES = {
@@ -80,6 +88,10 @@ const SCENARIO_ALIASES = {
   'outbound web lead callback': 'web_lead_callback',
   'web lead callback': 'web_lead_callback',
   'outbound lead callback': 'web_lead_callback',
+  'kids outbound web lead callback': 'kids_web_lead_callback',
+  'kids web lead callback': 'kids_web_lead_callback',
+  'outbound kids lead callback': 'kids_web_lead_callback',
+  'outbound lead kids inquiry': 'kids_web_lead_callback',
   'sales enrollment conference': 'sales_enrollment',
   'sales enrollment': 'sales_enrollment',
   'renewal conference': 'renewal_conference',
