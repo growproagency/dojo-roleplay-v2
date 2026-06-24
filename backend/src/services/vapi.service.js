@@ -37,6 +37,11 @@ const VAPI_VOICE_IDS = new Set([
   'Spencer',
   'Leah',
   'Tara',
+  'Layla',
+  'Sagar',
+  'Neil',
+  'Sid',
+  'Naina',
 ]);
 const LEGACY_VAPI_VOICE_MAP = {
   Emma: 'Paige',

@@ -25,6 +25,11 @@ const VOICE_OPTIONS = [
   { id: 'Leah', label: 'Leah (Female, American)' },
   { id: 'Harry', label: 'Harry (Male, American)' },
   { id: 'Spencer', label: 'Spencer (Male, American)' },
+  { id: 'Layla', label: 'Layla (Female, American)' },
+  { id: 'Sagar', label: 'Sagar (Male, Indian American)' },
+  { id: 'Neil', label: 'Neil (Male, American)' },
+  { id: 'Sid', label: 'Sid (Male, American)' },
+  { id: 'Naina', label: 'Naina (Female, Indian American)' },
 ];
 
 const CONTEXT_TYPES = [
