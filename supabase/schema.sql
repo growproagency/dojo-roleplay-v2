@@ -444,3 +444,27 @@ CREATE POLICY system_events_select_global_admin ON system_events FOR SELECT USIN
 CREATE POLICY system_events_insert_service_only ON system_events FOR INSERT WITH CHECK (false);
 CREATE POLICY system_events_update_service_only ON system_events FOR UPDATE USING (false);
 CREATE POLICY system_events_delete_service_only ON system_events FOR DELETE USING (false);
+
+-- Direct browser/JWT clients may read through RLS, but application data writes
+-- must go through the Express API. The backend service_role client bypasses RLS,
+-- so these revokes do not block server-side admin/profile/call workflows.
+REVOKE INSERT, UPDATE, DELETE ON TABLE
+  public.users,
+  public.schools,
+  public.calls,
+  public.scorecards,
+  public.school_invites,
+  public.custom_scenarios,
+  public.built_in_scenarios,
+  public.platform_settings,
+  public.system_events,
+  public.automation_events,
+  public.phone_call_attempts
+FROM anon, authenticated;
+
+DO $$
+BEGIN
+  IF to_regclass('public.school_settings') IS NOT NULL THEN
+    REVOKE INSERT, UPDATE, DELETE ON TABLE public.school_settings FROM anon, authenticated;
+  END IF;
+END $$;
