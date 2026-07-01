@@ -51,6 +51,12 @@ const BUILT_IN_DETAILS = {
     characterBlurb: 'parent of Tyler, 10 months in',
     topics: ['Progress check questions', 'Highlighting growth', 'Renewal offer'],
   },
+  student_advancement: {
+    contextType: 'in_person',
+    characterName: 'Dana',
+    characterBlurb: 'parent of Maya, a student recommended for advancement',
+    topics: ['Student progress', 'Next-level recommendation', 'Recommendation class'],
+  },
   cancellation_save: {
     contextType: 'inbound_call',
     characterName: 'Morgan',
@@ -66,6 +72,7 @@ const SCENARIO_IMAGES = {
   kids_web_lead_callback: '/scenario-parent-enrollment.png',
   sales_enrollment: '/scenario-sales-enrollment.png',
   renewal_conference: '/scenario-renewal-conference.png',
+  student_advancement: '/scenario-renewal-conference.png',
   cancellation_save: '/scenario-cancellation-save.png',
 };
 
@@ -95,6 +102,10 @@ const SCENARIO_ALIASES = {
   'sales enrollment conference': 'sales_enrollment',
   'sales enrollment': 'sales_enrollment',
   'renewal conference': 'renewal_conference',
+  'student advancement recommendation': 'student_advancement',
+  'student advancement': 'student_advancement',
+  'leadership program recommendation': 'student_advancement',
+  'advancement recommendation': 'student_advancement',
   'cancellation save': 'cancellation_save',
 };
 
@@ -195,6 +206,26 @@ const TRAINING_GUIDES = {
       ['Follow-Up Discipline', '5%'],
     ],
   },
+  studentAdvancement: {
+    title: 'Student Advancement',
+    description: 'Based on the advancement and leadership recommendation process.',
+    steps: [
+      ['Student progress conversation', 'Confirm the parent and student are having a positive experience first'],
+      ['Present the recommendation', 'Acknowledge specific accomplishments before introducing the opportunity'],
+      ['Explain the next level', 'Connect faster pace, expectations, leadership, and advanced training to growth'],
+      ['Invite them to experience it', 'Offer a recommendation class instead of asking for an immediate commitment'],
+      ['Trial class experience', 'Frame how the student and parent will see the next level firsthand'],
+      ['Post-class review', 'Review readiness, next steps, or the development plan after the class'],
+    ],
+    categories: [
+      ['Student Progress Conversation', '20%'],
+      ['Present the Recommendation', '15%'],
+      ['Explain the Next Level', '20%'],
+      ['Invite Them to Experience It', '15%'],
+      ['Trial Class Experience', '15%'],
+      ['Post-Class Review', '15%'],
+    ],
+  },
   cancellation: {
     title: 'Cancellation Save',
     description: 'Based on the cancellation save process.',
@@ -253,6 +284,7 @@ function getTrainingGuide(scenario) {
   const key = getScenarioKey(scenario);
   const title = (scenario?.title || '').toLowerCase();
   if (key === 'cancellation_save' || title.includes('cancellation')) return TRAINING_GUIDES.cancellation;
+  if (key === 'student_advancement' || title.includes('advancement') || title.includes('leadership')) return TRAINING_GUIDES.studentAdvancement;
   if (key === 'renewal_conference' || title.includes('renewal')) return TRAINING_GUIDES.renewal;
   if (key === 'sales_enrollment' || title.includes('sales enrollment') || title.includes('enrollment conference')) return TRAINING_GUIDES.sales;
   if (key === 'new_student' || key === 'parent_enrollment') return TRAINING_GUIDES.inbound;

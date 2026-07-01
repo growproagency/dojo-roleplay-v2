@@ -17,6 +17,7 @@ const SCORECARD_SCENARIO_LABELS = {
   kids_web_lead_callback: 'Kids Outbound Web Lead Callback',
   sales_enrollment: 'Sales Enrollment Conference',
   renewal_conference: 'Renewal Conference',
+  student_advancement: 'Student Advancement Recommendation',
 };
 
 function ScoreRing({ score, size = 120 }) {

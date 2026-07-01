@@ -560,12 +560,18 @@ export function CustomScenariosPage() {
         ) : (
           <>
         {isGlobalAdmin && (
-          <Tabs value={adminScenarioTab} onValueChange={setAdminScenarioTab}>
-            <TabsList>
-              <TabsTrigger value="built-in">Built-In Scenarios</TabsTrigger>
-              <TabsTrigger value="custom">Custom Scenarios</TabsTrigger>
-            </TabsList>
-          </Tabs>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <Tabs value={adminScenarioTab} onValueChange={setAdminScenarioTab}>
+              <TabsList>
+                <TabsTrigger value="built-in">Built-In Scenarios</TabsTrigger>
+                <TabsTrigger value="custom">Custom Scenarios</TabsTrigger>
+              </TabsList>
+            </Tabs>
+            <Button onClick={openCreate} className="gap-2 sm:self-auto">
+              <Plus className="w-4 h-4" />
+              New scenario
+            </Button>
+          </div>
         )}
 
         {isGlobalAdmin && adminScenarioTab === 'built-in' && (
@@ -621,7 +627,7 @@ export function CustomScenariosPage() {
               ? 'Create platform-wide scenarios or limit them to a specific school.'
               : 'Create and manage training scenarios for your school.'}
           </p>
-          <Button onClick={openCreate} className="gap-2"><Plus className="w-4 h-4" />New scenario</Button>
+          {!isGlobalAdmin && <Button onClick={openCreate} className="gap-2"><Plus className="w-4 h-4" />New scenario</Button>}
         </div>
 
         <Card>

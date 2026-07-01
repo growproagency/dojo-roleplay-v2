@@ -95,6 +95,24 @@ test('hard renewal conference can use a random blocker', () => {
   }
 });
 
+test('student advancement uses readiness and pressure blockers', () => {
+  const originalRandom = Math.random;
+  Math.random = () => 0.25;
+
+  try {
+    const prompt = getScenarioSystemPrompt('student_advancement', null, 'hard');
+
+    assert.match(prompt, /Dana/);
+    assert.match(prompt, /Maya/);
+    assert.match(prompt, /advancement/);
+    assert.match(prompt, /Selected Objections/);
+    assert.match(prompt, /(readiness|pressure concern|schedule uncertainty|value clarity)/);
+    assert.match(prompt, /Do not default to schedule/);
+  } finally {
+    Math.random = originalRandom;
+  }
+});
+
 test('scenario prompts discourage elongated filler sounds', () => {
   const prompt = getScenarioSystemPrompt('web_lead_callback', null, 'easy');
 

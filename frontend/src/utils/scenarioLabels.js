@@ -5,6 +5,7 @@ const SCENARIO_LABELS = {
   kids_web_lead_callback: 'Kids Outbound Callback',
   sales_enrollment: 'Sales Enrollment',
   renewal_conference: 'Renewal',
+  student_advancement: 'Student Advancement',
   cancellation_save: 'Cancellation Save',
 };
 

@@ -212,6 +212,36 @@ Your name is Pat. Your child Tyler (8 years old) has been training for about 10 
 - Best realistic outcome: if they handle this well, agree to a specific follow-up after checking with the other parent and schedule.
 `;
 
+const STUDENT_ADVANCEMENT_PROMPT = `${buildSharedBehavior('in_person')}
+
+## Who You Are
+Your name is Dana. You are the parent of Maya, a student who has been training consistently and was recommended for an advancement and leadership opportunity.
+
+## Your Opening Line
+"Yeah, Maya has been really enjoying classes. The instructor said you wanted to talk with us about her progress?"
+
+## Your Situation (only reveal when asked)
+- Maya has grown in confidence and focus, and you have noticed she listens better at home.
+- You are proud of her, but you do not want her pushed into something before she is ready.
+- You want to understand why she was selected and what the next level actually changes.
+- You are open to a recommendation class if it feels based on her development, not sales pressure.
+- If they offer class times: Tuesday is possible, Thursday may work better if it is after school.
+
+## Conversation Expectations
+- The staff member should first ask about your experience and what changes you have noticed.
+- If you raise a concern, they should listen and resolve it before continuing the recommendation.
+- If the feedback is positive, they should acknowledge Maya's progress and explain why she is being recommended.
+- They should describe the next level as faster-paced training with higher expectations for effort, focus, leadership, and appropriate advanced work.
+- They should invite you to experience a recommendation class rather than pushing for an immediate commitment.
+- After the class, they should review what Maya did well, what she is still developing, and the right next step.
+
+## Hard Mode Decision Blockers
+- Primary blocker: readiness. You are not sure Maya is mature or confident enough for a faster-paced class yet.
+- Secondary blocker: schedule. Additional classes may be hard with school and family commitments.
+- Pressure concern: if the staff member makes it feel like a sales pitch instead of a student recommendation, you become guarded.
+- Best realistic outcome: if they handle this well, agree to attend a specific recommendation class or accept a clear development plan before the next recommendation.
+`;
+
 const CANCELLATION_SAVE_PROMPT = `${buildSharedBehavior('inbound_call')}
 
 ## Who You Are
@@ -262,6 +292,12 @@ export const SCENARIOS = {
     title: 'Renewal Conference',
     description: "Practice renewing Pat, a parent whose child has been training for 10 months. Ask the 3 Progress Check questions and present the renewal confidently.",
     systemPrompt: RENEWAL_CONFERENCE_PROMPT,
+  },
+  student_advancement: {
+    id: 'student_advancement',
+    title: 'Student Advancement Recommendation',
+    description: 'Practice recommending an advancement or leadership opportunity based on student progress, attitude, and long-term development.',
+    systemPrompt: STUDENT_ADVANCEMENT_PROMPT,
   },
   cancellation_save: {
     id: 'cancellation_save',
@@ -318,6 +354,14 @@ const SCORING_RUBRICS = {
     scoringCategory('Renewal Ask', 20),
     scoringCategory('Objection Handling', 10),
     scoringCategory('Follow-Up Discipline', 5),
+  ],
+  studentAdvancement: [
+    scoringCategory('Student Progress Conversation', 20),
+    scoringCategory('Present the Recommendation', 15),
+    scoringCategory('Explain the Next Level', 20),
+    scoringCategory('Invite Them to Experience It', 15),
+    scoringCategory('Trial Class Experience', 15),
+    scoringCategory('Post-Class Review', 15),
   ],
   cancellation: [
     scoringCategory('Universal Opening', 20),
@@ -401,6 +445,18 @@ export const BUILT_IN_SCENARIO_DEFAULTS = {
     scoringCategories: SCORING_RUBRICS.renewal,
     status: 'published',
   },
+  student_advancement: {
+    slug: 'student_advancement',
+    title: SCENARIOS.student_advancement.title,
+    description: SCENARIOS.student_advancement.description,
+    systemPromptBase: SCENARIOS.student_advancement.systemPrompt,
+    firstMessage: "Yeah, Maya has been really enjoying classes. The instructor said you wanted to talk with us about her progress?",
+    voiceProvider: 'vapi',
+    voiceId: 'Paige',
+    scoringRubricType: 'studentAdvancement',
+    scoringCategories: SCORING_RUBRICS.studentAdvancement,
+    status: 'published',
+  },
   cancellation_save: {
     slug: 'cancellation_save',
     title: SCENARIOS.cancellation_save.title,
@@ -451,6 +507,11 @@ const OBJECTION_FOCUS = {
       'Light value question: ask what the next stage of progress looks like.',
       'Light price question: ask whether renewal pricing changes.',
     ],
+    student_advancement: [
+      'Light readiness question: ask what made the instructors think Maya is ready.',
+      'Light schedule question: ask when the recommendation class is offered.',
+      'Light program question: ask what is different about the next level.',
+    ],
     cancellation_save: [
       'Light schedule concern: Cameron started another activity, but a different class time might help.',
       'Light motivation concern: Cameron has been less excited lately.',
@@ -489,6 +550,11 @@ const OBJECTION_FOCUS = {
       'Mild price concern: ask whether the renewal price is changing.',
       'Mild other-parent concern: say you need to talk it over before renewing.',
       "Mild schedule concern: ask whether Tyler's class options will still work next season.",
+    ],
+    student_advancement: [
+      'Mild readiness concern: say you are proud of Maya but are not sure she is ready for a faster-paced class.',
+      'Mild schedule concern: ask whether adding another class will be realistic with school and family commitments.',
+      'Mild pressure concern: ask whether this is truly based on readiness or if everyone eventually gets offered it.',
     ],
     cancellation_save: [
       'Mild schedule concern: Cameron started another activity, but a different class time might help.',
@@ -532,6 +598,12 @@ const OBJECTION_FOCUS = {
       'Primary blocker: other-parent decision. You need to talk to the other parent before renewing.',
       "Primary blocker: schedule uncertainty. Tyler's school schedule may change soon, so you need to confirm class times.",
       'Primary blocker: progress doubt. You like the program, but you are not fully convinced the progress is strong enough to renew yet.',
+    ],
+    student_advancement: [
+      'Primary blocker: readiness. You worry Maya may not be mature or confident enough for the next level yet.',
+      'Primary blocker: pressure concern. You are guarded because this could feel like a sales pitch instead of a true instructor recommendation.',
+      'Primary blocker: schedule uncertainty. Additional classes may be difficult with school and family commitments.',
+      'Primary blocker: value clarity. You need to understand how this supports Maya long term before attending a recommendation class.',
     ],
     cancellation_save: [
       'Primary blocker: motivation. Cameron has been resistant about coming for a month.',
