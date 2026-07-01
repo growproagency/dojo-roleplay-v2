@@ -430,8 +430,8 @@ Say only this, then wait: "${scenario.openingLine || 'Hello?'}"
     schoolSettings,
     difficulty,
     base,
-    { easy: [], medium: [], hard: [] },
-    { easy: 0, medium: 0, hard: 0 }
+    scenario.objectionFocus || { easy: [], medium: [], hard: [] },
+    scenario.objectionCounts || { easy: 0, medium: 0, hard: 0 }
   );
 }
 

@@ -1,6 +1,6 @@
 import { supabase } from './supabase.js';
 
-const COLS = 'id, slug, title, description, context_type, character_name, character_blurb, topics, school_id, character_prompt, opening_line, voice_id, voice_provider, scoring_prompt, is_active, created_by, created_at, updated_at';
+const COLS = 'id, slug, title, description, context_type, character_name, character_blurb, topics, school_id, character_prompt, opening_line, voice_id, voice_provider, scoring_prompt, objection_focus, objection_counts, is_active, created_by, created_at, updated_at';
 const BUILT_IN_COLS = 'slug, title, description, system_prompt_base, first_message, voice_id, voice_provider, scoring_rubric_type, scoring_categories, objection_focus, objection_counts, status, updated_by, created_at, updated_at';
 
 function toScenario(row) {
@@ -20,6 +20,8 @@ function toScenario(row) {
     voiceId: row.voice_id,
     voiceProvider: row.voice_provider,
     scoringPrompt: row.scoring_prompt,
+    objectionFocus: row.objection_focus ?? null,
+    objectionCounts: row.objection_counts ?? null,
     isActive: row.is_active,
     createdBy: row.created_by,
     createdAt: row.created_at,
@@ -172,6 +174,8 @@ export async function insertCustomScenario(fields) {
       voice_id: fields.voiceId,
       voice_provider: fields.voiceProvider ?? 'vapi',
       scoring_prompt: fields.scoringPrompt,
+      objection_focus: fields.objectionFocus ?? null,
+      objection_counts: fields.objectionCounts ?? null,
       is_active: fields.isActive ?? true,
       created_by: fields.createdBy,
     })
@@ -194,6 +198,8 @@ export async function updateCustomScenario(id, fields) {
   if (fields.voiceId !== undefined) row.voice_id = fields.voiceId;
   if (fields.voiceProvider !== undefined) row.voice_provider = fields.voiceProvider;
   if (fields.scoringPrompt !== undefined) row.scoring_prompt = fields.scoringPrompt;
+  if (fields.objectionFocus !== undefined) row.objection_focus = fields.objectionFocus;
+  if (fields.objectionCounts !== undefined) row.objection_counts = fields.objectionCounts;
   if (fields.isActive !== undefined) row.is_active = fields.isActive;
   if (fields.schoolId !== undefined) row.school_id = fields.schoolId;
   const { error } = await supabase.from('custom_scenarios').update(row).eq('id', id);

@@ -146,6 +146,8 @@ CREATE TABLE IF NOT EXISTS custom_scenarios (
   voice_id         VARCHAR(100) NOT NULL DEFAULT 'Elliot',
   voice_provider   VARCHAR(50) NOT NULL DEFAULT 'vapi',
   scoring_prompt   TEXT,
+  objection_focus  JSONB,
+  objection_counts JSONB,
   is_active        BOOLEAN NOT NULL DEFAULT true,
   school_id        INTEGER REFERENCES schools(id) ON DELETE CASCADE,
   created_by       INTEGER REFERENCES users(id) ON DELETE SET NULL,

@@ -14,6 +14,7 @@ import {
   Loader2,
   Mic2,
   Phone,
+  Plus,
   Rocket,
   ShieldQuestion,
   Sparkles,
@@ -268,9 +269,13 @@ const DEFAULT_FORM = {
   openingLine: '',
   staffPractice: ['', '', '', '', ''],
   objections: ['', '', '', '', ''],
+  objectionCounts: { easy: 1, medium: 2, hard: 2 },
   voiceId: 'Elliot',
   schoolId: null,
 };
+
+const OBJECTION_COUNT_OPTIONS = [0, 1, 2, 3, 4, 5];
+const MAX_STAFF_PRACTICE_MOVES = 8;
 
 const STEP_WARNING_COPY = [
   {
@@ -316,6 +321,15 @@ function compactList(values) {
 
 function makeTopic(value) {
   return String(value || '').trim().slice(0, 40);
+}
+
+function buildObjectionFocus(objections) {
+  const pool = compactList(objections);
+  return {
+    easy: pool,
+    medium: pool,
+    hard: pool,
+  };
 }
 
 function getCallTypeLabel(callType) {
@@ -424,7 +438,7 @@ function StepRail({ step, onStepSelect }) {
                 ? 'border-primary bg-primary text-primary-foreground'
                 : done
                   ? 'border-primary/30 bg-primary/10 text-foreground'
-                  : 'border-border bg-card hover:bg-accent'
+                  : 'border-border bg-card text-foreground hover:bg-accent'
             }`}
           >
             <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md ${active ? 'bg-white/20' : 'bg-secondary'}`}>
@@ -578,9 +592,9 @@ function AiBuildPanel({ form, step }) {
               </div>
             </div>
 
-            <div className="relative z-10 mt-7 rounded-lg border border-white/20 bg-white p-4 text-foreground shadow-xl">
+            <div className="relative z-10 mt-7 rounded-lg border border-white/20 bg-white p-4 text-slate-950 shadow-xl">
               <div className="flex items-start gap-3">
-                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-primary">
                   <Phone className="h-7 w-7" />
                 </div>
                 <div className="min-w-0 flex-1">
@@ -591,21 +605,21 @@ function AiBuildPanel({ form, step }) {
                     </Badge>
                   </div>
                   <p className="mt-2 truncate text-2xl font-bold">{form.title || 'Untitled scenario'}</p>
-                  <p className="mt-1 truncate text-sm text-muted-foreground">{form.characterName || 'New caller'} / {form.voiceId}</p>
+                  <p className="mt-1 truncate text-sm text-slate-500">{form.characterName || 'New caller'} / {form.voiceId}</p>
                 </div>
               </div>
 
-              <div className="mt-5 rounded-lg border border-border bg-secondary/30 p-3">
+              <div className="mt-5 rounded-lg border border-slate-200 bg-slate-50 p-3">
                 <div className="flex h-20 items-center gap-1">
                   {[24, 38, 18, 54, 70, 34, 46, 28, 62, 84, 42, 22, 58, 74, 30, 48, 66, 36].map((height, index) => (
                     <span
                       key={index}
-                      className={`w-full rounded-full transition-all duration-500 ${index / 3 <= step ? 'bg-primary' : 'bg-muted'}`}
+                      className={`w-full rounded-full transition-all duration-500 ${index / 3 <= step ? 'bg-primary' : 'bg-slate-200'}`}
                       style={{ height: `${height}%` }}
                     />
                   ))}
                 </div>
-                <div className="mt-3 h-2 overflow-hidden rounded-full bg-muted">
+                <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-100">
                   <div className="h-full rounded-full bg-primary transition-all duration-500" style={{ width: `${buildPercent}%` }} />
                 </div>
               </div>
@@ -622,11 +636,11 @@ function AiBuildPanel({ form, step }) {
                     <div
                       key={item.label}
                       className={`rounded-lg border p-3 transition-all duration-500 ${
-                        item.ready ? 'border-primary/30 bg-primary/5' : 'border-border bg-background text-muted-foreground'
+                        item.ready ? 'border-primary/30 bg-blue-50 text-slate-950' : 'border-slate-200 bg-white text-slate-500'
                       }`}
                     >
                       <div className="flex items-center gap-2">
-                        <Icon className={`h-4 w-4 ${item.ready ? 'text-primary' : 'text-muted-foreground'}`} />
+                        <Icon className={`h-4 w-4 ${item.ready ? 'text-primary' : 'text-slate-400'}`} />
                         <p className="text-xs font-semibold">{item.label}</p>
                       </div>
                       <p className="mt-2 truncate text-xs">{item.value}</p>
@@ -665,6 +679,16 @@ export function CustomScenariosV2Page({ variant = 'v3' }) {
     setErrors((current) => ({ ...current, [field]: undefined }));
   };
 
+  const setObjectionCount = (difficulty, value) => {
+    setForm((current) => ({
+      ...current,
+      objectionCounts: {
+        ...current.objectionCounts,
+        [difficulty]: parseInt(value, 10),
+      },
+    }));
+  };
+
   const getStepErrors = (targetStep) => {
     const nextErrors = {};
     if (targetStep === 0) {
@@ -681,6 +705,12 @@ export function CustomScenariosV2Page({ variant = 'v3' }) {
     }
     if (targetStep === 3 && compactList(form.objections).length === 0) {
       nextErrors.objections = 'Add one realistic concern the caller might raise.';
+    }
+    if (targetStep === 3 && compactList(form.objections).length > 0) {
+      const counts = form.objectionCounts || {};
+      if (['easy', 'medium', 'hard'].some((difficulty) => Number(counts[difficulty]) > 0) === false) {
+        nextErrors.objectionCounts = 'Choose at least one objection for a difficulty level.';
+      }
     }
     return nextErrors;
   };
@@ -770,6 +800,8 @@ export function CustomScenariosV2Page({ variant = 'v3' }) {
       voiceId: form.voiceId,
       voiceProvider: 'vapi',
       scoringPrompt: buildScoringPrompt(form),
+      objectionFocus: buildObjectionFocus(form.objections),
+      objectionCounts: form.objectionCounts,
       isActive: true,
     };
 
@@ -810,21 +842,21 @@ export function CustomScenariosV2Page({ variant = 'v3' }) {
 
   return (
     <DashboardLayout title={isV3 ? 'Scenario Builder v3' : 'Scenario Builder'}>
-      <div className="space-y-6">
+      <div className="space-y-6 text-foreground">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <Badge className="mb-3 gap-1 rounded-md">
               <Sparkles className="h-3.5 w-3.5" />
               Custom Scenarios v3
             </Badge>
-            <h1 className="text-3xl font-bold tracking-tight">
+            <h1 className="text-3xl font-bold tracking-tight text-foreground">
               Assemble your AI roleplay
             </h1>
             <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
               Fill out the same simple brief: scenario, caller, what staff should practice, objections, and voice.
             </p>
           </div>
-          <Button variant="outline" onClick={() => navigate('/admin/scenarios')} className="gap-2">
+          <Button variant="outline" onClick={() => navigate('/admin/scenarios')} className="gap-2 text-foreground">
             Existing scenarios
             <ArrowRight className="h-4 w-4" />
           </Button>
@@ -946,6 +978,22 @@ export function CustomScenariosV2Page({ variant = 'v3' }) {
                       onChange={(values) => setField('staffPractice', values)}
                       placeholder="One observable action, like: Ask why they are interested before discussing price."
                     />
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="text-xs text-muted-foreground">
+                        {form.staffPractice.length} of {MAX_STAFF_PRACTICE_MOVES} possible scoring categories
+                      </p>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="gap-1.5"
+                        onClick={() => setField('staffPractice', [...form.staffPractice, ''])}
+                        disabled={form.staffPractice.length >= MAX_STAFF_PRACTICE_MOVES}
+                      >
+                        <Plus className="h-4 w-4" />
+                        Add practice move
+                      </Button>
+                    </div>
                   </FieldBlock>
                 </>
               )}
@@ -955,7 +1003,7 @@ export function CustomScenariosV2Page({ variant = 'v3' }) {
                   <FieldBlock
                     label="List of 5 objections"
                     helper="Add likely concerns the caller might raise. The AI will use them naturally during the call."
-                    hint={errors.objections}
+                    hint={errors.objections || errors.objectionCounts}
                   >
                     <div className="rounded-lg border border-border bg-secondary/20 p-3">
                       <div>
@@ -973,6 +1021,34 @@ export function CustomScenariosV2Page({ variant = 'v3' }) {
                           >
                             {template.label}
                           </Button>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="rounded-lg border border-border bg-secondary/20 p-3">
+                      <p className="text-sm font-medium">Objections by difficulty</p>
+                      <p className="text-xs text-muted-foreground">Choose how many objections the AI should use from this list on each difficulty.</p>
+                      <div className="mt-3 grid gap-3 sm:grid-cols-3">
+                        {[
+                          { id: 'easy', label: 'Easy' },
+                          { id: 'medium', label: 'Medium' },
+                          { id: 'hard', label: 'Hard' },
+                        ].map((difficulty) => (
+                          <div key={difficulty.id} className="space-y-1.5">
+                            <Label>{difficulty.label}</Label>
+                            <Select
+                              value={String(form.objectionCounts?.[difficulty.id] ?? 0)}
+                              onValueChange={(value) => setObjectionCount(difficulty.id, value)}
+                            >
+                              <SelectTrigger><SelectValue /></SelectTrigger>
+                              <SelectContent>
+                                {OBJECTION_COUNT_OPTIONS.map((count) => (
+                                  <SelectItem key={count} value={String(count)}>
+                                    {count === 1 ? '1 objection' : `${count} objections`}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
                         ))}
                       </div>
                     </div>

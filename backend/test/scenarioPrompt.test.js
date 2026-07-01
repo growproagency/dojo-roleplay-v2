@@ -101,3 +101,24 @@ test('scenario prompts discourage elongated filler sounds', () => {
   assert.match(prompt, /Never elongate filler words/);
   assert.match(prompt, /Do not say "uhhhhh"/);
 });
+
+test('custom objection overrides respect per-difficulty counts', () => {
+  const prompt = getScenarioSystemPrompt(
+    'new_student',
+    null,
+    'hard',
+    'Custom base prompt.',
+    {
+      easy: ['Easy concern'],
+      medium: ['Medium concern one', 'Medium concern two'],
+      hard: ['Hard concern one', 'Hard concern two', 'Hard concern three'],
+    },
+    { easy: 1, medium: 2, hard: 3 }
+  );
+
+  assert.match(prompt, /Selected Objections/);
+  assert.match(prompt, /1\. Hard concern/);
+  assert.match(prompt, /2\. Hard concern/);
+  assert.match(prompt, /3\. Hard concern/);
+  assert.doesNotMatch(prompt, /4\. Hard concern/);
+});
