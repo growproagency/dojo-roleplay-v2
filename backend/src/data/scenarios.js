@@ -322,6 +322,10 @@ function scoringCategory(name, weight) {
   return { name, weight, anchors: DEFAULT_SCORE_ANCHORS };
 }
 
+function scoringCategoryWithAnchors(name, weight, anchors) {
+  return { name, weight, anchors };
+}
+
 const SCORING_RUBRICS = {
   inbound: [
     scoringCategory('Rapport & Greeting', 10),
@@ -356,12 +360,54 @@ const SCORING_RUBRICS = {
     scoringCategory('Follow-Up Discipline', 5),
   ],
   studentAdvancement: [
-    scoringCategory('Student Progress Conversation', 20),
-    scoringCategory('Present the Recommendation', 15),
-    scoringCategory('Explain the Next Level', 20),
-    scoringCategory('Invite Them to Experience It', 15),
-    scoringCategory('Trial Class Experience', 15),
-    scoringCategory('Post-Class Review', 15),
+    scoringCategoryWithAnchors('Student Progress Conversation', 20, {
+      '10': 'Asks at least two progress questions, such as experience so far, changes noticed, biggest improvement, or how the child is enjoying training. If a concern appears, addresses it before continuing.',
+      '8-9': 'Asks at least one real progress question and confirms the family is positive, but misses one useful follow-up or concern check.',
+      '7-8': 'Asks a broad experience or progress question, but accepts a surface answer and moves on quickly.',
+      '5-6': 'Mentions the student has progressed, but does not ask the parent or student for their view.',
+      '3-4': 'Barely checks the family experience and bases the transition mostly on the instructor recommendation.',
+      '0-2': 'Introduces advancement before checking experience, or ignores a concern the parent raises.',
+    }),
+    scoringCategoryWithAnchors('Present the Recommendation', 15, {
+      '10': 'Names specific student accomplishments, frames the recommendation as readiness-based, says the coaching team believes the student is ready, and asks if the family has heard about the program before.',
+      '8-9': 'Gives a specific readiness-based recommendation, but misses either the team framing or the collaborative question.',
+      '7-8': 'Recommendation is clear, but the reason is generic, such as "doing well" without concrete examples.',
+      '5-6': 'Says the student is eligible or invited, but gives little student-specific evidence.',
+      '3-4': 'Moves into the program pitch before clearly recognizing the student accomplishments.',
+      '0-2': 'Does not present a clear recommendation, or makes it sound automatic, sales-driven, or unrelated to readiness.',
+    }),
+    scoringCategoryWithAnchors('Explain the Next Level', 20, {
+      '10': 'Explains that students are invited based on readiness and covers faster pace, higher expectations for effort/focus/leadership, advanced techniques or controlled partner training when appropriate, and long-term growth.',
+      '8-9': 'Explains most key differences and connects them to student growth, with only one meaningful point missing.',
+      '7-8': 'Explains some differences, but leans toward features instead of why the next level helps the student develop.',
+      '5-6': 'Gives one or two vague benefits, such as "more advanced" or "more leadership," without enough detail.',
+      '3-4': 'Explanation is confusing, too short, or overpromises what the student will get.',
+      '0-2': 'Skips the next-level explanation or describes it inaccurately.',
+    }),
+    scoringCategoryWithAnchors('Invite Them to Experience It', 15, {
+      '10': 'Invites the family to a recommendation class instead of asking for an immediate commitment, explains that seeing the class is the best next step, and offers two specific class times.',
+      '8-9': 'Invites them to experience a class and gives a specific next step, but offers only one time or leaves one logistics detail unclear.',
+      '7-8': 'Invites them to observe or try the class, but does not offer specific times.',
+      '5-6': 'Mentions they can come to a class sometime, but the next step is vague.',
+      '3-4': 'Pushes for enrollment or a decision before offering the class experience.',
+      '0-2': 'Does not offer an experience-based next step, or creates pressure instead of an invitation.',
+    }),
+    scoringCategoryWithAnchors('Trial Class Experience', 15, {
+      '10': 'Explains what will happen in the recommendation class: the student is welcomed or recognized, paired with an experienced student or mentor, the parent can observe, expectations are demonstrated, and the student participates.',
+      '8-9': 'Explains most of the class experience, with only one support or observation detail missing.',
+      '7-8': 'Gives a basic class preview, but lacks detail about student support, parent observation, or how the next-level culture is shown.',
+      '5-6': 'Mostly gives logistics such as day/time and says they can try it, without explaining the experience.',
+      '3-4': 'Describes it like a normal class with no clear reason it helps the family evaluate the next level.',
+      '0-2': 'Does not explain the trial or recommendation class experience.',
+    }),
+    scoringCategoryWithAnchors('Post-Class Review', 15, {
+      '10': 'Explains that staff will reconnect after class to review what the student did well, readiness signs, skills still developing, and either next enrollment steps or a development plan.',
+      '8-9': 'Includes a post-class review and next step, but misses either continued development areas or the alternate plan if the student is not ready.',
+      '7-8': 'Says they will talk after class, but the review criteria or decision path is vague.',
+      '5-6': 'Follow-up is mentioned only generally and does not explain how readiness will be reviewed.',
+      '3-4': 'Little clarity on what happens after the class or who handles the next step.',
+      '0-2': 'No post-class review plan, or implies the family must decide before seeing readiness feedback.',
+    }),
   ],
   cancellation: [
     scoringCategory('Universal Opening', 20),

@@ -831,6 +831,7 @@ export function CustomScenariosPage() {
                     <SelectItem value="outbound">Outbound</SelectItem>
                     <SelectItem value="salesEnrollment">Sales Enrollment</SelectItem>
                     <SelectItem value="renewal">Renewal</SelectItem>
+                    <SelectItem value="studentAdvancement">Student Advancement</SelectItem>
                     <SelectItem value="cancellation">Cancellation</SelectItem>
                   </SelectContent>
                 </Select>

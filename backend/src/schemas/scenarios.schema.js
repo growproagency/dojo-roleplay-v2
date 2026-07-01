@@ -43,7 +43,7 @@ export const updateBuiltInScenarioSchema = Joi.object({
   firstMessage: Joi.string().max(500).allow('', null).optional(),
   voiceId: Joi.string().min(1).required(),
   voiceProvider: Joi.string().default('vapi'),
-  scoringRubricType: Joi.string().valid('inbound', 'outbound', 'salesEnrollment', 'renewal', 'cancellation').required(),
+  scoringRubricType: Joi.string().valid('inbound', 'outbound', 'salesEnrollment', 'renewal', 'studentAdvancement', 'cancellation').required(),
   scoringCategories: Joi.array().items(Joi.object({
     name: Joi.string().min(1).max(120).required(),
     weight: Joi.number().min(0).max(100).required(),
