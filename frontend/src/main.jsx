@@ -29,6 +29,7 @@ import { SettingsPage } from './pages/SettingsPage';
 import { AdminSchoolsPage } from './pages/AdminSchoolsPage';
 import { AdminSchoolDetailPage } from './pages/AdminSchoolDetailPage';
 import { CustomScenariosPage } from './pages/CustomScenariosPage';
+import { CustomScenariosV2Page } from './pages/CustomScenariosV2Page';
 import { PlatformSettingsPage } from './pages/PlatformSettingsPage';
 import { UsagePage } from './pages/UsagePage';
 import { SchoolAnalyticsPage } from './pages/SchoolAnalyticsPage';
@@ -73,6 +74,8 @@ ReactDOM.createRoot(document.getElementById('root')).render(
                   <Route path="/admin/schools/:id" element={<AdminSchoolDetailPage />} />
                   <Route path="/admin/usage" element={<UsagePage />} />
                   <Route path="/admin/system-events" element={<SystemEventsPage />} />
+                  <Route path="/admin/scenario-builder" element={<CustomScenariosV2Page variant="v3" />} />
+                  <Route path="/admin/scenario-builder-v3" element={<CustomScenariosV2Page variant="v3" />} />
                   <Route path="/admin/scenarios" element={<CustomScenariosPage />} />
                   <Route path="/admin/platform-settings" element={<PlatformSettingsPage />} />
                   <Route path="/components" element={<ComponentShowcasePage />} />

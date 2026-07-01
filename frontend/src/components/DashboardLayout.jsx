@@ -25,6 +25,7 @@ import {
   Drama,
   Settings2,
   BarChart3,
+  Blocks,
   AlertTriangle,
   LineChart,
   LogOut,
@@ -48,6 +49,7 @@ const menuItems = [
   { icon: School, label: 'All Schools', path: '/admin/schools', requires: 'globalAdmin' },
   { icon: BarChart3, label: 'Usage', path: '/admin/usage', requires: 'globalAdmin' },
   { icon: AlertTriangle, label: 'System Events', path: '/admin/system-events', requires: 'globalAdmin' },
+  { icon: Blocks, label: 'Scenario Builder', path: '/admin/scenario-builder', requires: 'schoolAdmin' },
   { icon: Drama, label: 'Scenarios', path: '/admin/scenarios', requires: 'schoolAdmin' },
   { icon: Settings2, label: 'Platform Settings', path: '/admin/platform-settings', requires: 'globalAdmin' },
 ];
@@ -59,7 +61,10 @@ function NavItems({ onNavigate, collapsed }) {
   const customScenariosEnabled = isGlobalAdmin || canUseCustomScenarios(profile?.school);
 
   const visible = menuItems.filter((item) => {
-    if (item.path === '/admin/scenarios' && !customScenariosEnabled) return false;
+    if (
+      (item.path === '/admin/scenarios' || item.path === '/admin/scenario-builder') &&
+      !customScenariosEnabled
+    ) return false;
     if (!item.requires) return true;
     if (item.requires === 'globalAdmin') return isGlobalAdmin;
     if (item.requires === 'schoolAdmin') return isSchoolAdmin;

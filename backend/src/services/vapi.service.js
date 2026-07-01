@@ -425,7 +425,14 @@ ${scenario.characterPrompt}
 Say only this, then wait: "${scenario.openingLine || 'Hello?'}"
 `;
 
-  return getScenarioSystemPrompt('new_student', schoolSettings, difficulty, base);
+  return getScenarioSystemPrompt(
+    'new_student',
+    schoolSettings,
+    difficulty,
+    base,
+    { easy: [], medium: [], hard: [] },
+    { easy: 0, medium: 0, hard: 0 }
+  );
 }
 
 async function resolveScenarioForCall(scenarioSlug, schoolId) {
