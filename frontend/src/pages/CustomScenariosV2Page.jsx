@@ -314,6 +314,10 @@ function compactList(values) {
     .filter(Boolean);
 }
 
+function makeTopic(value) {
+  return String(value || '').trim().slice(0, 40);
+}
+
 function getCallTypeLabel(callType) {
   return CALL_TYPES.find((item) => item.id === callType)?.label || 'New lead inquiry';
 }
@@ -756,7 +760,10 @@ export function CustomScenariosV2Page({ variant = 'v3' }) {
       contextType: form.contextType,
       characterName: form.characterName.trim(),
       characterBlurb: form.characterRole.trim().slice(0, 500),
-      topics: [getCallTypeLabel(form.callType), ...compactList(form.staffPractice).slice(0, 5)].slice(0, 6),
+      topics: [getCallTypeLabel(form.callType), ...compactList(form.staffPractice).slice(0, 5)]
+        .map(makeTopic)
+        .filter(Boolean)
+        .slice(0, 6),
       schoolId: isGlobalAdmin ? form.schoolId : undefined,
       characterPrompt: buildPrompt(form),
       openingLine: form.openingLine.trim(),
