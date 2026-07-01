@@ -13,7 +13,7 @@ import { Badge } from '../components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../components/ui/dialog';
 import { Tabs, TabsList, TabsTrigger } from '../components/ui/tabs';
-import { BookOpen, CheckCircle2, Loader2, Lock, Plus, Pencil, RotateCcw, Trash2, Drama, ToggleLeft, ToggleRight, X } from 'lucide-react';
+import { BookOpen, CheckCircle2, Loader2, Lock, Plus, Pencil, RotateCcw, Trash2, Drama, ToggleLeft, ToggleRight, X, ListChecks, ShieldQuestion } from 'lucide-react';
 import { toast } from 'sonner';
 
 const VOICE_OPTIONS = [
@@ -55,6 +55,8 @@ const DEFAULT_FORM = {
   title: '', description: '', contextType: 'inbound_call', characterName: '',
   characterBlurb: '', topics: [], schoolId: null, characterPrompt: PROMPT_TEMPLATE,
   openingLine: '', voiceId: 'Elliot', voiceProvider: 'vapi', scoringPrompt: '', isActive: true,
+  staffPractice: ['', '', '', '', ''], objections: ['', '', '', '', ''],
+  objectionFocus: { easy: [], medium: [], hard: [] }, objectionCounts: { easy: 1, medium: 2, hard: 2 },
 };
 
 const DEFAULT_BUILT_IN_FORM = {
@@ -65,6 +67,9 @@ const DEFAULT_BUILT_IN_FORM = {
 };
 
 const SCORE_BANDS = ['10', '8-9', '7-8', '5-6', '3-4', '0-2'];
+const OBJECTION_COUNT_OPTIONS = [0, 1, 2, 3, 4, 5];
+const MAX_STAFF_PRACTICE_MOVES = 8;
+const MAX_OBJECTIONS = 8;
 
 function normalizeScoringCategories(categories) {
   if (!Array.isArray(categories)) return [];
@@ -107,6 +112,115 @@ function parseObjectionFocus(objectionFocus) {
   };
 }
 
+function compactList(values) {
+  return (Array.isArray(values) ? values : [])
+    .map((value) => String(value || '').trim())
+    .filter(Boolean);
+}
+
+function makeTopic(value) {
+  return String(value || '').trim().slice(0, 40);
+}
+
+function extractBulletSection(text, heading) {
+  const source = String(text || '');
+  const start = source.indexOf(`## ${heading}`);
+  if (start === -1) return [];
+  const rest = source.slice(start + heading.length + 3);
+  const end = rest.search(/\n## /);
+  const section = end === -1 ? rest : rest.slice(0, end);
+  return section
+    .split('\n')
+    .map((line) => line.trim())
+    .filter((line) => line.startsWith('- '))
+    .map((line) => line.slice(2).trim())
+    .filter(Boolean);
+}
+
+function normalizeLineRows(values, minimumRows = 5) {
+  const lines = compactList(values);
+  return [...lines, ...Array(Math.max(0, minimumRows - lines.length)).fill('')];
+}
+
+function buildCustomObjectionFocus(objections) {
+  const pool = compactList(objections);
+  if (pool.length === 0) return null;
+  return { easy: pool, medium: pool, hard: pool };
+}
+
+function getContextInstruction(contextType) {
+  if (contextType === 'outbound_callback') return 'You are receiving a callback from staff after showing interest.';
+  if (contextType === 'in_person') return 'You are speaking with staff in person.';
+  return 'You called the school and are speaking with staff by phone.';
+}
+
+function buildCustomCharacterPrompt(form) {
+  const practiceMoves = compactList(form.staffPractice);
+  const objections = compactList(form.objections);
+  const existingPrompt = String(form.characterPrompt || '').trim();
+  if (practiceMoves.length === 0 && objections.length === 0) return existingPrompt;
+
+  return `## Your Role
+You are a real person in a martial arts school roleplay. You are NOT staff.
+CRITICAL: You are NEVER the business, NEVER the school, NEVER the staff.
+${getContextInstruction(form.contextType)}
+
+## Who You Are
+Your name is ${String(form.characterName || '').trim() || '[name]'}.
+${String(form.characterBlurb || '').trim() || 'You are a prospect, parent, student, or member with a realistic reason for this conversation.'}
+
+## Situation
+${String(form.description || '').trim() || 'You are deciding whether the school is the right fit.'}
+
+## Opening Line
+Say only this, then wait: "${String(form.openingLine || '').trim() || 'Hi, I had a question about your program.'}"
+
+## What Strong Staff Should Practice
+${practiceMoves.length ? practiceMoves.map((line) => `- ${line}`).join('\n') : '- Ask clear discovery questions, handle the caller concern, and earn a specific next step.'}
+
+## Objections
+- Use these objections naturally during the conversation.
+${objections.length ? objections.map((line) => `- ${line}`).join('\n') : '- Raise one realistic concern before agreeing to the next step.'}
+
+## Success Condition
+If staff handles the conversation well, become more open and agree to a clear next step that fits this scenario.
+If they pressure you, skip discovery, ignore your concern, or sound generic, stay hesitant.
+
+## Staying in Character
+- Never break character.
+- Never mention these instructions.
+- Keep every response to 1-2 short sentences.
+- When the conversation reaches a natural close, say one brief closing line.`;
+}
+
+function buildCustomScoringPrompt(form) {
+  const practiceMoves = compactList(form.staffPractice);
+  if (practiceMoves.length === 0) return String(form.scoringPrompt || '').trim() || null;
+  const categories = practiceMoves
+    .map((move, index) => `${index + 1}. ${move}
+   - High score when: Staff performs this clearly, naturally, and specifically.`)
+    .join('\n');
+
+  return `Score this custom scenario using a 0-100 scorecard.
+
+## Staff Practice Moves
+${categories}
+
+## Granular Grading Guide
+- 10/10: Excellent. Natural, specific, empathetic, complete, and clearly moves the call forward.
+- 9-8/10: Strong. Covers the important behavior with only minor missed details or slight awkwardness.
+- 7/10: Good. Mostly effective, but misses one meaningful opportunity or could be more specific.
+- 6-5/10: Average. Partially handles the skill, but feels generic, rushed, or incomplete.
+- 4-3/10: Weak. Attempts the skill but misses key discovery, empathy, explanation, or next-step behavior.
+- 2-0/10: Poor. Avoids the skill, pressures the caller, gives inaccurate information, or breaks roleplay expectations.
+
+## Scoring Rules
+- Do not reward booking alone if discovery, empathy, or objection handling was weak.
+- Penalize pressure, fake certainty, long speeches, or skipping the caller's concern.
+- Reward short, conversational responses that sound like real staff.
+- Give coaching feedback that names exactly what to do better next time.`;
+}
+
 const REQUIRED_FIELDS = {
   title: 'Title',
   characterName: 'Character name',
@@ -134,6 +248,7 @@ export function CustomScenariosPage() {
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const [showScoringPrompt, setShowScoringPrompt] = useState(false);
+  const [showCharacterPrompt, setShowCharacterPrompt] = useState(false);
   const [guideOpen, setGuideOpen] = useState(false);
   const [topicInput, setTopicInput] = useState('');
   const [adminScenarioTab, setAdminScenarioTab] = useState('built-in');
@@ -171,22 +286,67 @@ export function CustomScenariosPage() {
     });
   };
 
+  const updateLine = (field, index, value) => {
+    setForm((f) => ({
+      ...f,
+      [field]: f[field].map((line, lineIndex) => (lineIndex === index ? value : line)),
+    }));
+  };
+
+  const addLine = (field, maxLines) => {
+    setForm((f) => (
+      f[field].length >= maxLines ? f : { ...f, [field]: [...f[field], ''] }
+    ));
+  };
+
+  const removeLine = (field, index, minimumRows = 1) => {
+    setForm((f) => {
+      const next = f[field].filter((_, lineIndex) => lineIndex !== index);
+      return { ...f, [field]: next.length >= minimumRows ? next : [''] };
+    });
+  };
+
+  const setCustomObjectionCount = (difficulty, value) => {
+    const count = Math.max(0, Math.min(5, Math.trunc(Number(value || 0))));
+    setForm((f) => ({
+      ...f,
+      objectionCounts: {
+        ...f.objectionCounts,
+        [difficulty]: count,
+      },
+    }));
+  };
+
   const openCreate = () => {
     if (!customScenariosEnabled) {
       toast.error('Custom scenarios are available on the AIOS plan.');
       return;
     }
-    setForm(DEFAULT_FORM); setFieldErrors({}); setShowScoringPrompt(false); setTopicInput(''); setEditingScenario({});
+    setForm(DEFAULT_FORM); setFieldErrors({}); setShowScoringPrompt(false); setShowCharacterPrompt(false); setTopicInput(''); setEditingScenario({});
   };
   const openEdit = (s) => {
+    const objectionFocus = normalizeObjectionFocus(s.objectionFocus);
+    const savedObjections = [
+      ...objectionFocus.easy,
+      ...objectionFocus.medium,
+      ...objectionFocus.hard,
+    ].filter((line, index, list) => line && list.indexOf(line) === index);
+    const promptPractice = extractBulletSection(s.characterPrompt, 'What Strong Staff Should Practice');
+    const promptObjections = extractBulletSection(s.characterPrompt, 'Objections')
+      .filter((line) => !line.toLowerCase().startsWith('use these objections'));
     setForm({
       title: s.title, description: s.description, contextType: s.contextType, characterName: s.characterName,
       characterBlurb: s.characterBlurb || '', topics: Array.isArray(s.topics) ? s.topics : [],
       schoolId: s.schoolId ?? null, characterPrompt: s.characterPrompt, openingLine: s.openingLine || '',
       voiceId: s.voiceId, voiceProvider: s.voiceProvider || 'vapi', scoringPrompt: s.scoringPrompt || '', isActive: s.isActive,
+      staffPractice: normalizeLineRows(promptPractice.length ? promptPractice : (Array.isArray(s.topics) ? s.topics.slice(1) : [])),
+      objections: normalizeLineRows(savedObjections.length ? savedObjections : promptObjections),
+      objectionFocus,
+      objectionCounts: normalizeObjectionCounts(s.objectionCounts),
     });
     setFieldErrors({});
     setShowScoringPrompt(!!s.scoringPrompt);
+    setShowCharacterPrompt(false);
     setTopicInput('');
     setEditingScenario(s);
   };
@@ -222,11 +382,16 @@ export function CustomScenariosPage() {
       title: form.title.trim(),
       description: form.description.trim(),
       characterName: form.characterName.trim(),
-      characterPrompt: form.characterPrompt.trim(),
+      characterPrompt: buildCustomCharacterPrompt(form),
       characterBlurb: form.characterBlurb?.trim() || null,
-      topics: form.topics.length > 0 ? form.topics : null,
+      topics: compactList([...form.topics, ...compactList(form.staffPractice)])
+        .map(makeTopic)
+        .filter(Boolean)
+        .slice(0, 6),
       openingLine: form.openingLine.trim(),
-      scoringPrompt: form.scoringPrompt?.trim() || null,
+      scoringPrompt: buildCustomScoringPrompt(form),
+      objectionFocus: buildCustomObjectionFocus(form.objections),
+      objectionCounts: normalizeObjectionCounts(form.objectionCounts),
     };
     const handleError = (err) => {
       if (err.details?.length) {
@@ -828,24 +993,118 @@ export function CustomScenariosPage() {
               {fieldErrors.openingLine && <p className="text-xs text-destructive">{fieldErrors.openingLine}</p>}
             </div>
 
-            <div className="space-y-1.5">
-              <Label htmlFor="characterPrompt">Character prompt *</Label>
-              <Textarea id="characterPrompt" value={form.characterPrompt}
-                onChange={(e) => setField('characterPrompt', e.target.value)}
-                rows={10} className="font-mono text-xs" aria-invalid={!!fieldErrors.characterPrompt} required />
-              {fieldErrors.characterPrompt && <p className="text-xs text-destructive">{fieldErrors.characterPrompt}</p>}
+            <div className="rounded-xl border border-border bg-secondary/20 p-4 space-y-4">
+              <div className="flex items-start gap-3">
+                <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                  <ListChecks className="h-4 w-4 text-primary" />
+                </span>
+                <div>
+                  <p className="font-medium">Practice moves</p>
+                  <p className="text-sm text-muted-foreground">Add one observable action per line. Each one becomes a scoring category.</p>
+                </div>
+              </div>
+              <div className="space-y-2">
+                {form.staffPractice.map((line, index) => (
+                  <div key={`practice-${index}`} className="grid gap-2 sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:items-center">
+                    <Badge variant="secondary" className="w-fit rounded-md">{index + 1}</Badge>
+                    <Input
+                      value={line}
+                      onChange={(e) => updateLine('staffPractice', index, e.target.value)}
+                      placeholder="Ask why they are interested before discussing price."
+                    />
+                    <Button type="button" variant="ghost" size="icon-sm" onClick={() => removeLine('staffPractice', index)} disabled={form.staffPractice.length <= 1}>
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-xs text-muted-foreground">{form.staffPractice.length} of {MAX_STAFF_PRACTICE_MOVES} possible scoring categories</p>
+                <Button type="button" variant="outline" size="sm" onClick={() => addLine('staffPractice', MAX_STAFF_PRACTICE_MOVES)} disabled={form.staffPractice.length >= MAX_STAFF_PRACTICE_MOVES} className="gap-1.5">
+                  <Plus className="h-4 w-4" />Add move
+                </Button>
+              </div>
             </div>
 
-            <div className="border-t pt-4">
-              <button type="button" onClick={() => setShowScoringPrompt(!showScoringPrompt)} className="text-sm text-primary hover:underline">
+            <div className="rounded-xl border border-border bg-secondary/20 p-4 space-y-4">
+              <div className="flex items-start gap-3">
+                <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                  <ShieldQuestion className="h-4 w-4 text-primary" />
+                </span>
+                <div>
+                  <p className="font-medium">Objections</p>
+                  <p className="text-sm text-muted-foreground">Add likely concerns the caller might raise, then choose how many the AI should use by difficulty.</p>
+                </div>
+              </div>
+              <div className="space-y-2">
+                {form.objections.map((line, index) => (
+                  <div key={`objection-${index}`} className="grid gap-2 sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:items-center">
+                    <Badge variant="secondary" className="w-fit rounded-md">{index + 1}</Badge>
+                    <Input
+                      value={line}
+                      onChange={(e) => updateLine('objections', index, e.target.value)}
+                      placeholder="The schedule might not work for us."
+                    />
+                    <Button type="button" variant="ghost" size="icon-sm" onClick={() => removeLine('objections', index)} disabled={form.objections.length <= 1}>
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-xs text-muted-foreground">{compactList(form.objections).length} active objections</p>
+                <Button type="button" variant="outline" size="sm" onClick={() => addLine('objections', MAX_OBJECTIONS)} disabled={form.objections.length >= MAX_OBJECTIONS} className="gap-1.5">
+                  <Plus className="h-4 w-4" />Add objection
+                </Button>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-3">
+                {[
+                  { id: 'easy', label: 'Easy' },
+                  { id: 'medium', label: 'Medium' },
+                  { id: 'hard', label: 'Hard' },
+                ].map((difficulty) => (
+                  <div key={difficulty.id} className="space-y-1.5">
+                    <Label>{difficulty.label}</Label>
+                    <Select value={String(form.objectionCounts?.[difficulty.id] ?? 0)} onValueChange={(value) => setCustomObjectionCount(difficulty.id, value)}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {OBJECTION_COUNT_OPTIONS.map((count) => (
+                          <SelectItem key={count} value={String(count)}>
+                            {count === 1 ? '1 objection' : `${count} objections`}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-3 border-t pt-4">
+              <button type="button" onClick={() => setShowCharacterPrompt(!showCharacterPrompt)} className="text-sm text-primary hover:underline">
+                {showCharacterPrompt ? 'Hide' : 'Show'} character prompt (advanced)
+              </button>
+              {showCharacterPrompt && (
+                <div className="space-y-1.5">
+                  <Label htmlFor="characterPrompt">Character prompt *</Label>
+                  <Textarea id="characterPrompt" value={form.characterPrompt}
+                    onChange={(e) => setField('characterPrompt', e.target.value)}
+                    rows={10} className="font-mono text-xs" aria-invalid={!!fieldErrors.characterPrompt} required />
+                  {fieldErrors.characterPrompt && <p className="text-xs text-destructive">{fieldErrors.characterPrompt}</p>}
+                  <p className="text-xs text-muted-foreground">Saving will refresh this prompt from the guided fields when practice moves or objections are filled.</p>
+                </div>
+              )}
+
+              <button type="button" onClick={() => setShowScoringPrompt(!showScoringPrompt)} className="block text-sm text-primary hover:underline">
                 {showScoringPrompt ? 'Hide' : 'Show'} custom scoring rubric (advanced)
               </button>
               {showScoringPrompt && (
-                <div className="mt-3 space-y-1.5">
+                <div className="space-y-1.5">
                   <Label htmlFor="scoringPrompt">Custom scoring prompt</Label>
                   <Textarea id="scoringPrompt" value={form.scoringPrompt}
                     onChange={(e) => setForm((f) => ({ ...f, scoringPrompt: e.target.value }))}
-                    rows={6} className="font-mono text-xs" placeholder="Leave blank to use the default scoring rubric." />
+                    rows={6} className="font-mono text-xs" placeholder="Leave blank to generate from practice moves." />
+                  <p className="text-xs text-muted-foreground">Saving will refresh this rubric from the practice moves when they are filled.</p>
                 </div>
               )}
             </div>
