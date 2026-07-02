@@ -80,7 +80,7 @@ export async function getSchoolCallUsageSince(schoolId, since) {
 export async function findUsageCalls() {
   const { data, error } = await supabase
     .from('calls')
-    .select('id, user_id, school_id, scenario, difficulty, status, duration_seconds, cost_usd, created_at, scorecards(overall_score), users(name, email)')
+    .select('id, user_id, school_id, scenario, difficulty, vapi_call_id, status, duration_seconds, cost_usd, created_at, scorecards(overall_score), users(name, email)')
     .order('created_at', { ascending: false })
     .limit(10000);
   if (error) throw error;
