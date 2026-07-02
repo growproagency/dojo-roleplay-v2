@@ -915,7 +915,7 @@ export function CustomScenariosV2Page({ variant = 'v3' }) {
               {step === 1 && (
                 <>
                   <div className="grid gap-4 md:grid-cols-2">
-                    <FieldBlock label="Caller name" hint={errors.characterName}>
+                    <FieldBlock label="AI caller name" hint={errors.characterName}>
                       <Input value={form.characterName} onChange={(event) => setField('characterName', event.target.value)} placeholder="Morgan" />
                     </FieldBlock>
                     <FieldBlock label="Are they calling in, or are we calling them?">
@@ -927,12 +927,12 @@ export function CustomScenariosV2Page({ variant = 'v3' }) {
                       </Select>
                     </FieldBlock>
                   </div>
-                  <FieldBlock label="Who is the caller?" hint={errors.characterRole}>
+                  <FieldBlock label="Who is the AI caller?" hint={errors.characterRole}>
                     <Textarea
                       value={form.characterRole}
                       onChange={(event) => setField('characterRole', event.target.value)}
                       rows={4}
-                      placeholder="Name plus one line of context, like: A parent calling to cancel a membership."
+                      placeholder="Describe the AI roleplay character, like: A parent calling to cancel a membership."
                     />
                   </FieldBlock>
                   <FieldBlock label="Opening line" hint={errors.openingLine}>
@@ -1026,7 +1026,7 @@ export function CustomScenariosV2Page({ variant = 'v3' }) {
                     </div>
                     <div className="rounded-lg border border-border bg-secondary/20 p-3">
                       <p className="text-sm font-medium">Objections by difficulty</p>
-                      <p className="text-xs text-muted-foreground">Choose how many objections the AI should use from this list on each difficulty.</p>
+                      <p className="text-xs text-muted-foreground">Choose how many objections the AI should randomly pick from this list on each difficulty.</p>
                       <div className="mt-3 grid gap-3 sm:grid-cols-3">
                         {[
                           { id: 'easy', label: 'Easy' },

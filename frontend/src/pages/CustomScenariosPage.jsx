@@ -1040,7 +1040,7 @@ export function CustomScenariosPage() {
                 </span>
                 <div>
                   <p className="font-medium">Objections</p>
-                  <p className="text-sm text-muted-foreground">Add likely concerns the caller might raise, then choose how many the AI should use by difficulty.</p>
+                  <p className="text-sm text-muted-foreground">Add likely concerns the caller might raise, then choose how many the AI should randomly pick by difficulty.</p>
                 </div>
               </div>
               <div className="space-y-2">
