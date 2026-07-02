@@ -561,7 +561,11 @@ function RecentCallsTable({ calls }) {
           <TableRow key={call.id}>
             <TableCell>
               <div className="font-medium">#{call.id}</div>
-              {call.vapiCallId && <div className="font-mono text-xs text-muted-foreground">{call.vapiCallId}</div>}
+              {call.vapiCallId ? (
+                <div className="font-mono text-xs text-muted-foreground">Vapi: {call.vapiCallId}</div>
+              ) : (
+                <div className="text-xs text-muted-foreground">Vapi: not captured</div>
+              )}
               <div className="text-xs text-muted-foreground">{formatDateTime(call.createdAt)}</div>
             </TableCell>
             <TableCell>

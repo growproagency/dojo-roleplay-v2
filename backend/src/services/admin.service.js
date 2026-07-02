@@ -124,6 +124,7 @@ function toUsageCall(call) {
     userEmail: call.userEmail,
     scenario: call.scenario,
     difficulty: call.difficulty,
+    vapiCallId: call.vapiCallId,
     status: call.status,
     durationSeconds: call.durationSeconds,
     costUsd: call.costUsd,
