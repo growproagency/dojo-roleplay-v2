@@ -370,20 +370,18 @@ function ScenarioCard({ scenario, isLocked, isSelected, onSelect, onViewScript }
           )}
         </div>
 
-        {scenario.isBuiltIn && (
-          <button
-            type="button"
-            onClick={(event) => {
-              event.stopPropagation();
-              onViewScript(scenario);
-            }}
-            className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-lg px-2 text-xs font-medium text-primary hover:bg-primary/10"
-            aria-label={`View ${title} training script`}
-          >
-            <FileText className="h-3.5 w-3.5" />
-            Script
-          </button>
-        )}
+        <button
+          type="button"
+          onClick={(event) => {
+            event.stopPropagation();
+            onViewScript(scenario);
+          }}
+          className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-lg px-2 text-xs font-medium text-primary hover:bg-primary/10"
+          aria-label={`View ${title} training script`}
+        >
+          <FileText className="h-3.5 w-3.5" />
+          Script
+        </button>
       </div>
     </div>
   );
@@ -417,7 +415,11 @@ export function PracticeCallPage() {
     }));
   };
   const endPractice = () => window.dispatchEvent(new Event('dojo:end-call'));
-  const scriptGuide = scriptScenario ? getTrainingGuide(scriptScenario) : null;
+  const scriptGuide = scriptScenario?.isBuiltIn ? getTrainingGuide(scriptScenario) : null;
+  const scriptMeta = scriptScenario ? scenarioMeta(scriptScenario) : null;
+  const scriptCustomRubric = scriptScenario && !scriptScenario.isBuiltIn
+    ? getCustomRubricCategories(scriptScenario.scoringPrompt)
+    : [];
   const callActive = callStatus === 'active' || callStatus === 'connecting';
   const callConnecting = callStatus === 'connecting';
   const callStatusLabel = callStatus === 'active' ? 'Live' : callStatus === 'connecting' ? 'Connecting' : 'Standby';
@@ -754,6 +756,60 @@ export function PracticeCallPage() {
                   </pre>
                 </div>
               )}
+            </div>
+          )}
+          {scriptScenario && !scriptScenario.isBuiltIn && (
+            <div className="space-y-5 text-sm">
+              <div className="rounded-xl border border-primary/20 bg-primary/5 p-4">
+                <p className="font-heading text-base font-semibold text-foreground">{scriptScenario.title}</p>
+                <p className="mt-1 text-muted-foreground">{scriptScenario.description || 'Custom roleplay scenario.'}</p>
+                {scriptMeta?.characterName && (
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    AI caller: <span className="font-medium text-foreground">{scriptMeta.characterName}</span>
+                  </p>
+                )}
+              </div>
+
+              <div className="grid gap-5 md:grid-cols-[1fr_0.9fr]">
+                <div className="rounded-xl border border-border bg-secondary/20 p-4">
+                  <p className="font-medium text-foreground">Objectives</p>
+                  {scriptCustomRubric.length > 0 ? (
+                    <ol className="mt-3 space-y-2">
+                      {scriptCustomRubric.map(([name], index) => (
+                        <li key={name} className="flex gap-3 text-muted-foreground">
+                          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
+                            {index + 1}
+                          </span>
+                          <span className="pt-0.5">{name}</span>
+                        </li>
+                      ))}
+                    </ol>
+                  ) : (
+                    <p className="mt-3 rounded-lg bg-background/70 p-3 text-xs leading-5 text-muted-foreground">
+                      No objectives were parsed from this scenario.
+                    </p>
+                  )}
+                </div>
+
+                <div className="rounded-xl border border-border bg-secondary/20 p-4">
+                  <p className="font-medium text-foreground">Scoring categories</p>
+                  {scriptCustomRubric.length > 0 ? (
+                    <div className="mt-3 space-y-2">
+                      {scriptCustomRubric.map(([name, weight]) => (
+                        <div key={name} className="flex items-center justify-between gap-3 rounded-lg bg-background/70 px-3 py-2">
+                          <span className="text-muted-foreground">{name}</span>
+                          <Badge variant="outline" className="shrink-0 font-normal">{weight}</Badge>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="mt-3 rounded-lg bg-background/70 p-3 text-xs leading-5 text-muted-foreground">
+                      No scoring categories were parsed from this scenario.
+                    </p>
+                  )}
+                </div>
+              </div>
+
             </div>
           )}
         </DialogContent>

@@ -18,6 +18,7 @@ import {
   Rocket,
   ShieldQuestion,
   Sparkles,
+  Trash2,
   UserRound,
   Wand2,
 } from 'lucide-react';
@@ -275,6 +276,7 @@ const DEFAULT_FORM = {
 };
 
 const OBJECTION_COUNT_OPTIONS = [0, 1, 2, 3, 4, 5];
+const DEFAULT_STAFF_PRACTICE_MOVES = 5;
 const MAX_STAFF_PRACTICE_MOVES = 8;
 
 const STEP_WARNING_COPY = [
@@ -470,21 +472,43 @@ function FieldBlock({ label, children, hint, helper }) {
   );
 }
 
-function LineListEditor({ values, onChange, placeholder }) {
+function normalizeLineCount(values, count) {
+  return [...values.slice(0, count), ...Array(Math.max(count - values.length, 0)).fill('')];
+}
+
+function LineListEditor({ values, onChange, placeholder, canRemove = false, minRows = 1 }) {
   const updateValue = (index, value) => {
     onChange(values.map((item, itemIndex) => (itemIndex === index ? value : item)));
+  };
+
+  const removeValue = (index) => {
+    if (values.length <= minRows) return;
+    onChange(values.filter((_, itemIndex) => itemIndex !== index));
   };
 
   return (
     <div className="space-y-3">
       {values.map((value, index) => (
-        <div key={index} className="grid gap-2 sm:grid-cols-[auto_minmax(0,1fr)] sm:items-center">
+        <div key={index} className="grid gap-2 sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:items-center">
           <Badge variant="secondary" className="w-fit rounded-md">{index + 1}</Badge>
           <Input
             value={value}
             onChange={(event) => updateValue(index, event.target.value)}
             placeholder={placeholder}
           />
+          {canRemove && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9 text-muted-foreground hover:text-destructive"
+              onClick={() => removeValue(index)}
+              disabled={values.length <= minRows}
+              aria-label={`Remove row ${index + 1}`}
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          )}
         </div>
       ))}
     </div>
@@ -973,7 +997,7 @@ export function CustomScenariosV2Page({ variant = 'v3' }) {
                             type="button"
                             variant={template.callType === form.callType ? 'secondary' : 'outline'}
                             size="sm"
-                            onClick={() => setField('staffPractice', template.moves)}
+                            onClick={() => setField('staffPractice', normalizeLineCount(template.moves, DEFAULT_STAFF_PRACTICE_MOVES))}
                           >
                             {template.label}
                           </Button>
@@ -984,6 +1008,7 @@ export function CustomScenariosV2Page({ variant = 'v3' }) {
                       values={form.staffPractice}
                       onChange={(values) => setField('staffPractice', values)}
                       placeholder="One observable action, like: Ask why they are interested before discussing price."
+                      canRemove
                     />
                     <div className="flex items-center justify-between gap-3">
                       <p className="text-xs text-muted-foreground">
