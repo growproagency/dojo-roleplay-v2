@@ -36,6 +36,7 @@ export async function getMe(userId) {
       plan: school.plan,
       memberLimit: school.memberLimit,
       monthlyRoleplayMinutes: school.monthlyRoleplayMinutes,
+      customScenariosEnabled: school.customScenariosEnabled,
       usagePeriodStart: school.usagePeriodStart,
       usagePeriodEnd: school.usagePeriodEnd,
       archivedAt: school.archivedAt,

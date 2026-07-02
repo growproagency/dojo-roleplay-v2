@@ -126,6 +126,17 @@ export async function findManagedCustomScenarios(schoolId, isGlobalAdmin = false
   return (data || []).map(toScenario);
 }
 
+export async function countCustomScenariosBySchool(schoolId, excludeId = null) {
+  let query = supabase
+    .from('custom_scenarios')
+    .select('id', { count: 'exact', head: true })
+    .eq('school_id', schoolId);
+  if (excludeId != null) query = query.neq('id', excludeId);
+  const { count, error } = await query.limit(100);
+  if (error) throw error;
+  return count ?? 0;
+}
+
 export async function findCustomScenarioById(id) {
   const { data, error } = await supabase
     .from('custom_scenarios')

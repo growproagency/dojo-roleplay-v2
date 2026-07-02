@@ -1,8 +1,10 @@
-import { findBuiltInScenarios, findCustomScenarios, findManagedCustomScenarios, findAllCustomScenarios, findCustomScenarioById, insertCustomScenario, updateCustomScenario, deleteCustomScenario, upsertBuiltInScenario } from '../db/scenarios.queries.js';
+import { findBuiltInScenarios, findCustomScenarios, findManagedCustomScenarios, findAllCustomScenarios, findCustomScenarioById, countCustomScenariosBySchool, insertCustomScenario, updateCustomScenario, deleteCustomScenario, upsertBuiltInScenario } from '../db/scenarios.queries.js';
 import { findSchoolById } from '../db/schools.queries.js';
 import { BUILT_IN_SCENARIO_IDS, BUILT_IN_SCENARIO_DEFAULTS, getBuiltInScenarioDefault } from '../data/scenarios.js';
 import { effectiveSchoolId } from '../middleware/auth.middleware.js';
 import { canUseCustomScenarios } from '../utils/plans.js';
+
+export const CUSTOM_SCENARIOS_PER_SCHOOL_LIMIT = 10;
 
 function isGlobalAdmin(user) {
   return user?.role === 'global_admin' || user?.role === 'admin';
@@ -23,6 +25,12 @@ async function assertCustomScenariosAllowedForSchool(schoolId) {
   if (!schoolId) return;
   const school = await findSchoolById(schoolId);
   if (!canUseCustomScenarios(school)) throw new Error('CUSTOM_SCENARIOS_PLAN_REQUIRED');
+}
+
+async function assertCustomScenarioLimitForSchool(schoolId, excludeId = null) {
+  if (!schoolId) return;
+  const count = await countCustomScenariosBySchool(schoolId, excludeId);
+  if (count >= CUSTOM_SCENARIOS_PER_SCHOOL_LIMIT) throw new Error('CUSTOM_SCENARIOS_LIMIT_REACHED');
 }
 
 async function hasCustomScenarioAccess(schoolId) {
@@ -173,6 +181,7 @@ export async function createCustomScenario(req, data) {
   if (BUILT_IN_SCENARIO_IDS.includes(slug)) throw new Error('CONFLICT');
   const schoolId = scopedScenarioSchoolId(req, data.schoolId);
   await assertCustomScenariosAllowedForSchool(schoolId);
+  await assertCustomScenarioLimitForSchool(schoolId);
   return insertCustomScenario({ ...data, slug, schoolId, createdBy: req.user.id });
 }
 
@@ -185,6 +194,9 @@ export async function editCustomScenario(id, req, data) {
     next.schoolId = scopedScenarioSchoolId(req, data.schoolId);
   }
   await assertCustomScenariosAllowedForSchool(next.schoolId ?? existing.schoolId);
+  if (next.schoolId !== undefined && next.schoolId !== existing.schoolId) {
+    await assertCustomScenarioLimitForSchool(next.schoolId, id);
+  }
   await updateCustomScenario(id, next);
   return findCustomScenarioById(id);
 }

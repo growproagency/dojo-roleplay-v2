@@ -31,6 +31,9 @@ export function getEffectivePlanDetails(school) {
 }
 
 export function canUseCustomScenarios(schoolOrPlan) {
+  if (typeof schoolOrPlan === 'object' && schoolOrPlan !== null) {
+    return schoolOrPlan.customScenariosEnabled !== false;
+  }
   const plan = typeof schoolOrPlan === 'object' ? schoolOrPlan?.plan : schoolOrPlan;
   return normalizePlan(plan) === 'aios';
 }

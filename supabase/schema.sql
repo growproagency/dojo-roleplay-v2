@@ -33,6 +33,7 @@ CREATE TABLE IF NOT EXISTS schools (
   usage_cap_usd         NUMERIC(10, 2),
   member_limit          INTEGER,
   monthly_roleplay_minutes INTEGER,
+  custom_scenarios_enabled BOOLEAN NOT NULL DEFAULT true,
   usage_period_start    TIMESTAMPTZ,
   usage_period_end      TIMESTAMPTZ,
   archived_at           TIMESTAMPTZ,

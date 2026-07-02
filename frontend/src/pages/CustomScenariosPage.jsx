@@ -319,7 +319,7 @@ export function CustomScenariosPage() {
 
   const openCreate = () => {
     if (!customScenariosEnabled) {
-      toast.error('Custom scenarios are available on the AIOS plan.');
+      toast.error('Custom scenarios are not enabled for this school.');
       return;
     }
     setForm(DEFAULT_FORM); setFieldErrors({}); setShowScoringPrompt(false); setShowCharacterPrompt(false); setTopicInput(''); setEditingScenario({});

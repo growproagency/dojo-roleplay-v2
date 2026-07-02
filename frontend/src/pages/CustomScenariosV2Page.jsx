@@ -832,8 +832,8 @@ export function CustomScenariosV2Page({ variant = 'v3' }) {
       <DashboardLayout title={isV3 ? 'Scenario Builder v3' : 'Scenario Builder'}>
         <Card className="rounded-lg">
           <CardContent className="py-10 text-center">
-            <p className="text-lg font-semibold">Custom scenarios are not enabled for this plan.</p>
-            <p className="mt-2 text-sm text-muted-foreground">Upgrade the school plan to create school-specific AI roleplays.</p>
+            <p className="text-lg font-semibold">Custom scenarios are not enabled for this school.</p>
+            <p className="mt-2 text-sm text-muted-foreground">Ask a platform admin to enable custom scenarios for this school.</p>
           </CardContent>
         </Card>
       </DashboardLayout>
