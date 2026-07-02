@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { getScenarioSystemPrompt } from '../src/data/scenarios.js';
+import { buildCustomScenarioPrompt } from '../src/services/vapi.service.js';
 
 test('web lead callbacks vary medium objections beyond schedule', () => {
   const originalRandom = Math.random;
@@ -139,4 +140,19 @@ test('custom objection overrides respect per-difficulty counts', () => {
   assert.match(prompt, /2\. Hard concern/);
   assert.match(prompt, /3\. Hard concern/);
   assert.doesNotMatch(prompt, /4\. Hard concern/);
+});
+
+test('custom scenario prompts forbid the AI from acting like the school', () => {
+  const prompt = buildCustomScenarioPrompt({
+    contextType: 'inbound_call',
+    characterName: 'Jordan',
+    characterBlurb: 'A parent unsure about committing after a trial.',
+    characterPrompt: 'You liked the trial but have a commitment concern.',
+    openingLine: 'Hi, we liked the trial, but I had a few questions.',
+  }, null, 'medium');
+
+  assert.match(prompt, /Role Boundary/);
+  assert.match(prompt, /not the school representative/);
+  assert.match(prompt, /Never say "we offer", "we have", "our classes"/);
+  assert.match(prompt, /cannot sell or present the school's options yourself/);
 });

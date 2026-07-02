@@ -395,7 +395,7 @@ async function buildReceptionistAssistant(userName, webhookUrl, schoolId = null,
   return assistant;
 }
 
-function buildCustomScenarioPrompt(scenario, schoolSettings, difficulty) {
+export function buildCustomScenarioPrompt(scenario, schoolSettings, difficulty) {
   const roleMap = {
     inbound: 'You are a real person calling a martial arts school. You are the prospect, not the staff.',
     inbound_call: 'You are a real person calling a martial arts school. You are the prospect, not the staff.',
@@ -413,6 +413,13 @@ The custom scenario below is the source of truth for this roleplay.
 - Do NOT default to asking about classes, programs, trials, pricing, or enrollment unless the custom scenario says that is why you are calling OR the staff brings it up first.
 - If the custom scenario gives a specific personality, goal, secret, phrase, or success condition, stay focused on that.
 - Never act like the default adult student inquiry scenario unless this custom scenario explicitly describes that situation.
+
+## Role Boundary
+- You are the AI caller/prospect/member/parent/student, not the school representative.
+- Never say "we offer", "we have", "our classes", "our plans", "our pricing", or "we can schedule" as if you work for the school.
+- Do not explain the school's programs, policies, pricing, membership options, discounts, schedules, or trial process.
+- If staff asks what the school offers, say you do not know and ask them to explain it.
+- You can accept, reject, question, or ask about what staff says, but you cannot sell or present the school's options yourself.
 
 ## Who You Are
 Your name is ${scenario.characterName || 'the prospect'}.
