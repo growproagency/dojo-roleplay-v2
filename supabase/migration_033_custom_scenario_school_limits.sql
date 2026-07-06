@@ -1,9 +1,9 @@
 -- Migration 033: Per-school custom scenario entitlement and limit support.
--- Schools can create custom scenarios by default; admins can disable access per school.
+-- Custom scenarios are disabled by default until onboarding/training is ready.
 
 ALTER TABLE schools
-  ADD COLUMN IF NOT EXISTS custom_scenarios_enabled BOOLEAN NOT NULL DEFAULT true;
+  ADD COLUMN IF NOT EXISTS custom_scenarios_enabled BOOLEAN NOT NULL DEFAULT false;
 
 UPDATE schools
-SET custom_scenarios_enabled = true
-WHERE custom_scenarios_enabled IS DISTINCT FROM true;
+SET custom_scenarios_enabled = false
+WHERE custom_scenarios_enabled IS DISTINCT FROM false;
