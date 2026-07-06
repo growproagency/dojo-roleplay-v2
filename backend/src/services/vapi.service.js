@@ -194,7 +194,7 @@ async function handleAssistantRequest(message) {
       };
     }
 
-    const recentAttempts = await countRecentPhoneAttempts(callerNumber, 60).catch((err) => {
+    const recentAttempts = await countRecentPhoneAttempts(callerNumber, 30).catch((err) => {
       logger.warn({ err, callerNumber }, 'Failed to count recent phone attempts');
       return 0;
     });
