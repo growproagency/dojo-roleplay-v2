@@ -1,6 +1,6 @@
 import { supabase } from './supabase.js';
 
-const SCHOOL_COLS = 'id, name, slug, plan, owner_user_id, street_address, city, state, zip_code, intro_offer, price_range_low, price_range_high, program_director_name, additional_notes, usage_cap_usd, member_limit, monthly_roleplay_minutes, usage_period_start, usage_period_end, archived_at, subscription_status, subscription_current_period_end, access_grace_until, created_at, updated_at';
+const SCHOOL_COLS = 'id, name, slug, plan, owner_user_id, street_address, city, state, zip_code, intro_offer, price_range_low, price_range_high, program_director_name, additional_notes, usage_cap_usd, member_limit, monthly_roleplay_minutes, custom_scenarios_enabled, usage_period_start, usage_period_end, archived_at, subscription_status, subscription_current_period_end, access_grace_until, created_at, updated_at';
 
 export function toSchool(row) {
   if (!row) return null;
@@ -22,6 +22,7 @@ export function toSchool(row) {
     usageCapUsd: row.usage_cap_usd != null ? Number(row.usage_cap_usd) : null,
     memberLimit: row.member_limit,
     monthlyRoleplayMinutes: row.monthly_roleplay_minutes,
+    customScenariosEnabled: row.custom_scenarios_enabled,
     usagePeriodStart: row.usage_period_start,
     usagePeriodEnd: row.usage_period_end,
     archivedAt: row.archived_at,
@@ -76,6 +77,7 @@ export async function insertSchool(fields) {
   if (fields.usageCapUsd !== undefined) row.usage_cap_usd = fields.usageCapUsd;
   if (fields.memberLimit !== undefined) row.member_limit = fields.memberLimit;
   if (fields.monthlyRoleplayMinutes !== undefined) row.monthly_roleplay_minutes = fields.monthlyRoleplayMinutes;
+  if (fields.customScenariosEnabled !== undefined) row.custom_scenarios_enabled = fields.customScenariosEnabled;
   if (fields.usagePeriodStart !== undefined) row.usage_period_start = fields.usagePeriodStart;
   if (fields.usagePeriodEnd !== undefined) row.usage_period_end = fields.usagePeriodEnd;
   const { data, error } = await supabase
@@ -105,6 +107,7 @@ export async function updateSchool(id, fields) {
   if (fields.usageCapUsd !== undefined) row.usage_cap_usd = fields.usageCapUsd;
   if (fields.memberLimit !== undefined) row.member_limit = fields.memberLimit;
   if (fields.monthlyRoleplayMinutes !== undefined) row.monthly_roleplay_minutes = fields.monthlyRoleplayMinutes;
+  if (fields.customScenariosEnabled !== undefined) row.custom_scenarios_enabled = fields.customScenariosEnabled;
   if (fields.usagePeriodStart !== undefined) row.usage_period_start = fields.usagePeriodStart;
   if (fields.usagePeriodEnd !== undefined) row.usage_period_end = fields.usagePeriodEnd;
   if (fields.archivedAt !== undefined) row.archived_at = fields.archivedAt;

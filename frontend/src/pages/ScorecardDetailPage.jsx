@@ -14,8 +14,10 @@ import { labelScenario } from '../utils/scenarioLabels';
 const SCORECARD_SCENARIO_LABELS = {
   new_student: 'New Student Inquiry',
   web_lead_callback: 'Outbound Web Lead Callback',
+  kids_web_lead_callback: 'Kids Outbound Web Lead Callback',
   sales_enrollment: 'Sales Enrollment Conference',
   renewal_conference: 'Renewal Conference',
+  student_advancement: 'Student Advancement Recommendation',
 };
 
 function ScoreRing({ score, size = 120 }) {
@@ -44,8 +46,8 @@ function CategoryBar({ name, score, feedback }) {
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <span className="text-sm font-medium">{name}</span>
-        <span className="text-sm font-bold">{score}/10</span>
+        <span className="text-sm font-medium text-foreground">{name}</span>
+        <span className="text-sm font-bold text-foreground">{score}/10</span>
       </div>
       <div className="h-2 bg-secondary rounded-full overflow-hidden">
         <div className={`h-full rounded-full transition-all duration-700 ${color}`} style={{ width: `${(score / 10) * 100}%` }} />
@@ -56,7 +58,7 @@ function CategoryBar({ name, score, feedback }) {
 }
 
 function formatDuration(seconds) {
-  if (!seconds) return '—';
+  if (!seconds) return '-';
   const m = Math.floor(seconds / 60);
   const s = seconds % 60;
   return `${m}:${s.toString().padStart(2, '0')}`;
@@ -105,7 +107,7 @@ export function ScorecardDetailPage() {
 
   return (
     <DashboardLayout>
-      <div className="max-w-4xl mx-auto space-y-6 py-2">
+      <div className="max-w-4xl mx-auto space-y-6 py-2 text-foreground">
         <div>
           <Button variant="ghost" size="sm" onClick={() => navigate('/calls')} className="text-muted-foreground hover:text-foreground gap-1">
             <ArrowLeft className="w-4 h-4" /> Back
@@ -125,7 +127,7 @@ export function ScorecardDetailPage() {
                 {call.status === 'scored' ? 'Scored' : call.status === 'scoring' ? 'Scoring...' : call.status}
               </span>
             </div>
-            <h1 className="text-2xl font-bold tracking-tight">Call Scorecard</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-foreground">Call Scorecard</h1>
             <div className="flex items-center gap-4 mt-1 text-sm text-muted-foreground">
               <span className="flex items-center gap-1"><Calendar className="w-3.5 h-3.5" />{formatDate(call.createdAt)}</span>
               <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5" />{formatDuration(call.durationSeconds)}</span>
@@ -142,7 +144,7 @@ export function ScorecardDetailPage() {
               </Button>
             )}
             {call.status === 'scored' && scorecard && (
-              <Button variant="outline" size="sm" onClick={() => refetch()}>
+              <Button variant="outline" size="sm" onClick={() => refetch()} className="text-foreground">
                 <RefreshCw className="w-4 h-4 mr-2" />Refresh
               </Button>
             )}
@@ -185,7 +187,7 @@ export function ScorecardDetailPage() {
                 <ScoreRing score={scorecard.overallScore} size={140} />
                 <p className="text-sm text-muted-foreground mt-4 text-center px-4">
                   {scorecard.overallScore >= 80 ? 'Excellent performance!' :
-                   scorecard.overallScore >= 60 ? 'Good — room to grow' :
+                   scorecard.overallScore >= 60 ? 'Good - room to grow' :
                    scorecard.overallScore >= 40 ? 'Needs improvement' : 'Significant work needed'}
                 </p>
               </Card>

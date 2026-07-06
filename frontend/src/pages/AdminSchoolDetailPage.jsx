@@ -20,6 +20,7 @@ import { Badge } from '../components/ui/badge';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
+import { Switch } from '../components/ui/switch';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../components/ui/dialog';
 import { Loader2, School, Users, ArrowLeft, Trash2, AlertTriangle, Mail, UserPlus, Copy, CheckCircle2, Save, SlidersHorizontal, KeyRound, Clock, RotateCcw } from 'lucide-react';
 import { toast } from 'sonner';
@@ -85,6 +86,7 @@ export function AdminSchoolDetailPage() {
     plan: 'starter',
     memberLimit: '',
     monthlyRoleplayMinutes: '',
+    customScenariosEnabled: true,
     subscriptionStatus: 'active',
     subscriptionCurrentPeriodEnd: '',
     accessGraceUntil: '',
@@ -98,6 +100,7 @@ export function AdminSchoolDetailPage() {
   const readdUserMutation = useReaddSchoolUser(schoolId);
   const revokeInviteMutation = useRevokeSchoolInvite(schoolId);
   const updateSchoolMutation = useUpdateAdminSchool();
+  const updateCustomScenariosMutation = useUpdateAdminSchool();
   const resetUsagePeriodMutation = useResetSchoolUsagePeriod();
   const createPasswordResetLink = useCreatePasswordResetLink();
 
@@ -113,6 +116,7 @@ export function AdminSchoolDetailPage() {
       plan: school.plan || 'starter',
       memberLimit: school.memberLimit == null ? '' : String(school.memberLimit),
       monthlyRoleplayMinutes: school.monthlyRoleplayMinutes == null ? '' : String(school.monthlyRoleplayMinutes),
+      customScenariosEnabled: school.customScenariosEnabled !== false,
       subscriptionStatus: school.subscriptionStatus || 'active',
       subscriptionCurrentPeriodEnd: school.subscriptionCurrentPeriodEnd ? school.subscriptionCurrentPeriodEnd.slice(0, 10) : '',
       accessGraceUntil: school.accessGraceUntil ? school.accessGraceUntil.slice(0, 10) : '',
@@ -165,6 +169,21 @@ export function AdminSchoolDetailPage() {
     });
   };
 
+  const handleCustomScenariosToggle = (checked) => {
+    const previous = planForm.customScenariosEnabled;
+    setPlanForm((prev) => ({ ...prev, customScenariosEnabled: checked }));
+    updateCustomScenariosMutation.mutate({
+      id: school.id,
+      data: { customScenariosEnabled: checked },
+    }, {
+      onSuccess: () => toast.success(`Custom scenarios ${checked ? 'enabled' : 'disabled'}`),
+      onError: (err) => {
+        setPlanForm((prev) => ({ ...prev, customScenariosEnabled: previous }));
+        toast.error(err.message || 'Failed to update custom scenario access');
+      },
+    });
+  };
+
   const sendPasswordReset = async (email) => {
     setResettingEmail(email);
     try {
@@ -206,6 +225,30 @@ export function AdminSchoolDetailPage() {
             {school.name}
           </h1>
         </div>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm font-semibold">Custom scenarios</p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Allows school admins to create and edit up to 10 school-specific roleplay scenarios.
+                </p>
+              </div>
+              <div className="flex items-center gap-3">
+                <Badge variant={planForm.customScenariosEnabled ? 'default' : 'secondary'}>
+                  {planForm.customScenariosEnabled ? 'Enabled' : 'Disabled'}
+                </Badge>
+                <Switch
+                  id="custom-scenarios-enabled"
+                  checked={planForm.customScenariosEnabled}
+                  disabled={updateCustomScenariosMutation.isPending}
+                  onCheckedChange={handleCustomScenariosToggle}
+                />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         <form onSubmit={handleLimitsSave} className="space-y-4">
           <div className="grid gap-4 lg:grid-cols-2">

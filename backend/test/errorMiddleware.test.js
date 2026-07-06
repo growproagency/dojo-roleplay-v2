@@ -36,3 +36,23 @@ test('call-not-scoreable errors return a helpful message', () => {
     },
   });
 });
+
+test('custom scenario limit errors return a helpful message', () => {
+  const res = createMockResponse();
+
+  errorHandler(
+    new Error('CUSTOM_SCENARIOS_LIMIT_REACHED'),
+    { url: '/api/scenarios/custom', method: 'POST', user: { id: 1 } },
+    res,
+    () => {}
+  );
+
+  assert.equal(res.statusCode, 409);
+  assert.deepEqual(res.payload, {
+    error: {
+      code: 'CUSTOM_SCENARIOS_LIMIT_REACHED',
+      message: 'This school has reached the limit of 10 custom scenarios.',
+      status: 409,
+    },
+  });
+});

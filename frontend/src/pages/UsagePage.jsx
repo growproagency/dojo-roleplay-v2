@@ -33,6 +33,29 @@ function formatDate(value) {
   return new Date(value).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
+function getLocalDateKey(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function formatDateTime(value) {
+  if (!value) return '-';
+  return new Date(value).toLocaleString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  });
+}
+
+function callDuration(seconds) {
+  if (seconds == null) return '-';
+  return minutes(Math.round((Number(seconds || 0) / 60) * 10) / 10);
+}
+
 function getCapStatus(school) {
   const capPct = school.capUsd ? (Number(school.totalUsd || 0) / Number(school.capUsd)) * 100 : null;
   const minutePct = school.monthlyRoleplayMinutes ? (Number(school.totalMinutes || 0) / Number(school.monthlyRoleplayMinutes)) * 100 : null;
@@ -63,10 +86,11 @@ function buildDailySeries(calls) {
   const byDay = new Map();
   calls.forEach((call) => {
     if (!call.createdAt) return;
-    const key = new Date(call.createdAt).toISOString().slice(0, 10);
+    const createdAt = new Date(call.createdAt);
+    const key = getLocalDateKey(createdAt);
     const item = byDay.get(key) ?? {
       date: key,
-      label: new Date(call.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+      label: createdAt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
       calls: 0,
       spend: 0,
       minutes: 0,
@@ -133,6 +157,13 @@ export function UsagePage() {
   const schoolBreakdown = useMemo(() => {
     return buildBreakdown(filteredCalls, 'schoolId', (id) => schoolById.get(id)?.schoolName ?? 'Unknown school');
   }, [filteredCalls, schoolById]);
+  const selectedSchool = schoolFilter === ALL ? null : schoolById.get(Number(schoolFilter));
+  const recentSchoolCalls = useMemo(() => {
+    if (schoolFilter === ALL) return [];
+    return [...filteredCalls]
+      .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
+      .slice(0, 50);
+  }, [filteredCalls, schoolFilter]);
 
   const scenarios = useMemo(() => [...new Set(calls.map((call) => call.scenario).filter(Boolean))], [calls]);
   const difficulties = useMemo(() => [...new Set(calls.map((call) => call.difficulty).filter(Boolean))], [calls]);
@@ -296,6 +327,21 @@ export function UsagePage() {
               <UsageBreakdownTable rows={schoolBreakdown} />
             </CardContent>
           </Card>
+
+          {selectedSchool && (
+            <Card className="border-border/70 shadow-sm">
+              <CardHeader className="pb-3">
+                <SectionTitle
+                  icon={<Phone className="h-4 w-4" />}
+                  title="Top 50 Recent Calls"
+                  description={`Most recent matching calls for ${selectedSchool.schoolName}.`}
+                />
+              </CardHeader>
+              <CardContent>
+                <RecentCallsTable calls={recentSchoolCalls} />
+              </CardContent>
+            </Card>
+          )}
         </section>
       </div>
     </DashboardLayout>
@@ -398,6 +444,22 @@ function AccessBadge({ status }) {
   );
 }
 
+function CallStatusBadge({ status }) {
+  const normalized = String(status || 'unknown');
+  const className = normalized === 'scored' || normalized === 'completed'
+    ? 'border-primary/20 bg-primary/10 text-primary'
+    : normalized === 'failed'
+      ? 'border-red-500/20 bg-red-500/10 text-red-700 dark:text-red-300'
+      : normalized === 'in_progress' || normalized === 'scoring'
+        ? 'border-amber-500/20 bg-amber-500/10 text-amber-700 dark:text-amber-300'
+        : 'border-muted bg-muted text-muted-foreground';
+  return (
+    <Badge className={`${className} border font-normal capitalize`}>
+      {normalized.replace(/_/g, ' ')}
+    </Badge>
+  );
+}
+
 function FilterSelect({ label, value, onChange, options }) {
   return (
     <div className="space-y-1.5">
@@ -417,7 +479,7 @@ function UsageAreaChart({ data }) {
   if (data.length === 0) return <EmptyChart />;
   return (
     <div className="h-72">
-      <ResponsiveContainer width="100%" height="100%">
+      <ResponsiveContainer width="100%" height="100%" minWidth={0}>
         <AreaChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
           <CartesianGrid strokeDasharray="3 3" className="stroke-border" vertical={false} />
           <XAxis dataKey="label" tick={{ fontSize: 11 }} tickLine={false} axisLine={false} />
@@ -436,7 +498,7 @@ function UsageBarChart({ data }) {
   if (data.length === 0) return <EmptyChart />;
   return (
     <div className="h-72">
-      <ResponsiveContainer width="100%" height="100%">
+      <ResponsiveContainer width="100%" height="100%" minWidth={0}>
         <BarChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
           <CartesianGrid strokeDasharray="3 3" className="stroke-border" vertical={false} />
           <XAxis dataKey="label" tick={{ fontSize: 11 }} tickLine={false} axisLine={false} interval={0} />
@@ -468,6 +530,54 @@ function UsageBreakdownTable({ rows }) {
             <TableCell className="text-right tabular-nums">{row.calls}</TableCell>
             <TableCell className="text-right tabular-nums">{minutes(row.minutes)}</TableCell>
             <TableCell className="text-right tabular-nums">{money(row.spend)}</TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  );
+}
+
+function RecentCallsTable({ calls }) {
+  if (calls.length === 0) {
+    return <p className="py-8 text-center text-sm text-muted-foreground">No matching calls for this school.</p>;
+  }
+
+  return (
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>Call</TableHead>
+          <TableHead>Staff</TableHead>
+          <TableHead>Scenario</TableHead>
+          <TableHead>Difficulty</TableHead>
+          <TableHead>Status</TableHead>
+          <TableHead className="text-right">Duration</TableHead>
+          <TableHead className="text-right">Spend</TableHead>
+          <TableHead className="text-right">Score</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {calls.map((call) => (
+          <TableRow key={call.id}>
+            <TableCell>
+              <div className="font-medium">#{call.id}</div>
+              {call.vapiCallId ? (
+                <div className="font-mono text-xs text-muted-foreground">Vapi: {call.vapiCallId}</div>
+              ) : (
+                <div className="text-xs text-muted-foreground">Vapi: not captured</div>
+              )}
+              <div className="text-xs text-muted-foreground">{formatDateTime(call.createdAt)}</div>
+            </TableCell>
+            <TableCell>
+              <div className="font-medium">{call.userName || 'Unknown user'}</div>
+              {call.userEmail && <div className="text-xs text-muted-foreground">{call.userEmail}</div>}
+            </TableCell>
+            <TableCell>{labelScenario(call.scenario)}</TableCell>
+            <TableCell className="capitalize">{call.difficulty || '-'}</TableCell>
+            <TableCell><CallStatusBadge status={call.status} /></TableCell>
+            <TableCell className="text-right tabular-nums">{callDuration(call.durationSeconds)}</TableCell>
+            <TableCell className="text-right tabular-nums">{money(call.costUsd)}</TableCell>
+            <TableCell className="text-right tabular-nums">{call.overallScore ?? '-'}</TableCell>
           </TableRow>
         ))}
       </TableBody>

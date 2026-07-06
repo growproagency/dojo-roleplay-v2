@@ -33,6 +33,12 @@ const BUILT_IN_DETAILS = {
     characterBlurb: "submitted a web form, hasn't responded",
     topics: ['Building rapport', 'Overcoming skepticism', 'Booking the appointment'],
   },
+  kids_web_lead_callback: {
+    contextType: 'outbound_callback',
+    characterName: 'Melissa',
+    characterBlurb: 'parent who submitted a web form for kids classes',
+    topics: ['Parent trust', 'Confidence & focus goals', 'Booking a trial'],
+  },
   sales_enrollment: {
     contextType: 'in_person',
     characterName: 'Jamie',
@@ -44,6 +50,12 @@ const BUILT_IN_DETAILS = {
     characterName: 'Pat',
     characterBlurb: 'parent of Tyler, 10 months in',
     topics: ['Progress check questions', 'Highlighting growth', 'Renewal offer'],
+  },
+  student_advancement: {
+    contextType: 'in_person',
+    characterName: 'Dana',
+    characterBlurb: 'parent of Maya, a student recommended for advancement',
+    topics: ['Student progress', 'Next-level recommendation', 'Recommendation class'],
   },
   cancellation_save: {
     contextType: 'inbound_call',
@@ -57,15 +69,18 @@ const SCENARIO_IMAGES = {
   new_student: '/scenario-new-student.png',
   parent_enrollment: '/scenario-parent-enrollment.png',
   web_lead_callback: '/scenario-web-lead-callback.png',
+  kids_web_lead_callback: '/scenario-parent-enrollment.png',
   sales_enrollment: '/scenario-sales-enrollment.png',
   renewal_conference: '/scenario-renewal-conference.png',
+  student_advancement: '/scenario-renewal-conference.png',
   cancellation_save: '/scenario-cancellation-save.png',
 };
 
 const PRACTICE_SCENARIO_LABELS = {
   new_student: 'Inbound Lead - Adult Inquiry',
   parent_enrollment: 'Inbound Lead - Parent Inquiry',
-  web_lead_callback: 'Outbound Lead Callback',
+  web_lead_callback: 'Outbound Lead Callback - Adult',
+  kids_web_lead_callback: 'Outbound Lead Callback - Kids',
 };
 
 const SCENARIO_ALIASES = {
@@ -80,9 +95,17 @@ const SCENARIO_ALIASES = {
   'outbound web lead callback': 'web_lead_callback',
   'web lead callback': 'web_lead_callback',
   'outbound lead callback': 'web_lead_callback',
+  'kids outbound web lead callback': 'kids_web_lead_callback',
+  'kids web lead callback': 'kids_web_lead_callback',
+  'outbound kids lead callback': 'kids_web_lead_callback',
+  'outbound lead kids inquiry': 'kids_web_lead_callback',
   'sales enrollment conference': 'sales_enrollment',
   'sales enrollment': 'sales_enrollment',
   'renewal conference': 'renewal_conference',
+  'student advancement recommendation': 'student_advancement',
+  'student advancement': 'student_advancement',
+  'leadership program recommendation': 'student_advancement',
+  'advancement recommendation': 'student_advancement',
   'cancellation save': 'cancellation_save',
 };
 
@@ -183,6 +206,26 @@ const TRAINING_GUIDES = {
       ['Follow-Up Discipline', '5%'],
     ],
   },
+  studentAdvancement: {
+    title: 'Student Advancement',
+    description: 'Based on the advancement and leadership recommendation process.',
+    steps: [
+      ['Student progress conversation', 'Confirm the parent and student are having a positive experience first'],
+      ['Present the recommendation', 'Acknowledge specific accomplishments before introducing the opportunity'],
+      ['Explain the next level', 'Connect faster pace, expectations, leadership, and advanced training to growth'],
+      ['Invite them to experience it', 'Offer a recommendation class instead of asking for an immediate commitment'],
+      ['Trial class experience', 'Frame how the student and parent will see the next level firsthand'],
+      ['Post-class review', 'Review readiness, next steps, or the development plan after the class'],
+    ],
+    categories: [
+      ['Student Progress Conversation', '20%'],
+      ['Present the Recommendation', '15%'],
+      ['Explain the Next Level', '20%'],
+      ['Invite Them to Experience It', '15%'],
+      ['Trial Class Experience', '15%'],
+      ['Post-Class Review', '15%'],
+    ],
+  },
   cancellation: {
     title: 'Cancellation Save',
     description: 'Based on the cancellation save process.',
@@ -241,6 +284,7 @@ function getTrainingGuide(scenario) {
   const key = getScenarioKey(scenario);
   const title = (scenario?.title || '').toLowerCase();
   if (key === 'cancellation_save' || title.includes('cancellation')) return TRAINING_GUIDES.cancellation;
+  if (key === 'student_advancement' || title.includes('advancement') || title.includes('leadership')) return TRAINING_GUIDES.studentAdvancement;
   if (key === 'renewal_conference' || title.includes('renewal')) return TRAINING_GUIDES.renewal;
   if (key === 'sales_enrollment' || title.includes('sales enrollment') || title.includes('enrollment conference')) return TRAINING_GUIDES.sales;
   if (key === 'new_student' || key === 'parent_enrollment') return TRAINING_GUIDES.inbound;
@@ -326,20 +370,18 @@ function ScenarioCard({ scenario, isLocked, isSelected, onSelect, onViewScript }
           )}
         </div>
 
-        {scenario.isBuiltIn && (
-          <button
-            type="button"
-            onClick={(event) => {
-              event.stopPropagation();
-              onViewScript(scenario);
-            }}
-            className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-lg px-2 text-xs font-medium text-primary hover:bg-primary/10"
-            aria-label={`View ${title} training script`}
-          >
-            <FileText className="h-3.5 w-3.5" />
-            Script
-          </button>
-        )}
+        <button
+          type="button"
+          onClick={(event) => {
+            event.stopPropagation();
+            onViewScript(scenario);
+          }}
+          className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-lg px-2 text-xs font-medium text-primary hover:bg-primary/10"
+          aria-label={`View ${title} training script`}
+        >
+          <FileText className="h-3.5 w-3.5" />
+          Script
+        </button>
       </div>
     </div>
   );
@@ -373,7 +415,11 @@ export function PracticeCallPage() {
     }));
   };
   const endPractice = () => window.dispatchEvent(new Event('dojo:end-call'));
-  const scriptGuide = scriptScenario ? getTrainingGuide(scriptScenario) : null;
+  const scriptGuide = scriptScenario?.isBuiltIn ? getTrainingGuide(scriptScenario) : null;
+  const scriptMeta = scriptScenario ? scenarioMeta(scriptScenario) : null;
+  const scriptCustomRubric = scriptScenario && !scriptScenario.isBuiltIn
+    ? getCustomRubricCategories(scriptScenario.scoringPrompt)
+    : [];
   const callActive = callStatus === 'active' || callStatus === 'connecting';
   const callConnecting = callStatus === 'connecting';
   const callStatusLabel = callStatus === 'active' ? 'Live' : callStatus === 'connecting' ? 'Connecting' : 'Standby';
@@ -710,6 +756,60 @@ export function PracticeCallPage() {
                   </pre>
                 </div>
               )}
+            </div>
+          )}
+          {scriptScenario && !scriptScenario.isBuiltIn && (
+            <div className="space-y-5 text-sm">
+              <div className="rounded-xl border border-primary/20 bg-primary/5 p-4">
+                <p className="font-heading text-base font-semibold text-foreground">{scriptScenario.title}</p>
+                <p className="mt-1 text-muted-foreground">{scriptScenario.description || 'Custom roleplay scenario.'}</p>
+                {scriptMeta?.characterName && (
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    AI caller: <span className="font-medium text-foreground">{scriptMeta.characterName}</span>
+                  </p>
+                )}
+              </div>
+
+              <div className="grid gap-5 md:grid-cols-[1fr_0.9fr]">
+                <div className="rounded-xl border border-border bg-secondary/20 p-4">
+                  <p className="font-medium text-foreground">Objectives</p>
+                  {scriptCustomRubric.length > 0 ? (
+                    <ol className="mt-3 space-y-2">
+                      {scriptCustomRubric.map(([name], index) => (
+                        <li key={name} className="flex gap-3 text-muted-foreground">
+                          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
+                            {index + 1}
+                          </span>
+                          <span className="pt-0.5">{name}</span>
+                        </li>
+                      ))}
+                    </ol>
+                  ) : (
+                    <p className="mt-3 rounded-lg bg-background/70 p-3 text-xs leading-5 text-muted-foreground">
+                      No objectives were parsed from this scenario.
+                    </p>
+                  )}
+                </div>
+
+                <div className="rounded-xl border border-border bg-secondary/20 p-4">
+                  <p className="font-medium text-foreground">Scoring categories</p>
+                  {scriptCustomRubric.length > 0 ? (
+                    <div className="mt-3 space-y-2">
+                      {scriptCustomRubric.map(([name, weight]) => (
+                        <div key={name} className="flex items-center justify-between gap-3 rounded-lg bg-background/70 px-3 py-2">
+                          <span className="text-muted-foreground">{name}</span>
+                          <Badge variant="outline" className="shrink-0 font-normal">{weight}</Badge>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="mt-3 rounded-lg bg-background/70 p-3 text-xs leading-5 text-muted-foreground">
+                      No scoring categories were parsed from this scenario.
+                    </p>
+                  )}
+                </div>
+              </div>
+
             </div>
           )}
         </DialogContent>

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { acceptInviteSchema, updateProfileSchema } from '../src/schemas/auth.schema.js';
-import { unassignUserSchema, updatePlatformSchema } from '../src/schemas/admin.schema.js';
+import { unassignUserSchema, updatePlatformSchema, updateSchoolAdminSchema } from '../src/schemas/admin.schema.js';
 import { vapiWebhookSchema } from '../src/schemas/vapi.schema.js';
 
 test('acceptInviteSchema lowercases email and strips unknown fields', () => {
@@ -44,6 +44,16 @@ test('unassignUserSchema accepts the current client payload', () => {
 
   assert.equal(error, undefined);
   assert.deepEqual(value, { schoolId: null });
+});
+
+test('updateSchoolAdminSchema accepts custom scenario entitlement toggle', () => {
+  const { error, value } = updateSchoolAdminSchema.validate({
+    customScenariosEnabled: true,
+    extraField: 'ignored',
+  });
+
+  assert.equal(error, undefined);
+  assert.deepEqual(value, { customScenariosEnabled: true });
 });
 
 test('vapiWebhookSchema keeps the provider payload under message', () => {

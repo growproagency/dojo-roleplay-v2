@@ -8,10 +8,12 @@ import { cn } from "@/lib/utils"
 function Switch({
   className,
   size = "default",
+  type = "button",
   ...props
 }) {
   return (
     <SwitchPrimitive.Root
+      type={type}
       data-slot="switch"
       data-size={size}
       className={cn(

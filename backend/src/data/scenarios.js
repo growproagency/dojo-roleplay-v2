@@ -151,6 +151,29 @@ Answer the phone casually: "Hello?" — then when they introduce themselves: "Oh
 - Best realistic outcome: if they handle this well, agree to receive pricing or class options and a specific follow-up, or tentatively hold a time if they make it very low pressure.
 `;
 
+const KIDS_WEB_LEAD_CALLBACK_PROMPT = `${buildSharedBehavior('outbound_callback')}
+
+## Who You Are
+Your name is Melissa. You're the parent of an 8-year-old daughter named Ava. You filled out a form on a martial arts school's website yesterday about kids classes.
+
+## Your Opening Line
+Answer the phone casually: "Hello?" - then when they introduce themselves: "Oh yeah, I filled out the form for my daughter."
+
+## Your Situation (only reveal when asked)
+- Ava is bright but shy, and you want her to build confidence and focus.
+- You found the school while searching for after-school activities near you.
+- Ava tried gymnastics last year but got nervous in big groups and stopped going.
+- You are interested, but you do not want a pushy sales call.
+- If they verify contact info: Melissa Carter, melissa.carter@example.com, 555-456-7890. Ava is 8.
+
+## Hard Mode Decision Blockers
+- Other-parent blocker: you need to talk to Ava's other parent before putting anything on the calendar.
+- Child-fit blocker: you are not sure Ava will participate if the first class feels intimidating.
+- Schedule blocker: weekdays are tight because of school pickup and homework.
+- Price/budget blocker: you want to understand whether there is a trial or intro offer before committing.
+- Best realistic outcome: if they handle this well, agree to a specific trial time or accept class options and a clear follow-up time after talking with the other parent.
+`;
+
 const SALES_ENROLLMENT_PROMPT = `${buildSharedBehavior('in_person')}
 
 ## Who You Are
@@ -189,6 +212,36 @@ Your name is Pat. Your child Tyler (8 years old) has been training for about 10 
 - Best realistic outcome: if they handle this well, agree to a specific follow-up after checking with the other parent and schedule.
 `;
 
+const STUDENT_ADVANCEMENT_PROMPT = `${buildSharedBehavior('in_person')}
+
+## Who You Are
+Your name is Dana. You are the parent of Maya, a student who has been training consistently and was recommended for an advancement and leadership opportunity.
+
+## Your Opening Line
+"Yeah, Maya has been really enjoying classes. The instructor said you wanted to talk with us about her progress?"
+
+## Your Situation (only reveal when asked)
+- Maya has grown in confidence and focus, and you have noticed she listens better at home.
+- You are proud of her, but you do not want her pushed into something before she is ready.
+- You want to understand why she was selected and what the next level actually changes.
+- You are open to a recommendation class if it feels based on her development, not sales pressure.
+- If they offer class times: Tuesday is possible, Thursday may work better if it is after school.
+
+## Conversation Expectations
+- The staff member should first ask about your experience and what changes you have noticed.
+- If you raise a concern, they should listen and resolve it before continuing the recommendation.
+- If the feedback is positive, they should acknowledge Maya's progress and explain why she is being recommended.
+- They should describe the next level as faster-paced training with higher expectations for effort, focus, leadership, and appropriate advanced work.
+- They should invite you to experience a recommendation class rather than pushing for an immediate commitment.
+- After the class, they should review what Maya did well, what she is still developing, and the right next step.
+
+## Hard Mode Decision Blockers
+- Primary blocker: readiness. You are not sure Maya is mature or confident enough for a faster-paced class yet.
+- Secondary blocker: schedule. Additional classes may be hard with school and family commitments.
+- Pressure concern: if the staff member makes it feel like a sales pitch instead of a student recommendation, you become guarded.
+- Best realistic outcome: if they handle this well, agree to attend a specific recommendation class or accept a clear development plan before the next recommendation.
+`;
+
 const CANCELLATION_SAVE_PROMPT = `${buildSharedBehavior('inbound_call')}
 
 ## Who You Are
@@ -222,6 +275,12 @@ export const SCENARIOS = {
     description: 'Practice calling back Alex, a prospect who submitted a web form. Build rapport quickly, overcome skepticism, and book the appointment.',
     systemPrompt: WEB_LEAD_CALLBACK_PROMPT,
   },
+  kids_web_lead_callback: {
+    id: 'kids_web_lead_callback',
+    title: 'Kids Outbound Web Lead Callback',
+    description: 'Practice calling back Melissa, a parent who submitted a web form about kids classes for her daughter. Build trust, uncover goals, and book a low-pressure trial.',
+    systemPrompt: KIDS_WEB_LEAD_CALLBACK_PROMPT,
+  },
   sales_enrollment: {
     id: 'sales_enrollment',
     title: 'Sales Enrollment Conference',
@@ -233,6 +292,12 @@ export const SCENARIOS = {
     title: 'Renewal Conference',
     description: "Practice renewing Pat, a parent whose child has been training for 10 months. Ask the 3 Progress Check questions and present the renewal confidently.",
     systemPrompt: RENEWAL_CONFERENCE_PROMPT,
+  },
+  student_advancement: {
+    id: 'student_advancement',
+    title: 'Student Advancement Recommendation',
+    description: 'Practice recommending an advancement or leadership opportunity based on student progress, attitude, and long-term development.',
+    systemPrompt: STUDENT_ADVANCEMENT_PROMPT,
   },
   cancellation_save: {
     id: 'cancellation_save',
@@ -255,6 +320,10 @@ const DEFAULT_SCORE_ANCHORS = {
 
 function scoringCategory(name, weight) {
   return { name, weight, anchors: DEFAULT_SCORE_ANCHORS };
+}
+
+function scoringCategoryWithAnchors(name, weight, anchors) {
+  return { name, weight, anchors };
 }
 
 const SCORING_RUBRICS = {
@@ -289,6 +358,56 @@ const SCORING_RUBRICS = {
     scoringCategory('Renewal Ask', 20),
     scoringCategory('Objection Handling', 10),
     scoringCategory('Follow-Up Discipline', 5),
+  ],
+  studentAdvancement: [
+    scoringCategoryWithAnchors('Student Progress Conversation', 20, {
+      '10': 'Asks at least two progress questions, such as experience so far, changes noticed, biggest improvement, or how the child is enjoying training. If a concern appears, addresses it before continuing.',
+      '8-9': 'Asks at least one real progress question and confirms the family is positive, but misses one useful follow-up or concern check.',
+      '7-8': 'Asks a broad experience or progress question, but accepts a surface answer and moves on quickly.',
+      '5-6': 'Mentions the student has progressed, but does not ask the parent or student for their view.',
+      '3-4': 'Barely checks the family experience and bases the transition mostly on the instructor recommendation.',
+      '0-2': 'Introduces advancement before checking experience, or ignores a concern the parent raises.',
+    }),
+    scoringCategoryWithAnchors('Present the Recommendation', 15, {
+      '10': 'Names specific student accomplishments, frames the recommendation as readiness-based, says the coaching team believes the student is ready, and asks if the family has heard about the program before.',
+      '8-9': 'Gives a specific readiness-based recommendation, but misses either the team framing or the collaborative question.',
+      '7-8': 'Recommendation is clear, but the reason is generic, such as "doing well" without concrete examples.',
+      '5-6': 'Says the student is eligible or invited, but gives little student-specific evidence.',
+      '3-4': 'Moves into the program pitch before clearly recognizing the student accomplishments.',
+      '0-2': 'Does not present a clear recommendation, or makes it sound automatic, sales-driven, or unrelated to readiness.',
+    }),
+    scoringCategoryWithAnchors('Explain the Next Level', 20, {
+      '10': 'Explains that students are invited based on readiness and covers faster pace, higher expectations for effort/focus/leadership, advanced techniques or controlled partner training when appropriate, and long-term growth.',
+      '8-9': 'Explains most key differences and connects them to student growth, with only one meaningful point missing.',
+      '7-8': 'Explains some differences, but leans toward features instead of why the next level helps the student develop.',
+      '5-6': 'Gives one or two vague benefits, such as "more advanced" or "more leadership," without enough detail.',
+      '3-4': 'Explanation is confusing, too short, or overpromises what the student will get.',
+      '0-2': 'Skips the next-level explanation or describes it inaccurately.',
+    }),
+    scoringCategoryWithAnchors('Invite Them to Experience It', 15, {
+      '10': 'Invites the family to a recommendation class instead of asking for an immediate commitment, explains that seeing the class is the best next step, and offers two specific class times.',
+      '8-9': 'Invites them to experience a class and gives a specific next step, but offers only one time or leaves one logistics detail unclear.',
+      '7-8': 'Invites them to observe or try the class, but does not offer specific times.',
+      '5-6': 'Mentions they can come to a class sometime, but the next step is vague.',
+      '3-4': 'Pushes for enrollment or a decision before offering the class experience.',
+      '0-2': 'Does not offer an experience-based next step, or creates pressure instead of an invitation.',
+    }),
+    scoringCategoryWithAnchors('Trial Class Experience', 15, {
+      '10': 'Explains what will happen in the recommendation class: the student is welcomed or recognized, paired with an experienced student or mentor, the parent can observe, expectations are demonstrated, and the student participates.',
+      '8-9': 'Explains most of the class experience, with only one support or observation detail missing.',
+      '7-8': 'Gives a basic class preview, but lacks detail about student support, parent observation, or how the next-level culture is shown.',
+      '5-6': 'Mostly gives logistics such as day/time and says they can try it, without explaining the experience.',
+      '3-4': 'Describes it like a normal class with no clear reason it helps the family evaluate the next level.',
+      '0-2': 'Does not explain the trial or recommendation class experience.',
+    }),
+    scoringCategoryWithAnchors('Post-Class Review', 15, {
+      '10': 'Explains that staff will reconnect after class to review what the student did well, readiness signs, skills still developing, and either next enrollment steps or a development plan.',
+      '8-9': 'Includes a post-class review and next step, but misses either continued development areas or the alternate plan if the student is not ready.',
+      '7-8': 'Says they will talk after class, but the review criteria or decision path is vague.',
+      '5-6': 'Follow-up is mentioned only generally and does not explain how readiness will be reviewed.',
+      '3-4': 'Little clarity on what happens after the class or who handles the next step.',
+      '0-2': 'No post-class review plan, or implies the family must decide before seeing readiness feedback.',
+    }),
   ],
   cancellation: [
     scoringCategory('Universal Opening', 20),
@@ -336,6 +455,18 @@ export const BUILT_IN_SCENARIO_DEFAULTS = {
     scoringCategories: SCORING_RUBRICS.outbound,
     status: 'published',
   },
+  kids_web_lead_callback: {
+    slug: 'kids_web_lead_callback',
+    title: SCENARIOS.kids_web_lead_callback.title,
+    description: SCENARIOS.kids_web_lead_callback.description,
+    systemPromptBase: SCENARIOS.kids_web_lead_callback.systemPrompt,
+    firstMessage: null,
+    voiceProvider: 'vapi',
+    voiceId: 'Paige',
+    scoringRubricType: 'outbound',
+    scoringCategories: SCORING_RUBRICS.outbound,
+    status: 'published',
+  },
   sales_enrollment: {
     slug: 'sales_enrollment',
     title: SCENARIOS.sales_enrollment.title,
@@ -358,6 +489,18 @@ export const BUILT_IN_SCENARIO_DEFAULTS = {
     voiceId: 'Savannah',
     scoringRubricType: 'renewal',
     scoringCategories: SCORING_RUBRICS.renewal,
+    status: 'published',
+  },
+  student_advancement: {
+    slug: 'student_advancement',
+    title: SCENARIOS.student_advancement.title,
+    description: SCENARIOS.student_advancement.description,
+    systemPromptBase: SCENARIOS.student_advancement.systemPrompt,
+    firstMessage: "Yeah, Maya has been really enjoying classes. The instructor said you wanted to talk with us about her progress?",
+    voiceProvider: 'vapi',
+    voiceId: 'Paige',
+    scoringRubricType: 'studentAdvancement',
+    scoringCategories: SCORING_RUBRICS.studentAdvancement,
     status: 'published',
   },
   cancellation_save: {
@@ -395,6 +538,11 @@ const OBJECTION_FOCUS = {
       'Light schedule question: ask what class times are usually available.',
       'Light comfort concern: mention you have never tried martial arts before.',
     ],
+    kids_web_lead_callback: [
+      'Light child-fit question: ask if shy kids usually do okay in the first class.',
+      'Light schedule question: ask what kids class times are usually available.',
+      'Light trial question: ask whether there is an intro class or beginner option.',
+    ],
     sales_enrollment: [
       'Light schedule question: ask which class times are best after the trial.',
       'Light commitment concern: ask how often most kids attend.',
@@ -404,6 +552,11 @@ const OBJECTION_FOCUS = {
       'Light schedule question: ask if class times will stay the same.',
       'Light value question: ask what the next stage of progress looks like.',
       'Light price question: ask whether renewal pricing changes.',
+    ],
+    student_advancement: [
+      'Light readiness question: ask what made the instructors think Maya is ready.',
+      'Light schedule question: ask when the recommendation class is offered.',
+      'Light program question: ask what is different about the next level.',
     ],
     cancellation_save: [
       'Light schedule concern: Cameron started another activity, but a different class time might help.',
@@ -428,6 +581,12 @@ const OBJECTION_FOCUS = {
       'Mild comparison concern: mention you are looking at a couple of schools.',
       'Mild schedule concern: ask for class time options because work can run late.',
     ],
+    kids_web_lead_callback: [
+      'Mild price question: ask whether there is a trial or intro offer before booking.',
+      "Mild other-parent concern: say you probably need to check with Ava's other parent before putting anything on the calendar.",
+      'Mild child-fit concern: ask how they help shy kids feel comfortable in the first class.',
+      'Mild schedule concern: ask whether kids classes fit around school pickup and homework.',
+    ],
     sales_enrollment: [
       'Mild price concern: say the membership is a little more than expected.',
       'Mild other-parent concern: say you should check with the other parent before deciding.',
@@ -437,6 +596,11 @@ const OBJECTION_FOCUS = {
       'Mild price concern: ask whether the renewal price is changing.',
       'Mild other-parent concern: say you need to talk it over before renewing.',
       "Mild schedule concern: ask whether Tyler's class options will still work next season.",
+    ],
+    student_advancement: [
+      'Mild readiness concern: say you are proud of Maya but are not sure she is ready for a faster-paced class.',
+      'Mild schedule concern: ask whether adding another class will be realistic with school and family commitments.',
+      'Mild pressure concern: ask whether this is truly based on readiness or if everyone eventually gets offered it.',
     ],
     cancellation_save: [
       'Mild schedule concern: Cameron started another activity, but a different class time might help.',
@@ -463,6 +627,12 @@ const OBJECTION_FOCUS = {
       'Primary blocker: comparison shopping. You are comparing several schools and do not want pressure.',
       'Primary blocker: schedule uncertainty. You need class time options before committing.',
     ],
+    kids_web_lead_callback: [
+      "Primary blocker: other-parent decision. You need to talk to Ava's other parent before booking anything.",
+      'Primary blocker: child fit. Ava is shy, and you are worried she will shut down if the first class feels intimidating.',
+      'Primary blocker: schedule uncertainty. Weekdays are tight because of school pickup and homework, so you need class time options.',
+      'Primary blocker: price/budget. You want to understand the intro offer or trial cost before agreeing to visit.',
+    ],
     sales_enrollment: [
       'Primary blocker: price/budget. The membership is more than expected and you need to understand the value before deciding.',
       'Primary blocker: other-parent decision. You need to talk to the other parent before making a membership decision.',
@@ -474,6 +644,12 @@ const OBJECTION_FOCUS = {
       'Primary blocker: other-parent decision. You need to talk to the other parent before renewing.',
       "Primary blocker: schedule uncertainty. Tyler's school schedule may change soon, so you need to confirm class times.",
       'Primary blocker: progress doubt. You like the program, but you are not fully convinced the progress is strong enough to renew yet.',
+    ],
+    student_advancement: [
+      'Primary blocker: readiness. You worry Maya may not be mature or confident enough for the next level yet.',
+      'Primary blocker: pressure concern. You are guarded because this could feel like a sales pitch instead of a true instructor recommendation.',
+      'Primary blocker: schedule uncertainty. Additional classes may be difficult with school and family commitments.',
+      'Primary blocker: value clarity. You need to understand how this supports Maya long term before attending a recommendation class.',
     ],
     cancellation_save: [
       'Primary blocker: motivation. Cameron has been resistant about coming for a month.',

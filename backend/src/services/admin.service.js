@@ -22,9 +22,9 @@ export async function listSchools({ status = 'active' } = {}) {
   return schoolsWithCounts;
 }
 
-export async function createSchool({ name, slug, plan, ownerUserId, usageCapUsd, memberLimit, monthlyRoleplayMinutes }) {
+export async function createSchool({ name, slug, plan, ownerUserId, usageCapUsd, memberLimit, monthlyRoleplayMinutes, customScenariosEnabled }) {
   const generatedSlug = slug || name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-  return insertSchool({ name, slug: generatedSlug, plan: plan || 'starter', ownerUserId, usageCapUsd, memberLimit, monthlyRoleplayMinutes });
+  return insertSchool({ name, slug: generatedSlug, plan: plan || 'starter', ownerUserId, usageCapUsd, memberLimit, monthlyRoleplayMinutes, customScenariosEnabled });
 }
 
 export async function editSchool(schoolId, data) {
@@ -124,6 +124,7 @@ function toUsageCall(call) {
     userEmail: call.userEmail,
     scenario: call.scenario,
     difficulty: call.difficulty,
+    vapiCallId: call.vapiCallId,
     status: call.status,
     durationSeconds: call.durationSeconds,
     costUsd: call.costUsd,

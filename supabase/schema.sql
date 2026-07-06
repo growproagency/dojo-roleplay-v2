@@ -33,6 +33,7 @@ CREATE TABLE IF NOT EXISTS schools (
   usage_cap_usd         NUMERIC(10, 2),
   member_limit          INTEGER,
   monthly_roleplay_minutes INTEGER,
+  custom_scenarios_enabled BOOLEAN NOT NULL DEFAULT true,
   usage_period_start    TIMESTAMPTZ,
   usage_period_end      TIMESTAMPTZ,
   archived_at           TIMESTAMPTZ,
@@ -146,6 +147,8 @@ CREATE TABLE IF NOT EXISTS custom_scenarios (
   voice_id         VARCHAR(100) NOT NULL DEFAULT 'Elliot',
   voice_provider   VARCHAR(50) NOT NULL DEFAULT 'vapi',
   scoring_prompt   TEXT,
+  objection_focus  JSONB,
+  objection_counts JSONB,
   is_active        BOOLEAN NOT NULL DEFAULT true,
   school_id        INTEGER REFERENCES schools(id) ON DELETE CASCADE,
   created_by       INTEGER REFERENCES users(id) ON DELETE SET NULL,
@@ -185,6 +188,24 @@ CREATE TABLE IF NOT EXISTS platform_settings (
   updated_at            TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS system_events (
+  id          SERIAL PRIMARY KEY,
+  source      VARCHAR(50) NOT NULL,
+  event_type  VARCHAR(100) NOT NULL,
+  severity    VARCHAR(20) NOT NULL DEFAULT 'error'
+                CHECK (severity IN ('info', 'warning', 'error', 'critical')),
+  status      VARCHAR(20) NOT NULL DEFAULT 'open'
+                CHECK (status IN ('open', 'resolved')),
+  message     TEXT NOT NULL,
+  details     JSONB NOT NULL DEFAULT '{}'::jsonb,
+  user_id     INTEGER REFERENCES users(id) ON DELETE SET NULL,
+  school_id   INTEGER REFERENCES schools(id) ON DELETE SET NULL,
+  call_id     INTEGER REFERENCES calls(id) ON DELETE SET NULL,
+  external_id VARCHAR(255),
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  resolved_at TIMESTAMPTZ
+);
+
 -- Seed the single platform_settings row
 INSERT INTO platform_settings (id) VALUES (1) ON CONFLICT (id) DO NOTHING;
 
@@ -221,6 +242,15 @@ VALUES
     'published'
   ),
   (
+    'kids_web_lead_callback',
+    'Kids Outbound Web Lead Callback',
+    'Practice calling back Melissa, a parent who submitted a web form about kids classes for her daughter. Build trust, uncover goals, and book a low-pressure trial.',
+    NULL,
+    'Paige',
+    'vapi',
+    'published'
+  ),
+  (
     'sales_enrollment',
     'Sales Enrollment Conference',
     'Practice enrolling Jamie after a trial class. Follow the 4-step process: uncover goals, teach the benefit, pre-frame the upgrade, and present pricing.',
@@ -239,6 +269,15 @@ VALUES
     'published'
   ),
   (
+    'student_advancement',
+    'Student Advancement Recommendation',
+    'Practice recommending an advancement or leadership opportunity based on student progress, attitude, and long-term development.',
+    'Yeah, Maya has been really enjoying classes. The instructor said you wanted to talk with us about her progress?',
+    'Paige',
+    'vapi',
+    'published'
+  ),
+  (
     'cancellation_save',
     'Cancellation Save',
     'Practice saving Morgan, a parent calling to cancel. Use the Universal Opening, identify the real reason, deploy the Extended Time Guarantee, and close.',
@@ -248,6 +287,80 @@ VALUES
     'published'
   )
 ON CONFLICT (slug) DO NOTHING;
+
+UPDATE built_in_scenarios
+SET
+  system_prompt_base = $student_advancement_prompt$
+## Your Role
+You are a real person sitting in front of a staff member at a martial arts school.
+CRITICAL: You are NEVER the business, NEVER the school, NEVER the staff.
+
+## How to Talk
+- Keep every response to 1-2 short sentences. Never more.
+- Use contractions: "I'm", "I've", "don't", and "it's".
+- Never volunteer information that was not asked for.
+- Never break character.
+
+## Who You Are
+Your name is Dana. You are the parent of Maya, a student who has been training consistently and was recommended for an advancement and leadership opportunity.
+
+## Your Opening Line
+"Yeah, Maya has been really enjoying classes. The instructor said you wanted to talk with us about her progress?"
+
+## Purpose of This Conversation
+The staff member should identify whether Maya is ready for additional training opportunities based on her progress, attitude, and long-term development.
+
+## Trigger
+This conversation is happening because an instructor recommended Maya for advancement after seeing consistent skills, effort, and mindset.
+
+## What Strong Staff Should Practice
+- Student Progress Conversation: confirm that the student and parent are having a positive experience before introducing advancement.
+- Present the Recommendation: acknowledge the student's accomplishments before introducing the opportunity.
+- Explain the Next Level: explain faster pace, higher expectations, leadership, advanced techniques, and appropriate partner training in terms of student growth.
+- Invite Them to Experience It: invite the family to a recommendation class instead of asking for an immediate commitment.
+- Trial Class Experience: frame how the student will be welcomed, paired with a mentor, recognized, and allowed to experience the advanced environment.
+- Post-Class Review: review what the student did well, readiness signals, continued development areas, and the next step.
+
+## Situation
+- Maya has grown in confidence and focus, and you have noticed she listens better at home.
+- You are proud of her, but you do not want her pushed into something before she is ready.
+- You want to understand why she was selected and what the next level actually changes.
+- You are open to a recommendation class if it feels based on her development, not sales pressure.
+- If they offer class times: Tuesday is possible, Thursday may work better if it is after school.
+
+## Success Condition
+If staff handles the conversation well, agree to attend a specific recommendation class or accept a clear development plan before the next recommendation.
+If they pressure you, skip the progress conversation, or make it sound generic, stay hesitant.
+$student_advancement_prompt$,
+  scoring_rubric_type = 'studentAdvancement',
+  scoring_categories = '[
+    {"name":"Student Progress Conversation","weight":20,"anchors":{"10":"Asks at least two progress questions, such as experience so far, changes noticed, biggest improvement, or how the child is enjoying training. If a concern appears, addresses it before continuing.","8-9":"Asks at least one real progress question and confirms the family is positive, but misses one useful follow-up or concern check.","7-8":"Asks a broad experience or progress question, but accepts a surface answer and moves on quickly.","5-6":"Mentions the student has progressed, but does not ask the parent or student for their view.","3-4":"Barely checks the family experience and bases the transition mostly on the instructor recommendation.","0-2":"Introduces advancement before checking experience, or ignores a concern the parent raises."}},
+    {"name":"Present the Recommendation","weight":15,"anchors":{"10":"Names specific student accomplishments, frames the recommendation as readiness-based, says the coaching team believes the student is ready, and asks if the family has heard about the program before.","8-9":"Gives a specific readiness-based recommendation, but misses either the team framing or the collaborative question.","7-8":"Recommendation is clear, but the reason is generic, such as \"doing well\" without concrete examples.","5-6":"Says the student is eligible or invited, but gives little student-specific evidence.","3-4":"Moves into the program pitch before clearly recognizing the student accomplishments.","0-2":"Does not present a clear recommendation, or makes it sound automatic, sales-driven, or unrelated to readiness."}},
+    {"name":"Explain the Next Level","weight":20,"anchors":{"10":"Explains that students are invited based on readiness and covers faster pace, higher expectations for effort/focus/leadership, advanced techniques or controlled partner training when appropriate, and long-term growth.","8-9":"Explains most key differences and connects them to student growth, with only one meaningful point missing.","7-8":"Explains some differences, but leans toward features instead of why the next level helps the student develop.","5-6":"Gives one or two vague benefits, such as \"more advanced\" or \"more leadership,\" without enough detail.","3-4":"Explanation is confusing, too short, or overpromises what the student will get.","0-2":"Skips the next-level explanation or describes it inaccurately."}},
+    {"name":"Invite Them to Experience It","weight":15,"anchors":{"10":"Invites the family to a recommendation class instead of asking for an immediate commitment, explains that seeing the class is the best next step, and offers two specific class times.","8-9":"Invites them to experience a class and gives a specific next step, but offers only one time or leaves one logistics detail unclear.","7-8":"Invites them to observe or try the class, but does not offer specific times.","5-6":"Mentions they can come to a class sometime, but the next step is vague.","3-4":"Pushes for enrollment or a decision before offering the class experience.","0-2":"Does not offer an experience-based next step, or creates pressure instead of an invitation."}},
+    {"name":"Trial Class Experience","weight":15,"anchors":{"10":"Explains what will happen in the recommendation class: the student is welcomed or recognized, paired with an experienced student or mentor, the parent can observe, expectations are demonstrated, and the student participates.","8-9":"Explains most of the class experience, with only one support or observation detail missing.","7-8":"Gives a basic class preview, but lacks detail about student support, parent observation, or how the next-level culture is shown.","5-6":"Mostly gives logistics such as day/time and says they can try it, without explaining the experience.","3-4":"Describes it like a normal class with no clear reason it helps the family evaluate the next level.","0-2":"Does not explain the trial or recommendation class experience."}},
+    {"name":"Post-Class Review","weight":15,"anchors":{"10":"Explains that staff will reconnect after class to review what the student did well, readiness signs, skills still developing, and either next enrollment steps or a development plan.","8-9":"Includes a post-class review and next step, but misses either continued development areas or the alternate plan if the student is not ready.","7-8":"Says they will talk after class, but the review criteria or decision path is vague.","5-6":"Follow-up is mentioned only generally and does not explain how readiness will be reviewed.","3-4":"Little clarity on what happens after the class or who handles the next step.","0-2":"No post-class review plan, or implies the family must decide before seeing readiness feedback."}}
+  ]'::jsonb,
+  objection_focus = '{
+    "easy": [
+      "Light readiness question: ask what made the instructors think Maya is ready.",
+      "Light schedule question: ask when the recommendation class is offered.",
+      "Light program question: ask what is different about the next level."
+    ],
+    "medium": [
+      "Mild readiness concern: say you are proud of Maya but are not sure she is ready for a faster-paced class.",
+      "Mild schedule concern: ask whether adding another class will be realistic with school and family commitments.",
+      "Mild pressure concern: ask whether this is truly based on readiness or if everyone eventually gets offered it."
+    ],
+    "hard": [
+      "Primary blocker: readiness. You worry Maya may not be mature or confident enough for the next level yet.",
+      "Primary blocker: pressure concern. You are guarded because this could feel like a sales pitch instead of a true instructor recommendation.",
+      "Primary blocker: schedule uncertainty. Additional classes may be difficult with school and family commitments.",
+      "Primary blocker: value clarity. You need to understand how this supports Maya long term before attending a recommendation class."
+    ]
+  }'::jsonb,
+  objection_counts = '{"easy":1,"medium":2,"hard":2}'::jsonb
+WHERE slug = 'student_advancement';
 
 -- ============================================================
 -- INDEXES
@@ -267,6 +380,11 @@ CREATE INDEX IF NOT EXISTS idx_school_invites_token    ON school_invites(token);
 CREATE INDEX IF NOT EXISTS idx_custom_scenarios_school ON custom_scenarios(school_id);
 CREATE INDEX IF NOT EXISTS idx_automation_events_source_created ON automation_events(source, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_automation_events_external ON automation_events(source, external_id) WHERE external_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_system_events_created ON system_events(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_system_events_status_created ON system_events(status, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_system_events_school_created ON system_events(school_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_system_events_call_id ON system_events(call_id);
+CREATE INDEX IF NOT EXISTS idx_system_events_source_type ON system_events(source, event_type);
 
 CREATE UNIQUE INDEX IF NOT EXISTS custom_scenarios_global_slug_unique
   ON custom_scenarios(slug)
@@ -323,6 +441,7 @@ ALTER TABLE automation_events ENABLE ROW LEVEL SECURITY;
 ALTER TABLE custom_scenarios  ENABLE ROW LEVEL SECURITY;
 ALTER TABLE built_in_scenarios ENABLE ROW LEVEL SECURITY;
 ALTER TABLE platform_settings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE system_events ENABLE ROW LEVEL SECURITY;
 
 -- USERS
 CREATE POLICY users_select ON users FOR SELECT USING (
@@ -399,3 +518,39 @@ CREATE POLICY platform_settings_select ON platform_settings FOR SELECT USING (
   EXISTS (SELECT 1 FROM users u WHERE u.email = current_setting('request.jwt.claims', true)::json->>'email')
 );
 CREATE POLICY platform_settings_update ON platform_settings FOR UPDATE USING (false);
+
+-- SYSTEM_EVENTS (global admin reads, writes via service role only)
+CREATE POLICY system_events_select_global_admin ON system_events FOR SELECT USING (
+  EXISTS (
+    SELECT 1 FROM users u
+    WHERE u.email = current_setting('request.jwt.claims', true)::json->>'email'
+      AND u.role IN ('global_admin', 'admin')
+  )
+);
+CREATE POLICY system_events_insert_service_only ON system_events FOR INSERT WITH CHECK (false);
+CREATE POLICY system_events_update_service_only ON system_events FOR UPDATE USING (false);
+CREATE POLICY system_events_delete_service_only ON system_events FOR DELETE USING (false);
+
+-- Direct browser/JWT clients may read through RLS, but application data writes
+-- must go through the Express API. The backend service_role client bypasses RLS,
+-- so these revokes do not block server-side admin/profile/call workflows.
+REVOKE INSERT, UPDATE, DELETE ON TABLE
+  public.users,
+  public.schools,
+  public.calls,
+  public.scorecards,
+  public.school_invites,
+  public.custom_scenarios,
+  public.built_in_scenarios,
+  public.platform_settings,
+  public.system_events,
+  public.automation_events,
+  public.phone_call_attempts
+FROM anon, authenticated;
+
+DO $$
+BEGIN
+  IF to_regclass('public.school_settings') IS NOT NULL THEN
+    REVOKE INSERT, UPDATE, DELETE ON TABLE public.school_settings FROM anon, authenticated;
+  END IF;
+END $$;

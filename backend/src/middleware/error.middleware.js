@@ -31,6 +31,7 @@ const STATUS_MAP = {
   MONTHLY_MINUTES_LIMIT_REACHED: 402,
   SCHOOL_ACCESS_DISABLED: 402,
   CUSTOM_SCENARIOS_PLAN_REQUIRED: 403,
+  CUSTOM_SCENARIOS_LIMIT_REACHED: 409,
 };
 
 const MESSAGE_MAP = {
@@ -44,7 +45,8 @@ const MESSAGE_MAP = {
   USER_BELONGS_TO_ANOTHER_SCHOOL: 'This user already belongs to another school.',
   MONTHLY_MINUTES_LIMIT_REACHED: 'This school has reached its monthly roleplay minute limit.',
   SCHOOL_ACCESS_DISABLED: 'This school does not currently have access. Please contact your administrator.',
-  CUSTOM_SCENARIOS_PLAN_REQUIRED: 'Custom scenarios are available on the AIOS plan.',
+  CUSTOM_SCENARIOS_PLAN_REQUIRED: 'Custom scenarios are not enabled for this school.',
+  CUSTOM_SCENARIOS_LIMIT_REACHED: 'This school has reached the limit of 10 custom scenarios.',
   CALL_NOT_SCOREABLE: 'This call is too short or does not contain enough conversation to generate a scorecard.',
 };
 

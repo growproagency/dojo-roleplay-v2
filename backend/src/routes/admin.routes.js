@@ -11,6 +11,7 @@ import {
   getUsageHandler, getPlatformSettingsHandler, updatePlatformSettingsHandler,
   changeUserRoleHandler, unassignUserHandler, deleteUserHandler,
   getSchoolInvitesHandler, createSchoolInviteHandler, readdSchoolUserHandler, revokeSchoolInviteHandler,
+  listSystemEventsHandler, getSystemEventHandler, resolveSystemEventHandler,
 } from '../controllers/admin.controller.js';
 import { createSchoolSchema, updateSchoolAdminSchema, updatePlatformSchema, changeRoleSchema, unassignUserSchema, adminCreateInviteSchema, readdSchoolUserSchema, platformAdminInviteSchema, passwordResetLinkSchema } from '../schemas/admin.schema.js';
 
@@ -43,5 +44,8 @@ router.post('/users/password-reset-link', validateBody(passwordResetLinkSchema),
 router.get('/usage', getUsageHandler);
 router.get('/platform-settings', getPlatformSettingsHandler);
 router.put('/platform-settings', validateBody(updatePlatformSchema), updatePlatformSettingsHandler);
+router.get('/system-events', listSystemEventsHandler);
+router.get('/system-events/:eventId', getSystemEventHandler);
+router.patch('/system-events/:eventId/resolve', resolveSystemEventHandler);
 
 export default router;

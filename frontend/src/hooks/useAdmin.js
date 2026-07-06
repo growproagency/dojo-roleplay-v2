@@ -8,6 +8,7 @@ export const adminKeys = {
   platformAdmins: ['admin', 'platform-admins'],
   usage: ['admin', 'usage'],
   platformSettings: ['admin', 'platform-settings'],
+  systemEvents: (filters = {}) => ['admin', 'system-events', filters],
 };
 
 export function useAdminSchools(enabled = true, status = 'active') {
@@ -184,5 +185,20 @@ export function useUpdatePlatformSettings() {
   return useMutation({
     mutationFn: (data) => adminApi.updatePlatformSettings(data),
     onSuccess: () => qc.invalidateQueries({ queryKey: adminKeys.platformSettings }),
+  });
+}
+
+export function useSystemEvents(filters = {}) {
+  return useQuery({
+    queryKey: adminKeys.systemEvents(filters),
+    queryFn: () => adminApi.listSystemEvents(filters).then(r => r.data),
+  });
+}
+
+export function useResolveSystemEvent(filters = {}) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id) => adminApi.resolveSystemEvent(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: adminKeys.systemEvents(filters) }),
   });
 }

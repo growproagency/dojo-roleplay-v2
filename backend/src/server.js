@@ -35,13 +35,19 @@ app.use(cors({
   credentials: true,
 }));
 
-const apiLimiter = rateLimit({
+const publicApiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 100,
-  skip: (req) => req.path === '/auth/me' || req.path === '/vapi/webhook' || req.path.startsWith('/invites/'),
+  max: 300,
+  skip: (req) => req.originalUrl === '/api/vapi/webhook',
   message: { error: { code: 'RATE_LIMITED', message: 'Too many requests' } },
 });
-app.use('/api/', apiLimiter);
+
+const authenticatedApiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 1000,
+  keyGenerator: (req) => String(req.user.id),
+  message: { error: { code: 'RATE_LIMITED', message: 'Too many requests' } },
+});
 
 app.use(express.json({ limit: '10mb' }));
 app.use(requestLogger);
@@ -57,6 +63,7 @@ app.get('/health', async (_req, res) => {
 });
 
 // Public routes (no auth)
+app.use(['/api/vapi', '/api/invites', '/api/system', '/api/automation'], publicApiLimiter);
 app.use('/api/vapi', vapiRoutes);
 app.use('/api/invites', invitesRoutes);
 app.use('/api/system', systemRoutes);
@@ -64,6 +71,7 @@ app.use('/api/automation', automationRoutes);
 
 // All routes below require a valid Supabase session
 app.use('/api', authMiddleware);
+app.use('/api', authenticatedApiLimiter);
 
 app.use('/api/auth', authRoutes);
 app.use('/api/calls', callsRoutes);
