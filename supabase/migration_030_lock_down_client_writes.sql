@@ -20,7 +20,6 @@ REVOKE INSERT, UPDATE, DELETE ON TABLE
   public.platform_settings,
   public.system_events,
   public.automation_events,
-  public.phone_call_attempts
 FROM anon, authenticated;
 
 DO $$
