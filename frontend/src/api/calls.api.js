@@ -13,5 +13,6 @@ export const callsApi = {
     return apiClient.get(`/api/calls${qs ? `?${qs}` : ''}`, { headers: viewingHeaders() });
   },
   get:         (id)          => apiClient.get(`/api/calls/${id}`, { headers: viewingHeaders() }),
+  recording:   (id)          => apiClient.get(`/api/calls/${id}/recording`, { headers: viewingHeaders() }),
   score:       (id)          => apiClient.post(`/api/calls/${id}/score`, {}, { headers: viewingHeaders() }),
 };

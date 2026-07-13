@@ -32,6 +32,9 @@ const STATUS_MAP = {
   SCHOOL_ACCESS_DISABLED: 402,
   CUSTOM_SCENARIOS_PLAN_REQUIRED: 403,
   CUSTOM_SCENARIOS_LIMIT_REACHED: 409,
+  VAPI_NOT_CONFIGURED: 503,
+  RECORDING_UNAVAILABLE: 404,
+  VAPI_RECORDING_FAILED: 502,
 };
 
 const MESSAGE_MAP = {
@@ -48,6 +51,9 @@ const MESSAGE_MAP = {
   CUSTOM_SCENARIOS_PLAN_REQUIRED: 'Custom scenarios are not enabled for this school.',
   CUSTOM_SCENARIOS_LIMIT_REACHED: 'This school has reached the limit of 10 custom scenarios.',
   CALL_NOT_SCOREABLE: 'This call is too short or does not contain enough conversation to generate a scorecard.',
+  VAPI_NOT_CONFIGURED: 'Call recording playback is not configured.',
+  RECORDING_UNAVAILABLE: 'This call recording is not available.',
+  VAPI_RECORDING_FAILED: 'The call recording could not be loaded. Please try again.',
 };
 
 export const errorHandler = (err, req, res, _next) => {

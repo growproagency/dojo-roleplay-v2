@@ -1,5 +1,5 @@
 import { useNavigate, useParams } from 'react-router-dom';
-import { useCall, useScoreCall } from '../hooks/useCalls';
+import { useCall, useCallRecording, useScoreCall } from '../hooks/useCalls';
 import DashboardLayout from '../components/DashboardLayout';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
@@ -72,10 +72,10 @@ export function ScorecardDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { data, isLoading, refetch } = useCall(id);
-  const scoreCall = useScoreCall();
-
   const call = data?.call;
   const scorecard = data?.scorecard;
+  const recording = useCallRecording(id, !!call?.recordingUrl);
+  const scoreCall = useScoreCall();
 
   if (isLoading) {
     return (
@@ -297,7 +297,17 @@ export function ScorecardDetailPage() {
                       <Volume2 className="w-4 h-4 text-primary shrink-0" />
                       <div className="flex-1 min-w-0">
                         <p className="text-xs text-muted-foreground mb-1 font-medium">Call Recording</p>
-                        <audio controls className="w-full h-8" src={call.recordingUrl} />
+                        {recording.isLoading && (
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" /> Loading recording...
+                          </div>
+                        )}
+                        {recording.data?.url && (
+                          <audio controls className="w-full h-8" src={recording.data.url} />
+                        )}
+                        {recording.isError && (
+                          <p className="text-xs text-destructive">Recording is temporarily unavailable.</p>
+                        )}
                       </div>
                     </div>
                   )}
