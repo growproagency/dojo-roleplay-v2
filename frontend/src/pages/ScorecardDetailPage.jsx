@@ -74,7 +74,7 @@ export function ScorecardDetailPage() {
   const { data, isLoading, refetch } = useCall(id);
   const call = data?.call;
   const scorecard = data?.scorecard;
-  const recording = useCallRecording(id, !!call?.recordingUrl);
+  const recording = useCallRecording(id, !!call?.vapiCallId);
   const scoreCall = useScoreCall();
 
   if (isLoading) {
@@ -284,7 +284,7 @@ export function ScorecardDetailPage() {
               </CardContent>
             </Card>
 
-            {(call.transcriptTurns?.length > 0 || call.transcription || call.recordingUrl) && (
+            {(call.transcriptTurns?.length > 0 || call.transcription || call.vapiCallId) && (
               <Card>
                 <CardHeader className="pb-3">
                   <CardTitle className="text-base flex items-center gap-2">
@@ -292,7 +292,7 @@ export function ScorecardDetailPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {call.recordingUrl && (
+                  {call.vapiCallId && (
                     <div className="flex items-center gap-3 p-3 rounded-lg bg-secondary/50 border border-border">
                       <Volume2 className="w-4 h-4 text-primary shrink-0" />
                       <div className="flex-1 min-w-0">
