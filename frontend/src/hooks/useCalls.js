@@ -6,6 +6,7 @@ export const callKeys = {
   all: ['calls'],
   list: ({ params, userId, schoolId, viewingSchoolId }) => ['calls', 'list', params, userId, schoolId, viewingSchoolId],
   detail: (id) => ['calls', 'detail', id],
+  recording: (id) => ['calls', 'recording', id],
 };
 
 export function useCalls(params = {}) {
@@ -25,6 +26,15 @@ export function useCall(id) {
     queryKey: callKeys.detail(id),
     queryFn: () => callsApi.get(id).then(r => r.data),
     enabled: !!id,
+  });
+}
+
+export function useCallRecording(id, enabled = true) {
+  return useQuery({
+    queryKey: callKeys.recording(id),
+    queryFn: () => callsApi.recording(id).then(r => r.data),
+    enabled: !!id && enabled,
+    gcTime: 0,
   });
 }
 

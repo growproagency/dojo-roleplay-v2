@@ -7,6 +7,7 @@ import { getPublishedBuiltInScenarios } from './scenarios.service.js';
 import { SCENARIOS } from '../data/scenarios.js';
 import { canUseCustomScenarios } from '../utils/plans.js';
 import { isScoreableTranscriptTurns, parseTranscriptTurns } from '../utils/transcriptQuality.js';
+import { getVapiRecordingUrl } from './vapiRecording.service.js';
 function isGlobalAdmin(user) { return user?.role === 'global_admin' || user?.role === 'admin'; }
 function isSchoolAdmin(user) { return user?.role === 'school_admin'; }
 
@@ -45,6 +46,13 @@ export async function getCall(callId, user) {
   if (!canAccessCall(user, call)) throw new Error('NOT_FOUND');
   const scorecard = await findScorecardByCallId(call.id);
   return { call, scorecard: scorecard ?? null };
+}
+
+export async function getCallRecording(callId, user) {
+  const call = await findCallById(callId);
+  if (!canAccessCall(user, call)) throw new Error('NOT_FOUND');
+  const url = await getVapiRecordingUrl(call.vapiCallId);
+  return { url };
 }
 
 export async function triggerScoring(callId, user) {
