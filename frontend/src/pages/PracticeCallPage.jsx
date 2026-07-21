@@ -5,6 +5,7 @@ import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/ui/dialog';
+import { Skeleton } from '../components/ui/skeleton';
 import { AudioWaveform } from '../components/AudioWaveform';
 import { BookOpen, CheckCircle2, ChevronUp, Copy, FileText, Headphones, Loader2, Phone, Sparkles, Users } from 'lucide-react';
 
@@ -387,6 +388,35 @@ function ScenarioCard({ scenario, isLocked, isSelected, onSelect, onViewScript }
   );
 }
 
+function ScenarioListSkeleton() {
+  return (
+    <div className="space-y-2" role="status" aria-label="Loading scenarios">
+      {[0, 1, 2].map((item) => (
+        <div key={item} className="w-full rounded-xl border border-border/80 bg-secondary/10 p-3">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0 flex-1 space-y-2.5">
+              <div className="flex items-center gap-2">
+                <Skeleton className="h-4 w-32 rounded-md" />
+                <Skeleton className="h-5 w-24 rounded-full" />
+              </div>
+              <div className="space-y-1.5">
+                <Skeleton className="h-3 w-full rounded-md" />
+                <Skeleton className="h-3 w-3/4 rounded-md" />
+              </div>
+              <div className="flex gap-1.5">
+                <Skeleton className="h-5 w-16 rounded-full" />
+                <Skeleton className="h-5 w-24 rounded-full" />
+              </div>
+            </div>
+            <Skeleton className="h-8 w-16 shrink-0 rounded-lg" />
+          </div>
+        </div>
+      ))}
+      <span className="sr-only">Loading available scenarios</span>
+    </div>
+  );
+}
+
 export function PracticeCallPage() {
   const { data: scenarios, isLoading } = useScenarios();
   const [scriptScenario, setScriptScenario] = useState(null);
@@ -645,9 +675,7 @@ export function PracticeCallPage() {
             </p>
 
             {isLoading ? (
-              <div className="flex items-center justify-center py-12">
-                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-              </div>
+              <ScenarioListSkeleton />
             ) : !scenarios || scenarios.length === 0 ? (
               <div className="rounded-xl border border-dashed border-border py-12 text-center">
                 <BookOpen className="mx-auto mb-3 h-8 w-8 text-muted-foreground/30" />

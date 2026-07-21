@@ -135,16 +135,12 @@ export function TutorialProvider() {
       onNext={() => goTo(stepIndex + 1)}
       onSkip={() => close('skipped')}
       onFinish={() => close('completed')}
-      onDashboard={() => {
-        close('completed');
-        navigate('/dashboard');
-      }}
     />,
     document.body,
   );
 }
 
-function TutorialOverlay({ step, stepIndex, targetRect, onBack, onNext, onSkip, onFinish, onDashboard }) {
+function TutorialOverlay({ step, stepIndex, targetRect, onBack, onNext, onSkip, onFinish }) {
   const isLast = stepIndex === newUserTourSteps.length - 1;
   const cardStyle = getCardStyle(targetRect);
 
@@ -179,17 +175,24 @@ function TutorialOverlay({ step, stepIndex, targetRect, onBack, onNext, onSkip, 
         <div className="mt-5 h-1 overflow-hidden rounded-full bg-muted">
           <div className="h-full bg-primary transition-all" style={{ width: `${((stepIndex + 1) / newUserTourSteps.length) * 100}%` }} />
         </div>
-        <div className="mt-5 flex items-center justify-between gap-3">
-          <Button type="button" variant="ghost" onClick={isLast ? onDashboard : onSkip}>
-            {isLast ? 'Go to dashboard' : 'Skip tour'}
-          </Button>
-          <div className="flex gap-2">
-            {stepIndex > 0 && <Button type="button" variant="outline" onClick={onBack}><ChevronLeft />Back</Button>}
-            {isLast
-              ? <Button type="button" onClick={onFinish}>Start practicing</Button>
-              : <Button type="button" onClick={onNext}>Next<ChevronRight /></Button>}
+        {isLast ? (
+          <div className="mt-5 flex items-center justify-between gap-3">
+            <Button type="button" variant="ghost" onClick={onBack} className="px-2.5">
+              <ChevronLeft />Back
+            </Button>
+            <Button type="button" onClick={onFinish}>
+              Start practicing
+            </Button>
           </div>
-        </div>
+        ) : (
+          <div className="mt-5 flex items-center justify-between gap-3">
+            <Button type="button" variant="ghost" onClick={onSkip}>Skip tour</Button>
+            <div className="flex gap-2">
+              {stepIndex > 0 && <Button type="button" variant="outline" onClick={onBack}><ChevronLeft />Back</Button>}
+              <Button type="button" onClick={onNext}>Next<ChevronRight /></Button>
+            </div>
+          </div>
+        )}
       </section>
     </div>
   );
