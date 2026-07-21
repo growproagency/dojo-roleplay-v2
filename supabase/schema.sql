@@ -188,6 +188,25 @@ CREATE TABLE IF NOT EXISTS platform_settings (
   updated_at            TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS user_tutorial_progress (
+  id               BIGSERIAL PRIMARY KEY,
+  user_id          INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  tutorial_key     VARCHAR(100) NOT NULL,
+  tutorial_version INTEGER NOT NULL CHECK (tutorial_version > 0),
+  status           VARCHAR(20) NOT NULL DEFAULT 'in_progress'
+                     CHECK (status IN ('in_progress', 'skipped', 'completed')),
+  current_step     INTEGER NOT NULL DEFAULT 0 CHECK (current_step >= 0),
+  completed_at     TIMESTAMPTZ,
+  created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE (user_id, tutorial_key, tutorial_version)
+);
+
+DROP TRIGGER IF EXISTS set_user_tutorial_progress_updated_at ON user_tutorial_progress;
+CREATE TRIGGER set_user_tutorial_progress_updated_at
+  BEFORE UPDATE ON user_tutorial_progress
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
 CREATE TABLE IF NOT EXISTS system_events (
   id          SERIAL PRIMARY KEY,
   source      VARCHAR(50) NOT NULL,
@@ -368,6 +387,7 @@ WHERE slug = 'student_advancement';
 
 CREATE INDEX IF NOT EXISTS idx_users_school_id         ON users(school_id);
 CREATE INDEX IF NOT EXISTS idx_users_supabase_auth_id  ON users(supabase_auth_id);
+CREATE INDEX IF NOT EXISTS idx_user_tutorial_progress_user ON user_tutorial_progress(user_id);
 CREATE INDEX IF NOT EXISTS idx_calls_user_id           ON calls(user_id);
 CREATE INDEX IF NOT EXISTS idx_calls_school_id         ON calls(school_id);
 CREATE INDEX IF NOT EXISTS idx_calls_school_created    ON calls(school_id, created_at DESC);
@@ -433,6 +453,7 @@ CREATE OR REPLACE TRIGGER trg_platform_settings_updated
 -- ============================================================
 
 ALTER TABLE users             ENABLE ROW LEVEL SECURITY;
+ALTER TABLE user_tutorial_progress ENABLE ROW LEVEL SECURITY;
 ALTER TABLE schools           ENABLE ROW LEVEL SECURITY;
 ALTER TABLE calls             ENABLE ROW LEVEL SECURITY;
 ALTER TABLE scorecards        ENABLE ROW LEVEL SECURITY;

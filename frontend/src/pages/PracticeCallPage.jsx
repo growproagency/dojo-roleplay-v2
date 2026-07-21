@@ -523,7 +523,7 @@ export function PracticeCallPage() {
         </Card>
 
         <div className="grid gap-6 lg:grid-cols-[minmax(0,0.6fr)_minmax(360px,0.4fr)]">
-          <Card className="h-full overflow-hidden">
+          <Card className="h-full overflow-hidden" data-tour="start-call">
             <CardHeader className="pb-2">
               <CardTitle className="flex items-center justify-between gap-3 text-base">
                 <span className="flex items-center gap-2">
@@ -628,7 +628,7 @@ export function PracticeCallPage() {
             </CardContent>
           </Card>
 
-          <Card className="h-full">
+          <Card className="h-full" data-tour="scenario-list">
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center justify-between gap-3 text-base">
               <span className="flex items-center gap-2">
@@ -671,7 +671,7 @@ export function PracticeCallPage() {
         </Card>
         </div>
 
-        <Card>
+        <Card data-tour="difficulty">
           <CardHeader className="pb-3">
             <CardTitle className="text-base">Difficulty</CardTitle>
           </CardHeader>

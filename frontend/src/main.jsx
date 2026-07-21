@@ -11,6 +11,7 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import { CallWidget } from './components/CallWidget';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { TooltipProvider } from './components/ui/tooltip';
+import { TutorialProvider } from './features/tutorial/TutorialProvider';
 
 import { HomePage } from './pages/HomePage';
 import { LoginPage } from './pages/LoginPage';
@@ -85,6 +86,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
               </Routes>
 
               <CallWidget />
+              <TutorialProvider />
             </BrowserRouter>
 
             <Toaster richColors position="top-right" />

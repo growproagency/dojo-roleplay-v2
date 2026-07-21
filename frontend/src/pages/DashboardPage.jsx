@@ -328,6 +328,7 @@ export function DashboardPage() {
                 </p>
               </div>
               <Button
+                data-tour="start-practice"
                 size="lg"
                 onClick={startPractice}
                 disabled={!vapiConfig?.configured}
