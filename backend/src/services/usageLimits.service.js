@@ -2,27 +2,52 @@ import { getSchoolCallUsageSince } from '../db/calls.queries.js';
 import { findSchoolById } from '../db/schools.queries.js';
 import { getEffectivePlanDetails } from '../utils/plans.js';
 
-function currentUtcMonthStart() {
-  const now = new Date();
+function currentUtcMonthStart(now = new Date()) {
   return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
 }
 
-function addOneMonth(date) {
-  const next = new Date(date);
-  next.setUTCMonth(next.getUTCMonth() + 1);
-  return next;
+function addUtcMonths(date, months) {
+  const year = date.getUTCFullYear();
+  const month = date.getUTCMonth() + months;
+  const lastDay = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
+  return new Date(Date.UTC(
+    year,
+    month,
+    Math.min(date.getUTCDate(), lastDay),
+    date.getUTCHours(),
+    date.getUTCMinutes(),
+    date.getUTCSeconds(),
+    date.getUTCMilliseconds(),
+  ));
 }
 
-function getUsagePeriod(school) {
+export function getUsagePeriod(school, now = new Date()) {
   const explicitStart = school.usagePeriodStart ? new Date(school.usagePeriodStart) : null;
-  const start = explicitStart && !Number.isNaN(explicitStart.getTime())
-    ? explicitStart
-    : currentUtcMonthStart();
-  const explicitEnd = school.usagePeriodEnd ? new Date(school.usagePeriodEnd) : null;
-  const end = explicitEnd && !Number.isNaN(explicitEnd.getTime())
-    ? explicitEnd
-    : addOneMonth(start);
-  return { start, end, isManual: !!school.usagePeriodStart };
+  const hasManualStart = explicitStart && !Number.isNaN(explicitStart.getTime());
+
+  if (!hasManualStart) {
+    const start = currentUtcMonthStart(now);
+    return { start, end: addUtcMonths(start, 1), isManual: false };
+  }
+
+  let monthOffset = Math.max(
+    0,
+    ((now.getUTCFullYear() - explicitStart.getUTCFullYear()) * 12)
+      + now.getUTCMonth()
+      - explicitStart.getUTCMonth(),
+  );
+  let start = addUtcMonths(explicitStart, monthOffset);
+
+  if (start > now && monthOffset > 0) {
+    monthOffset -= 1;
+    start = addUtcMonths(explicitStart, monthOffset);
+  }
+
+  return {
+    start,
+    end: addUtcMonths(explicitStart, monthOffset + 1),
+    isManual: true,
+  };
 }
 
 export async function getSchoolMonthlyMinutesUsage(schoolId) {
