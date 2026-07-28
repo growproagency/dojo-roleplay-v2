@@ -19,13 +19,13 @@ export function replayTutorial() {
 }
 
 export function TutorialProvider() {
-  const { user, profile, isGlobalAdmin } = useAuth();
+  const { user, profile, isGlobalAdmin, recoveryMode } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [active, setActive] = useState(false);
   const [stepIndex, setStepIndex] = useState(0);
   const [targetRect, setTargetRect] = useState(null);
-  const eligible = Boolean(user && profile?.schoolId && !isGlobalAdmin);
+  const eligible = Boolean(user && profile?.schoolId && !isGlobalAdmin && !recoveryMode);
   const { data: progress, isSuccess } = useTutorialProgress(
     NEW_USER_TOUR_KEY,
     NEW_USER_TOUR_VERSION,

@@ -10,7 +10,13 @@ import { toast } from 'sonner';
 
 export function UpdatePasswordPage() {
   const navigate = useNavigate();
-  const { initialized, user, updatePassword } = useAuth();
+  const {
+    initialized,
+    user,
+    recoveryMode,
+    updatePassword,
+    cancelPasswordRecovery,
+  } = useAuth();
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -34,7 +40,17 @@ export function UpdatePasswordPage() {
     }
   };
 
-  const missingRecoverySession = initialized && !user;
+  const missingRecoverySession = initialized && (!user || !recoveryMode);
+
+  const handleCancel = async () => {
+    await cancelPasswordRecovery();
+    navigate('/login', { replace: true });
+  };
+
+  const handleRequestNewLink = async () => {
+    await cancelPasswordRecovery();
+    navigate('/reset-password', { replace: true });
+  };
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background">
@@ -49,8 +65,8 @@ export function UpdatePasswordPage() {
           {updated ? (
             <div className="flex flex-col items-center gap-4 py-4">
               <CheckCircle2 className="h-12 w-12 text-green-500" />
-              <Button className="w-full" onClick={() => navigate('/dashboard', { replace: true })}>
-                Continue to Dashboard
+              <Button className="w-full" onClick={() => navigate('/login', { replace: true })}>
+                Sign In
               </Button>
             </div>
           ) : missingRecoverySession ? (
@@ -58,7 +74,7 @@ export function UpdatePasswordPage() {
               <p className="text-sm text-muted-foreground">
                 This reset link is invalid or expired. Request a new password reset email.
               </p>
-              <Button className="w-full" onClick={() => navigate('/reset-password', { replace: true })}>
+              <Button className="w-full" onClick={handleRequestNewLink}>
                 Request New Link
               </Button>
             </div>
@@ -90,6 +106,9 @@ export function UpdatePasswordPage() {
               <Button type="submit" className="w-full" disabled={loading || !initialized}>
                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Update Password
+              </Button>
+              <Button type="button" variant="ghost" className="w-full" onClick={handleCancel}>
+                Cancel and Sign Out
               </Button>
             </form>
           )}

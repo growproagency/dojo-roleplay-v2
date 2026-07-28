@@ -47,6 +47,7 @@ export const ProtectedRoute = ({ redirectTo = '/login' }) => {
   const user        = useAuthStore((s) => s.user);
   const initialized = useAuthStore((s) => s.initialized);
   const profile     = useAuthStore((s) => s.profile);
+  const recoveryMode = useAuthStore((s) => s.recoveryMode);
 
   // Wait for auth state to be resolved before making a decision
   if (!initialized) {
@@ -56,6 +57,8 @@ export const ProtectedRoute = ({ redirectTo = '/login' }) => {
       </div>
     );
   }
+
+  if (recoveryMode) return <Navigate to="/update-password" replace />;
 
   // Not logged in → redirect to login
   if (!user) return <Navigate to={redirectTo} replace />;

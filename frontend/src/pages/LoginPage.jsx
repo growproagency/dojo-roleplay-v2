@@ -14,6 +14,7 @@ export function LoginPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const user = useAuthStore((s) => s.user);
+  const recoveryMode = useAuthStore((s) => s.recoveryMode);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isSignUp, setIsSignUp] = useState(false);
@@ -26,8 +27,9 @@ export function LoginPage() {
   const postLoginPath = pendingToken ? `/invite/${pendingToken}` : '/dashboard';
 
   useEffect(() => {
-    if (user) navigate(postLoginPath, { replace: true });
-  }, [user]);
+    if (recoveryMode) navigate('/update-password', { replace: true });
+    else if (user) navigate(postLoginPath, { replace: true });
+  }, [user, recoveryMode]);
 
   useEffect(() => {
     const storedEmail = sessionStorage.getItem('dojo:inviteEmail');
@@ -63,6 +65,7 @@ export function LoginPage() {
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email: normalizedEmail, password });
         if (error) throw error;
+        useAuthStore.getState().setRecoveryMode(false);
         queryClient.removeQueries({ queryKey: ['auth', 'me'] });
         navigate(postLoginPath, { replace: true });
       }

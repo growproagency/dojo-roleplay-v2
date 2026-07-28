@@ -10,7 +10,9 @@ export const useAuth = () => {
   const profile     = useAuthStore((s) => s.profile);
   const initialized = useAuthStore((s) => s.initialized);
   const profileLoading = useAuthStore((s) => s.profileLoading);
+  const recoveryMode = useAuthStore((s) => s.recoveryMode);
   const clear       = useAuthStore((s) => s.clear);
+  const setRecoveryMode = useAuthStore((s) => s.setRecoveryMode);
 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError]         = useState(null);
@@ -20,6 +22,7 @@ export const useAuth = () => {
     setError(null);
     const { error } = await supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password });
     if (error) setError(error.message);
+    else setRecoveryMode(false);
     setIsLoading(false);
     return !error;
   };
@@ -48,6 +51,13 @@ export const useAuth = () => {
   const updatePassword = async (password) => {
     const { error } = await supabase.auth.updateUser({ password });
     if (error) throw error;
+    await supabase.auth.signOut();
+    clear();
+  };
+
+  const cancelPasswordRecovery = async () => {
+    await supabase.auth.signOut();
+    clear();
   };
 
   return {
@@ -56,6 +66,7 @@ export const useAuth = () => {
     profile,
     initialized,
     profileLoading,
+    recoveryMode,
     isLoading,
     error,
     signIn,
@@ -63,6 +74,7 @@ export const useAuth = () => {
     signOut,
     resetPassword,
     updatePassword,
+    cancelPasswordRecovery,
     isLoggedIn: !!user,
     role: profile?.role ?? null,
     isGlobalAdmin: profile?.role === 'global_admin' || profile?.role === 'admin',

@@ -10,6 +10,7 @@ import { AuthProvider } from './context/AuthProvider';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { CallWidget } from './components/CallWidget';
 import { ProtectedRoute } from './components/ProtectedRoute';
+import { PasswordRecoveryGuard } from './components/PasswordRecoveryGuard';
 import { TooltipProvider } from './components/ui/tooltip';
 import { TutorialProvider } from './features/tutorial/TutorialProvider';
 
@@ -55,6 +56,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <TooltipProvider>
             <BrowserRouter>
               <Routes>
+                <Route element={<PasswordRecoveryGuard />}>
                 <Route path="/" element={<HomePage />} />
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/reset-password" element={<ResetPasswordPage />} />
@@ -83,6 +85,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
                 </Route>
 
                 <Route path="*" element={<NotFoundPage />} />
+                </Route>
               </Routes>
 
               <CallWidget />
