@@ -20,7 +20,6 @@ import {
   Sparkles,
   Trash2,
   UserRound,
-  Wand2,
 } from 'lucide-react';
 import DashboardLayout from '../components/DashboardLayout';
 import { ScenarioBuilderGuide } from '../features/guides/ScenarioBuilderGuide';
@@ -29,7 +28,6 @@ import { Badge } from '../components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
-import { Progress } from '../components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Textarea } from '../components/ui/textarea';
 import { useAdminSchools } from '../hooks/useAdmin';
@@ -516,84 +514,6 @@ function LineListEditor({ values, onChange, placeholder, canRemove = false, minR
   );
 }
 
-function PreviewPanel({ form }) {
-  const prompt = useMemo(() => buildPrompt(form), [form]);
-  const completion = [
-    form.title,
-    form.goal,
-    form.characterName,
-    form.characterRole,
-    form.openingLine,
-    compactList(form.staffPractice).length ? 'practice' : '',
-    compactList(form.objections).length ? 'objections' : '',
-  ].filter((value) => String(value || '').trim()).length;
-
-  return (
-    <aside className="space-y-4">
-      <Card className="rounded-lg">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Bot className="h-4 w-4 text-primary" />
-            AI blueprint
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-            <div>
-              <div className="mb-2 flex items-center justify-between text-xs text-muted-foreground">
-                <span>Build progress</span>
-                <span>{Math.round((completion / 7) * 100)}%</span>
-              </div>
-            <Progress value={(completion / 7) * 100} />
-          </div>
-          <div className="rounded-lg border border-border bg-secondary/30 p-3">
-            <p className="text-sm font-medium">{form.title || 'Untitled AI roleplay'}</p>
-            <p className="mt-1 text-xs text-muted-foreground">{form.characterName || 'Caller'} will start with:</p>
-            <p className="mt-2 text-sm">"{form.openingLine || 'Opening line appears here.'}"</p>
-          </div>
-          <div className="grid grid-cols-3 gap-2 text-center text-xs">
-            <div className="rounded-lg bg-secondary/40 p-2">
-              <p className="font-semibold">Easy</p>
-              <p className="mt-1 text-muted-foreground">1 concern</p>
-            </div>
-            <div className="rounded-lg bg-secondary/40 p-2">
-              <p className="font-semibold">Medium</p>
-              <p className="mt-1 text-muted-foreground">2 concerns</p>
-            </div>
-            <div className="rounded-lg bg-secondary/40 p-2">
-              <p className="font-semibold">Hard</p>
-              <p className="mt-1 text-muted-foreground">2 blockers</p>
-            </div>
-          </div>
-          <div className="rounded-lg border border-border bg-secondary/30 p-3">
-            <div className="flex items-center justify-between gap-3">
-              <p className="text-sm font-medium">Scorecard</p>
-              <Badge variant="secondary" className="rounded-md">
-                Auto
-              </Badge>
-            </div>
-            <p className="mt-2 text-xs text-muted-foreground">
-              Generated automatically from the staff practice moves.
-            </p>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card className="rounded-lg">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Wand2 className="h-4 w-4 text-primary" />
-            Generated prompt
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <pre className="max-h-[420px] overflow-auto whitespace-pre-wrap rounded-lg bg-secondary/40 p-3 text-xs leading-5 text-muted-foreground">
-            {prompt}
-          </pre>
-        </CardContent>
-      </Card>
-    </aside>
-  );
-}
 
 function AiBuildPanel({ form, step }) {
   const prompt = useMemo(() => buildPrompt(form), [form]);
@@ -607,7 +527,7 @@ function AiBuildPanel({ form, step }) {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <BrainCircuit className="h-4 w-4 text-primary" />
-            AI build v3
+            AI build
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -695,13 +615,12 @@ function AiBuildPanel({ form, step }) {
   );
 }
 
-export function CustomScenariosV2Page({ variant = 'v3' }) {
+export function CustomScenariosV2Page() {
   const navigate = useNavigate();
   const { isGlobalAdmin, profile } = useAuth();
   const createScenario = useCreateCustomScenario();
   const { data: schools } = useAdminSchools(isGlobalAdmin);
   const customScenariosEnabled = isGlobalAdmin || canUseCustomScenarios(profile?.school);
-  const isV3 = variant === 'v3';
   const [step, setStep] = useState(0);
   const [form, setForm] = useState(DEFAULT_FORM);
   const [errors, setErrors] = useState({});
@@ -861,7 +780,7 @@ export function CustomScenariosV2Page({ variant = 'v3' }) {
 
   if (!customScenariosEnabled) {
     return (
-      <DashboardLayout title={isV3 ? 'Scenario Builder v3' : 'Scenario Builder'}>
+      <DashboardLayout title="Scenario Builder">
         <Card className="rounded-lg">
           <CardContent className="py-10 text-center">
             <p className="text-lg font-semibold">Custom scenarios are not enabled for this school.</p>
@@ -873,13 +792,13 @@ export function CustomScenariosV2Page({ variant = 'v3' }) {
   }
 
   return (
-    <DashboardLayout title={isV3 ? 'Scenario Builder v3' : 'Scenario Builder'}>
+    <DashboardLayout title="Scenario Builder">
       <div className="space-y-6 text-foreground">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <Badge className="mb-3 gap-1 rounded-md">
               <Sparkles className="h-3.5 w-3.5" />
-              Custom Scenarios v3
+              Custom Scenarios
             </Badge>
             <h1 className="text-3xl font-bold tracking-tight text-foreground">
               Assemble your AI roleplay
@@ -1166,7 +1085,7 @@ export function CustomScenariosV2Page({ variant = 'v3' }) {
             </CardContent>
           </Card>
 
-          {isV3 ? <AiBuildPanel form={form} step={step} /> : <PreviewPanel form={form} />}
+          <AiBuildPanel form={form} step={step} />
         </div>
       </div>
     </DashboardLayout>
