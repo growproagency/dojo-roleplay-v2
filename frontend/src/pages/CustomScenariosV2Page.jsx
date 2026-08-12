@@ -23,6 +23,7 @@ import {
   Wand2,
 } from 'lucide-react';
 import DashboardLayout from '../components/DashboardLayout';
+import { ScenarioBuilderGuide } from '../features/guides/ScenarioBuilderGuide';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
@@ -887,10 +888,13 @@ export function CustomScenariosV2Page({ variant = 'v3' }) {
               Fill out the same simple brief: scenario, caller, what staff should practice, objections, and voice.
             </p>
           </div>
-          <Button variant="outline" onClick={() => navigate('/admin/scenarios')} className="gap-2 text-foreground">
-            Existing scenarios
-            <ArrowRight className="h-4 w-4" />
-          </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            <ScenarioBuilderGuide enabled={customScenariosEnabled} />
+            <Button variant="outline" onClick={() => navigate('/admin/scenarios')} className="gap-2 text-foreground">
+              Existing scenarios
+              <ArrowRight className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
 
         <StepRail step={step} onStepSelect={goToStep} />
