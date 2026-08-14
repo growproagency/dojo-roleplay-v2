@@ -32,3 +32,27 @@ export const validateBody = (schema) => (req, res, next) => {
   req.body = value; // replace with sanitised, coerced value
   next();
 };
+
+export const validateQuery = (schema) => (req, res, next) => {
+  const { error, value } = schema.validate(req.query, {
+    abortEarly: false,
+    stripUnknown: true,
+    convert: true,
+  });
+
+  if (error) {
+    return res.status(400).json({
+      error: {
+        code: 'VALIDATION',
+        message: 'Validation failed',
+        details: error.details.map((detail) => ({
+          field: detail.path.join('.'),
+          message: detail.message.replace(/['"]/g, ''),
+        })),
+      },
+    });
+  }
+
+  req.query = value;
+  next();
+};

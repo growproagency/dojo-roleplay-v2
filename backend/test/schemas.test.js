@@ -3,6 +3,7 @@ import test from 'node:test';
 import { acceptInviteSchema, updateProfileSchema } from '../src/schemas/auth.schema.js';
 import { unassignUserSchema, updatePlatformSchema, updateSchoolAdminSchema } from '../src/schemas/admin.schema.js';
 import { vapiWebhookSchema } from '../src/schemas/vapi.schema.js';
+import { tutorialProgressQuerySchema, tutorialProgressSchema } from '../src/schemas/tutorial.schema.js';
 
 test('acceptInviteSchema lowercases email and strips unknown fields', () => {
   const { error, value } = acceptInviteSchema.validate({
@@ -69,4 +70,21 @@ test('vapiWebhookSchema keeps the provider payload under message', () => {
   assert.equal(error, undefined);
   assert.equal(value.ignored, undefined);
   assert.equal(value.message.call.id, 'call_123');
+});
+
+test('tutorialProgressSchema accepts progress and strips user ownership fields', () => {
+  const { error, value } = tutorialProgressSchema.validate({
+    tutorialVersion: 1,
+    status: 'in_progress',
+    currentStep: 3,
+    userId: 999,
+  });
+
+  assert.equal(error, undefined);
+  assert.deepEqual(value, { tutorialVersion: 1, status: 'in_progress', currentStep: 3 });
+});
+
+test('tutorialProgressQuerySchema requires a positive version', () => {
+  assert.equal(tutorialProgressQuerySchema.validate({ version: '1' }).value.version, 1);
+  assert.ok(tutorialProgressQuerySchema.validate({ version: 0 }).error);
 });

@@ -8,6 +8,7 @@ export const AuthProvider = ({ children }) => {
   const setProfile     = useAuthStore((s) => s.setProfile);
   const setProfileLoading = useAuthStore((s) => s.setProfileLoading);
   const setInitialized = useAuthStore((s) => s.setInitialized);
+  const setRecoveryMode = useAuthStore((s) => s.setRecoveryMode);
 
   const fetchProfile = async () => {
     setProfileLoading(true);
@@ -24,14 +25,20 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
-      if (session) fetchProfile().finally(() => setInitialized());
+      if (session && !useAuthStore.getState().recoveryMode) {
+        fetchProfile().finally(() => setInitialized());
+      }
       else setInitialized();
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
+      (event, session) => {
+        if (event === 'PASSWORD_RECOVERY') setRecoveryMode(true);
+        if (event === 'SIGNED_OUT') setRecoveryMode(false);
         setSession(session);
-        if (session) fetchProfile().finally(() => setInitialized());
+        if (session && !useAuthStore.getState().recoveryMode) {
+          fetchProfile().finally(() => setInitialized());
+        }
         else {
           setProfile(null);
           setProfileLoading(false);

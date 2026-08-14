@@ -10,7 +10,9 @@ import { AuthProvider } from './context/AuthProvider';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { CallWidget } from './components/CallWidget';
 import { ProtectedRoute } from './components/ProtectedRoute';
+import { PasswordRecoveryGuard } from './components/PasswordRecoveryGuard';
 import { TooltipProvider } from './components/ui/tooltip';
+import { TutorialProvider } from './features/tutorial/TutorialProvider';
 
 import { HomePage } from './pages/HomePage';
 import { LoginPage } from './pages/LoginPage';
@@ -54,6 +56,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <TooltipProvider>
             <BrowserRouter>
               <Routes>
+                <Route element={<PasswordRecoveryGuard />}>
                 <Route path="/" element={<HomePage />} />
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/reset-password" element={<ResetPasswordPage />} />
@@ -74,17 +77,18 @@ ReactDOM.createRoot(document.getElementById('root')).render(
                   <Route path="/admin/schools/:id" element={<AdminSchoolDetailPage />} />
                   <Route path="/admin/usage" element={<UsagePage />} />
                   <Route path="/admin/system-events" element={<SystemEventsPage />} />
-                  <Route path="/admin/scenario-builder" element={<CustomScenariosV2Page variant="v3" />} />
-                  <Route path="/admin/scenario-builder-v3" element={<CustomScenariosV2Page variant="v3" />} />
+                  <Route path="/admin/scenario-builder" element={<CustomScenariosV2Page />} />
                   <Route path="/admin/scenarios" element={<CustomScenariosPage />} />
                   <Route path="/admin/platform-settings" element={<PlatformSettingsPage />} />
                   <Route path="/components" element={<ComponentShowcasePage />} />
                 </Route>
 
                 <Route path="*" element={<NotFoundPage />} />
+                </Route>
               </Routes>
 
               <CallWidget />
+              <TutorialProvider />
             </BrowserRouter>
 
             <Toaster richColors position="top-right" />

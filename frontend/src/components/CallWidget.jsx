@@ -62,7 +62,7 @@ const findScenarioValue = (value, depth = 0) => {
 
 export function CallWidget() {
   const navigate = useNavigate();
-  const { user, isGlobalAdmin, profile } = useAuth();
+  const { user, isGlobalAdmin, profile, recoveryMode } = useAuth();
   const [open, setOpen] = useState(false);
   const [webCallActive, setWebCallActive] = useState(false);
   const [webCallConnecting, setWebCallConnecting] = useState(false);
@@ -72,10 +72,14 @@ export function CallWidget() {
   const getSessionToken = useVapiSessionToken();
   const getScenarioAssistant = useVapiScenarioAssistant();
 
-  const { data: vapiConfig } = useVapiConfig(!!user);
+  const { data: vapiConfig } = useVapiConfig(!!user && !recoveryMode);
 
   const schoolAccessAllowed = profile?.school?.accessStatus?.allowed !== false;
-  const shouldShow = user && schoolAccessAllowed && (profile?.schoolId || isGlobalAdmin) && vapiConfig?.configured;
+  const shouldShow = !recoveryMode
+    && user
+    && schoolAccessAllowed
+    && (profile?.schoolId || isGlobalAdmin)
+    && vapiConfig?.configured;
 
   useEffect(() => {
     if (webCallActive) {

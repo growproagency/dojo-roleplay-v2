@@ -37,7 +37,9 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   Sun,
+  GraduationCap,
 } from 'lucide-react';
+import { replayTutorial } from '../features/tutorial/TutorialProvider';
 
 const menuItems = [
   { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
@@ -80,6 +82,7 @@ function NavItems({ onNavigate, collapsed }) {
 
         const btn = (
           <button
+            data-tour={item.path === '/calls' ? 'call-history-nav' : undefined}
             onClick={() => { navigate(item.path); onNavigate?.(); }}
             className={`w-full flex items-center gap-3 px-3 h-9 rounded-lg text-sm transition-colors ${
               collapsed ? 'justify-center' : ''
@@ -185,6 +188,13 @@ function UserFooter({ onNavigate, collapsed }) {
           >
             <User className="mr-2 h-4 w-4" />
             Account
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onClick={() => { replayTutorial(); onNavigate?.(); }}
+            className="cursor-pointer"
+          >
+            <GraduationCap className="mr-2 h-4 w-4" />
+            Replay tutorial
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={signOut} className="cursor-pointer text-destructive focus:text-destructive">
