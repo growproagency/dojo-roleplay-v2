@@ -4,6 +4,7 @@ import { acceptInviteSchema, updateProfileSchema } from '../src/schemas/auth.sch
 import { unassignUserSchema, updatePlatformSchema, updateSchoolAdminSchema } from '../src/schemas/admin.schema.js';
 import { vapiWebhookSchema } from '../src/schemas/vapi.schema.js';
 import { tutorialProgressQuerySchema, tutorialProgressSchema } from '../src/schemas/tutorial.schema.js';
+import { startCallSchema } from '../src/schemas/calls.schema.js';
 
 test('acceptInviteSchema lowercases email and strips unknown fields', () => {
   const { error, value } = acceptInviteSchema.validate({
@@ -87,4 +88,30 @@ test('tutorialProgressSchema accepts progress and strips user ownership fields',
 test('tutorialProgressQuerySchema requires a positive version', () => {
   assert.equal(tutorialProgressQuerySchema.validate({ version: '1' }).value.version, 1);
   assert.ok(tutorialProgressQuerySchema.validate({ version: 0 }).error);
+});
+
+test('startCallSchema strips caller-supplied ownership fields', () => {
+  const { error, value } = startCallSchema.validate({
+    vapiCallId: '01a00091-35dd-7aaf-bd66-b9ed0e903f5e',
+    scenario: 'new_student',
+    difficulty: 'medium',
+    userId: 999,
+    schoolId: 42,
+  });
+
+  assert.equal(error, undefined);
+  assert.deepEqual(value, {
+    vapiCallId: '01a00091-35dd-7aaf-bd66-b9ed0e903f5e',
+    scenario: 'new_student',
+    difficulty: 'medium',
+  });
+});
+
+test('startCallSchema requires a vapi call id and a known difficulty', () => {
+  assert.ok(startCallSchema.validate({ scenario: 'new_student', difficulty: 'medium' }).error);
+  assert.ok(startCallSchema.validate({
+    vapiCallId: 'call_123',
+    scenario: 'new_student',
+    difficulty: 'impossible',
+  }).error);
 });

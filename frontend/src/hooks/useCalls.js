@@ -38,6 +38,14 @@ export function useCallRecording(id, enabled = true) {
   });
 }
 
+export function useStartCall() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body) => callsApi.start(body),
+    onSuccess: () => qc.invalidateQueries({ queryKey: callKeys.all }),
+  });
+}
+
 export function useScoreCall() {
   const qc = useQueryClient();
   return useMutation({

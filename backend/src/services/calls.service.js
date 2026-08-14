@@ -1,4 +1,4 @@
-import { findCallsByUser, findCallsBySchool, findCallsBySchoolAndUser, findCallById, updateCall } from '../db/calls.queries.js';
+import { findCallsByUser, findCallsBySchool, findCallsBySchoolAndUser, findCallById, findCallByVapiId, insertCall, updateCall } from '../db/calls.queries.js';
 import { findScorecardByCallId, insertScorecard } from '../db/scorecards.queries.js';
 import { findCustomScenarioBySlug } from '../db/scenarios.queries.js';
 import { findSchoolById } from '../db/schools.queries.js';
@@ -39,6 +39,27 @@ export async function listCalls({ user, schoolId, scope = 'school', userId = nul
   }
 
   return findCallsByUser(user.id);
+}
+
+// Called by the browser the moment Vapi hands back a call id, so the row exists
+// before any webhook arrives. Vapi webhooks can then resolve the tenant from this
+// row instead of from metadata that may not survive the round trip.
+export async function startCall({ user, vapiCallId, scenario, difficulty }) {
+  const existing = await findCallByVapiId(vapiCallId);
+  if (existing) {
+    if (existing.userId !== user.id) throw new Error('FORBIDDEN');
+    return { id: existing.id };
+  }
+
+  const id = await insertCall({
+    userId: user.id,
+    schoolId: user.schoolId ?? null,
+    scenario,
+    difficulty,
+    vapiCallId,
+    status: 'in_progress',
+  });
+  return { id };
 }
 
 export async function getCall(callId, user) {
