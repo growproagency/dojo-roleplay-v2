@@ -2,6 +2,7 @@ import { useCallback, useRef, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useVapiConfig, useVapiScenarioAssistant, useVapiSessionToken } from '../hooks/useVapi';
+import { useStartCall } from '../hooks/useCalls';
 import { Button } from './ui/button';
 import { Phone, X, Loader2, Monitor } from 'lucide-react';
 import { toast } from 'sonner';
@@ -9,6 +10,13 @@ import Vapi from '@vapi-ai/web';
 
 const emitCallState = (status) => {
   window.dispatchEvent(new CustomEvent('dojo:call-state', { detail: { status } }));
+};
+
+const DIFFICULTIES = ['easy', 'medium', 'hard'];
+
+const normalizeDifficulty = (value) => {
+  const lowered = String(value || '').toLowerCase();
+  return DIFFICULTIES.includes(lowered) ? lowered : 'medium';
 };
 
 const emitCallScenario = (scenario) => {
@@ -71,6 +79,7 @@ export function CallWidget() {
   const timerRef = useRef(null);
   const getSessionToken = useVapiSessionToken();
   const getScenarioAssistant = useVapiScenarioAssistant();
+  const { mutateAsync: registerCall } = useStartCall();
 
   const { data: vapiConfig } = useVapiConfig(!!user && !recoveryMode);
 
@@ -184,7 +193,28 @@ export function CallWidget() {
           selectedDifficulty,
         },
       };
-      await vapi.start(selectedAssistant || vapiConfig.assistantId, overrides);
+      const startedCall = await vapi.start(selectedAssistant || vapiConfig.assistantId, overrides);
+
+      // Create the call row now, while we still have an authenticated session.
+      // Webhooks can then resolve the tenant from this row rather than from
+      // metadata, which is not always echoed back to us.
+      const vapiCallId = startedCall?.id ?? null;
+      if (vapiCallId) {
+        try {
+          await registerCall({
+            vapiCallId,
+            scenario: selectedScenario || 'new_student',
+            difficulty: normalizeDifficulty(selectedDifficulty),
+          });
+        } catch (err) {
+          if (import.meta.env.DEV) {
+            console.error('[Vapi call register failed]', err);
+          }
+          toast.warning('This call may not appear in your history.');
+        }
+      } else if (import.meta.env.DEV) {
+        console.warn('[Vapi] start() returned no call id; falling back to webhook mapping');
+      }
     } catch (err) {
       if (import.meta.env.DEV) {
         console.error('[Vapi start failed]', err);
@@ -193,7 +223,7 @@ export function CallWidget() {
       emitCallState('idle');
       toast.error('Failed to start web call: ' + getVapiErrorMessage(err));
     }
-  }, [getScenarioAssistant, getSessionToken, vapiConfig]);
+  }, [getScenarioAssistant, getSessionToken, registerCall, vapiConfig]);
 
   const endWebCall = useCallback(() => {
     if (vapiRef.current) {

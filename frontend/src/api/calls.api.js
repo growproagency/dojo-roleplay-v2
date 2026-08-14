@@ -12,6 +12,7 @@ export const callsApi = {
     const qs = new URLSearchParams(params).toString();
     return apiClient.get(`/api/calls${qs ? `?${qs}` : ''}`, { headers: viewingHeaders() });
   },
+  start:       (body)        => apiClient.post('/api/calls/start', body),
   get:         (id)          => apiClient.get(`/api/calls/${id}`, { headers: viewingHeaders() }),
   recording:   (id)          => apiClient.get(`/api/calls/${id}/recording`, { headers: viewingHeaders() }),
   score:       (id)          => apiClient.post(`/api/calls/${id}/score`, {}, { headers: viewingHeaders() }),

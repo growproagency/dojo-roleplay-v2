@@ -1,6 +1,6 @@
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { effectiveSchoolId } from '../middleware/auth.middleware.js';
-import { listCalls, getCall, getCallRecording, triggerScoring } from '../services/calls.service.js';
+import { listCalls, getCall, getCallRecording, startCall, triggerScoring } from '../services/calls.service.js';
 
 export const listCallsHandler = asyncHandler(async (req, res) => {
   const data = await listCalls({
@@ -10,6 +10,16 @@ export const listCallsHandler = asyncHandler(async (req, res) => {
     userId: req.query.userId ? parseInt(req.query.userId, 10) : null,
   });
   res.json({ data });
+});
+
+export const startCallHandler = asyncHandler(async (req, res) => {
+  const data = await startCall({
+    user: req.user,
+    vapiCallId: req.body.vapiCallId,
+    scenario: req.body.scenario,
+    difficulty: req.body.difficulty,
+  });
+  res.status(201).json({ data });
 });
 
 export const getCallHandler = asyncHandler(async (req, res) => {
