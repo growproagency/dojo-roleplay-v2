@@ -4,6 +4,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useUIStore } from '../store/ui.store';
 import { MaintenanceBanner } from './MaintenanceBanner';
 import { SupportDialog } from './SupportDialog';
+import { SupportAnnouncement } from './SupportAnnouncement';
 import { canUseCustomScenarios, getEffectivePlanDetails } from '../utils/plans';
 import { Button } from './ui/button';
 import { Avatar, AvatarFallback } from './ui/avatar';
@@ -351,6 +352,7 @@ export default function DashboardLayout({ children, title }) {
           {children}
         </main>
       </div>
+      <SupportAnnouncement userId={user.id} onOpenSupport={() => setSupportOpen(true)} />
       <SupportDialog open={supportOpen} onOpenChange={setSupportOpen} />
     </div>
   );

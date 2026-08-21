@@ -11,6 +11,15 @@ import { useCreateSupportRequest, useSupportRequests } from '../hooks/useSupport
 
 const initialForm = { category: 'practice_call', subject: '', message: '' };
 
+function getSubmissionError(error) {
+  const detail = error?.details?.[0];
+  if (detail?.field === 'subject') return 'Subject must be at least 3 characters.';
+  if (detail?.field === 'message') return 'Details must be at least 10 characters.';
+  if (detail?.message) return detail.message;
+  if (error?.status === 404) return 'Support is not available on the server yet. Please try again after the backend is updated.';
+  return error?.message || 'We could not send your request. Please try again.';
+}
+
 export function SupportDialog({ open, onOpenChange }) {
   const [form, setForm] = useState(initialForm);
   const [reference, setReference] = useState('');
@@ -58,10 +67,10 @@ export function SupportDialog({ open, onOpenChange }) {
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2"><Label htmlFor="support-subject">Subject</Label><Input id="support-subject" maxLength={120} onChange={(e) => update('subject', e.target.value)} placeholder="A short description" required value={form.subject} /></div>
+            <div className="space-y-2"><Label htmlFor="support-subject">Subject</Label><Input id="support-subject" maxLength={120} minLength={3} onChange={(e) => update('subject', e.target.value)} placeholder="A short description (at least 3 characters)" required value={form.subject} /></div>
             <div className="space-y-2"><Label htmlFor="support-message">Details</Label><Textarea id="support-message" className="min-h-32" maxLength={4000} minLength={10} onChange={(e) => update('message', e.target.value)} placeholder="What were you doing? What went wrong?" required value={form.message} /></div>
             <Button className="w-full gap-2" disabled={createRequest.isPending} type="submit">{createRequest.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}{createRequest.isPending ? 'Sending request' : 'Send to support'}</Button>
-            {createRequest.isError && <p className="text-sm text-destructive">{createRequest.error.message}</p>}
+            {createRequest.isError && <p className="text-sm text-destructive" role="alert">{getSubmissionError(createRequest.error)}</p>}
             {reference && <div className="flex items-center gap-2 rounded-xl bg-emerald-500/10 p-3 text-sm text-emerald-700 dark:text-emerald-400"><CheckCircle2 className="h-4 w-4" />Request received. Reference #{reference}</div>}
           </form>
           <aside className="border-t pt-5 md:border-l md:border-t-0 md:pl-6 md:pt-0">
