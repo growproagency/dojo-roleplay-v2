@@ -37,6 +37,7 @@ import { UsagePage } from './pages/UsagePage';
 import { SchoolAnalyticsPage } from './pages/SchoolAnalyticsPage';
 import { ComponentShowcasePage } from './pages/ComponentShowcasePage';
 import { SystemEventsPage } from './pages/SystemEventsPage';
+import { SupportInboxPage } from './pages/SupportInboxPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -77,6 +78,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
                   <Route path="/admin/schools/:id" element={<AdminSchoolDetailPage />} />
                   <Route path="/admin/usage" element={<UsagePage />} />
                   <Route path="/admin/system-events" element={<SystemEventsPage />} />
+                  <Route path="/admin/support" element={<SupportInboxPage />} />
                   <Route path="/admin/scenario-builder" element={<CustomScenariosV2Page />} />
                   <Route path="/admin/scenarios" element={<CustomScenariosPage />} />
                   <Route path="/admin/platform-settings" element={<PlatformSettingsPage />} />

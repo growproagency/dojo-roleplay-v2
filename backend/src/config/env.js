@@ -34,4 +34,5 @@ export const config = {
   vapiWebhookUrl:    process.env.VAPI_WEBHOOK_URL || '',
   frontendUrl:        process.env.FRONTEND_URL || (process.env.ALLOWED_ORIGINS || 'http://localhost:5173').split(',')[0],
   automationWebhookSecret: process.env.AUTOMATION_WEBHOOK_SECRET || '',
+  slackSupportWebhookUrl: process.env.SLACK_SUPPORT_WEBHOOK_URL || '',
 };
