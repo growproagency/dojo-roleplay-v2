@@ -28,4 +28,6 @@ export const adminApi = {
   },
   getSystemEvent:         (id)            => apiClient.get(`/api/admin/system-events/${id}`),
   resolveSystemEvent:     (id)            => apiClient.patch(`/api/admin/system-events/${id}/resolve`, {}),
+  listSupportRequests:    (status)        => apiClient.get(`/api/admin/support-requests${status ? `?status=${encodeURIComponent(status)}` : ''}`),
+  updateSupportRequest:   (id, status)    => apiClient.patch(`/api/admin/support-requests/${id}`, { status }),
 };

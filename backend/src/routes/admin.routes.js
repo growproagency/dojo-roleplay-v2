@@ -12,8 +12,10 @@ import {
   changeUserRoleHandler, unassignUserHandler, deleteUserHandler,
   getSchoolInvitesHandler, createSchoolInviteHandler, readdSchoolUserHandler, revokeSchoolInviteHandler,
   listSystemEventsHandler, getSystemEventHandler, resolveSystemEventHandler,
+  listSupportRequestsHandler, updateSupportRequestHandler,
 } from '../controllers/admin.controller.js';
 import { createSchoolSchema, updateSchoolAdminSchema, updatePlatformSchema, changeRoleSchema, unassignUserSchema, adminCreateInviteSchema, readdSchoolUserSchema, platformAdminInviteSchema, passwordResetLinkSchema } from '../schemas/admin.schema.js';
+import { updateSupportRequestSchema } from '../schemas/supportRequests.schema.js';
 
 const router = Router();
 
@@ -47,5 +49,7 @@ router.put('/platform-settings', validateBody(updatePlatformSchema), updatePlatf
 router.get('/system-events', listSystemEventsHandler);
 router.get('/system-events/:eventId', getSystemEventHandler);
 router.patch('/system-events/:eventId/resolve', resolveSystemEventHandler);
+router.get('/support-requests', listSupportRequestsHandler);
+router.patch('/support-requests/:requestId', validateBody(updateSupportRequestSchema), updateSupportRequestHandler);
 
 export default router;

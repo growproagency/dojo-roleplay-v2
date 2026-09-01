@@ -23,6 +23,7 @@ import vapiConfigRoutes from './routes/vapiConfig.routes.js';
 import systemRoutes from './routes/system.routes.js';
 import automationRoutes from './routes/automation.routes.js';
 import tutorialRoutes from './routes/tutorial.routes.js';
+import supportRequestsRoutes from './routes/supportRequests.routes.js';
 
 const app = express();
 app.set('trust proxy', 1);
@@ -82,6 +83,7 @@ app.use('/api/school', schoolRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/vapi-config', vapiConfigRoutes);
 app.use('/api/tutorials', tutorialRoutes);
+app.use('/api/support-requests', supportRequestsRoutes);
 
 app.use((_req, res) => {
   res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Route not found' } });

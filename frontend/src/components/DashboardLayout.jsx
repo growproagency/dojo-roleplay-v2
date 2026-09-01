@@ -3,6 +3,8 @@ import { Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useUIStore } from '../store/ui.store';
 import { MaintenanceBanner } from './MaintenanceBanner';
+import { SupportDialog } from './SupportDialog';
+import { SupportAnnouncement } from './SupportAnnouncement';
 import { canUseCustomScenarios, getEffectivePlanDetails } from '../utils/plans';
 import { Button } from './ui/button';
 import { Avatar, AvatarFallback } from './ui/avatar';
@@ -38,6 +40,7 @@ import {
   PanelLeftOpen,
   Sun,
   GraduationCap,
+  Headphones,
 } from 'lucide-react';
 import { replayTutorial } from '../features/tutorial/TutorialProvider';
 
@@ -51,6 +54,7 @@ const menuItems = [
   { icon: School, label: 'All Schools', path: '/admin/schools', requires: 'globalAdmin' },
   { icon: BarChart3, label: 'Usage', path: '/admin/usage', requires: 'globalAdmin' },
   { icon: AlertTriangle, label: 'System Events', path: '/admin/system-events', requires: 'globalAdmin' },
+  { icon: Headphones, label: 'Support Inbox', path: '/admin/support', requires: 'globalAdmin' },
   { icon: Blocks, label: 'Scenario Builder', path: '/admin/scenario-builder', requires: 'schoolAdmin' },
   { icon: Drama, label: 'Scenarios', path: '/admin/scenarios', requires: 'schoolAdmin' },
   { icon: Settings2, label: 'Platform Settings', path: '/admin/platform-settings', requires: 'globalAdmin' },
@@ -236,6 +240,7 @@ export default function DashboardLayout({ children, title }) {
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [supportOpen, setSupportOpen] = useState(false);
   const [darkMode, setDarkMode] = useState(() => {
     if (typeof window === 'undefined') return false;
     return localStorage.getItem('dojo:theme') === 'dark';
@@ -305,6 +310,11 @@ export default function DashboardLayout({ children, title }) {
           <div className="mx-4 h-5 w-px bg-border" />
           <h1 className="truncate text-sm font-semibold text-foreground">{headerTitle}</h1>
           <div className="ml-auto flex items-center gap-2 text-muted-foreground">
+            <Button variant="ghost" size="sm" className="gap-2" onClick={() => setSupportOpen(true)}>
+              <Headphones className="h-4 w-4" />
+              Support
+            </Button>
+            <div className="mx-1 h-5 w-px bg-border" />
             <Sun className="h-4 w-4" />
             <Switch
               aria-label="Toggle dark mode"
@@ -328,13 +338,11 @@ export default function DashboardLayout({ children, title }) {
             </SheetContent>
           </Sheet>
           <span className="text-sm font-medium">{headerTitle}</span>
-          <div className="flex w-20 items-center justify-end gap-1.5 text-muted-foreground">
-            <Sun className="h-3.5 w-3.5" />
-            <Switch
-              aria-label="Toggle dark mode"
-              checked={darkMode}
-              onCheckedChange={setDarkMode}
-            />
+          <div className="flex w-20 items-center justify-end gap-1 text-muted-foreground">
+            <Button variant="ghost" size="icon-sm" aria-label="Open support" onClick={() => setSupportOpen(true)}>
+              <Headphones className="h-4 w-4" />
+            </Button>
+            <Switch aria-label="Toggle dark mode" checked={darkMode} onCheckedChange={setDarkMode} />
           </div>
         </header>
 
@@ -344,6 +352,8 @@ export default function DashboardLayout({ children, title }) {
           {children}
         </main>
       </div>
+      <SupportAnnouncement userId={user.id} onOpenSupport={() => setSupportOpen(true)} />
+      <SupportDialog open={supportOpen} onOpenChange={setSupportOpen} />
     </div>
   );
 }
