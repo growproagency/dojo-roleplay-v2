@@ -35,6 +35,7 @@ import { CustomScenariosV2Page } from './pages/CustomScenariosV2Page';
 import { PlatformSettingsPage } from './pages/PlatformSettingsPage';
 import { UsagePage } from './pages/UsagePage';
 import { SchoolAnalyticsPage } from './pages/SchoolAnalyticsPage';
+import { MonthlyReportsPage } from './pages/MonthlyReportsPage';
 import { ComponentShowcasePage } from './pages/ComponentShowcasePage';
 import { SystemEventsPage } from './pages/SystemEventsPage';
 import { SupportInboxPage } from './pages/SupportInboxPage';
@@ -74,6 +75,8 @@ ReactDOM.createRoot(document.getElementById('root')).render(
                   <Route path="/members" element={<MembersPage />} />
                   <Route path="/settings" element={<SettingsPage />} />
                   <Route path="/analytics" element={<SchoolAnalyticsPage />} />
+                  <Route path="/analytics/monthly-reports" element={<MonthlyReportsPage />} />
+                  <Route path="/analytics/monthly-reports/:userId" element={<MonthlyReportsPage />} />
                   <Route path="/admin/schools" element={<AdminSchoolsPage />} />
                   <Route path="/admin/schools/:id" element={<AdminSchoolDetailPage />} />
                   <Route path="/admin/usage" element={<UsagePage />} />

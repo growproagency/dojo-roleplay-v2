@@ -4,183 +4,126 @@ import { useLeaderboard } from '../hooks/useLeaderboard';
 import { useScenarios } from '../hooks/useScenarios';
 import { useAdminSchools } from '../hooks/useAdmin';
 import DashboardLayout from '../components/DashboardLayout';
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
+import { Card, CardContent } from '../components/ui/card';
+import { Button } from '../components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
-import { Trophy, Phone, TrendingUp, Star, Loader2, Medal, Filter } from 'lucide-react';
+import { Trophy, Loader2, Flame } from 'lucide-react';
 
-function ScoreBadge({ score }) {
-  if (score === null) return <span className="text-muted-foreground text-sm">—</span>;
-  const color = score >= 80 ? 'text-green-400' : score >= 60 ? 'text-yellow-400' : score >= 40 ? 'text-orange-400' : 'text-red-400';
-  return <span className={`text-lg font-bold ${color}`}>{score}</span>;
+function Identity({ entry }) {
+  return <div className="min-w-0">
+    <p className="font-medium truncate">{entry.userName || entry.userEmail || 'Unknown'}</p>
+    {entry.userName && <p className="text-xs text-muted-foreground truncate">{entry.userEmail}</p>}
+    {entry.hardModeParticipant && <span className="inline-flex items-center gap-1 text-xs text-orange-400"><Flame className="h-3 w-3" />Hard-mode participant</span>}
+  </div>;
 }
 
-function RankIcon({ rank }) {
-  if (rank === 1) return <Trophy className="w-5 h-5 text-yellow-400" />;
-  if (rank === 2) return <Medal className="w-5 h-5 text-slate-400" />;
-  if (rank === 3) return <Medal className="w-5 h-5 text-amber-600" />;
-  return <span className="w-5 h-5 flex items-center justify-center text-sm font-bold text-muted-foreground">#{rank}</span>;
-}
-
-function formatDate(date) {
-  if (!date) return '—';
-  return new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-}
-
-function StaffIdentity({ entry, align = 'left', size = 'sm' }) {
-  const name = entry.userName?.trim();
-  const email = entry.userEmail?.trim();
-  const primary = name || email || 'Unknown';
-  const secondary = name && email ? email : null;
-  return (
-    <div className={`min-w-0 ${align === 'center' ? 'text-center' : 'text-left'}`}>
-      <p className={`${size === 'lg' ? 'font-semibold text-base' : 'font-medium text-sm'} truncate`}>{primary}</p>
-      {secondary && <p className="text-xs text-muted-foreground truncate">{secondary}</p>}
-    </div>
-  );
+function FilterSelect({ label, value, onChange, options }) {
+  return <div className="space-y-1">
+    <span className="text-xs text-muted-foreground">{label}</span>
+    <Select value={value} onValueChange={onChange}>
+      <SelectTrigger aria-label={label} className="w-full"><SelectValue /></SelectTrigger>
+      <SelectContent>{options.map(([id, title]) => <SelectItem key={id} value={id}>{title}</SelectItem>)}</SelectContent>
+    </Select>
+  </div>;
 }
 
 export function LeaderboardPage() {
   const { isGlobalAdmin } = useAuth();
-  const [range, setRange] = useState('all');
+  const [range, setRange] = useState('30d');
   const [scenario, setScenario] = useState('all');
+  const [difficulty, setDifficulty] = useState('all');
   const [schoolFilter, setSchoolFilter] = useState('all');
-
+  const [page, setPage] = useState(1);
   const { data: scenarios } = useScenarios();
   const { data: schools } = useAdminSchools();
-
-  const filters = {
-    ...(range !== 'all' && { range }),
+  const { data: result, isLoading, isError, error, refetch } = useLeaderboard({
+    range, page, limit: 25,
     ...(scenario !== 'all' && { scenario }),
+    ...(difficulty !== 'all' && { difficulty }),
     ...(isGlobalAdmin && schoolFilter !== 'all' && { schoolId: schoolFilter }),
-  };
+  });
+  const change = setter => value => { setter(value); setPage(1); };
+  const entries = result?.data ?? [];
+  const meta = result?.meta;
+  const minimum = meta?.minimumScoredCalls ?? 5;
+  const me = result?.currentUser;
+  const showSchool = isGlobalAdmin && schoolFilter === 'all';
+  const schoolNames = new Map((schools ?? []).map(s => [s.id, s.name]));
 
-  const { data, isLoading } = useLeaderboard(filters);
-  const schoolNameById = new Map((schools ?? []).map((s) => [s.id, s.name]));
-  const showSchoolColumn = isGlobalAdmin && schoolFilter === 'all';
-
-  return (
-    <DashboardLayout title="Staff Leaderboard">
-      <div className="max-w-4xl mx-auto space-y-6 py-2">
-        <p className="text-muted-foreground text-sm">Rankings based on average scorecard score across all completed calls.</p>
-
-        {isLoading ? (
-          <div className="flex items-center justify-center min-h-[40vh]">
-            <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
-          </div>
-        ) : (
-          <>
-            {data && data.length >= 1 && (
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                {data.slice(0, 3).map((entry) => (
-                  <Card key={entry.userId} className={`text-center py-6 ${
-                    entry.rank === 1 ? 'border-yellow-500/30 bg-yellow-500/5' :
-                    entry.rank === 2 ? 'border-slate-400/30' : 'border-amber-600/30'
-                  }`}>
-                    <CardContent className="pt-0 space-y-2">
-                      <div className="flex justify-center"><RankIcon rank={entry.rank} /></div>
-                      <StaffIdentity entry={entry} align="center" size="lg" />
-                      {showSchoolColumn && (
-                        <p className="text-xs text-muted-foreground truncate">{schoolNameById.get(entry.schoolId) ?? '—'}</p>
-                      )}
-                      <div className="flex justify-center"><ScoreBadge score={entry.avgScore} /></div>
-                      <p className="text-xs text-muted-foreground">avg score</p>
-                      <div className="flex justify-center gap-3 text-xs text-muted-foreground pt-1">
-                        <span className="flex items-center gap-1"><Phone className="w-3 h-3" />{entry.totalCalls} calls</span>
-                        {entry.bestScore !== null && (
-                          <span className="flex items-center gap-1"><Star className="w-3 h-3" />{entry.bestScore} best</span>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            )}
-
-            <Card>
-              <CardHeader className="py-3">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <TrendingUp className="w-4 h-4 text-primary" />All Rankings
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-0">
-                <div className="px-4 py-2 border-b border-border flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground shrink-0">
-                    <Filter className="w-4 h-4" /><span>Filter:</span>
-                  </div>
-                  <Select value={range} onValueChange={setRange}>
-                    <SelectTrigger className="w-full sm:w-36"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All time</SelectItem>
-                      <SelectItem value="7d">Last 7 days</SelectItem>
-                      <SelectItem value="30d">Last 30 days</SelectItem>
-                      <SelectItem value="90d">Last 90 days</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Select value={scenario} onValueChange={setScenario}>
-                    <SelectTrigger className="w-full sm:w-52"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All scenarios</SelectItem>
-                      {(scenarios ?? []).map((s) => (
-                        <SelectItem key={s.id} value={s.id}>{s.title}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {isGlobalAdmin && (
-                    <Select value={schoolFilter} onValueChange={setSchoolFilter}>
-                      <SelectTrigger className="w-full sm:w-52"><SelectValue placeholder="All schools" /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All schools</SelectItem>
-                        {(schools ?? []).map((s) => (
-                          <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
-                </div>
-
-                {!data || data.length === 0 ? (
-                  <div className="py-16 text-center">
-                    <Trophy className="w-12 h-12 text-muted-foreground/20 mx-auto mb-4" />
-                    <p className="text-muted-foreground font-medium">No calls scored yet.</p>
-                    <p className="text-sm text-muted-foreground/70 mt-1">Complete and score a call to appear on the leaderboard.</p>
-                  </div>
-                ) : (
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
-                      <thead>
-                        <tr className="border-b border-border">
-                          <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wide">Rank</th>
-                          <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wide">Staff Member</th>
-                          {showSchoolColumn && <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wide">School</th>}
-                          <th className="text-right px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wide">Avg Score</th>
-                          <th className="text-right px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wide">Best</th>
-                          <th className="text-right px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wide">Calls</th>
-                          <th className="text-right px-4 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wide">Last Call</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {data.map((entry) => (
-                          <tr key={entry.userId} className="border-b border-border/50 hover:bg-secondary/30 transition-colors">
-                            <td className="px-4 py-3"><div className="flex items-center"><RankIcon rank={entry.rank} /></div></td>
-                            <td className="px-4 py-3"><StaffIdentity entry={entry} /></td>
-                            {showSchoolColumn && <td className="px-4 py-3 text-sm text-muted-foreground">{schoolNameById.get(entry.schoolId) ?? '—'}</td>}
-                            <td className="px-4 py-3 text-right"><ScoreBadge score={entry.avgScore} /></td>
-                            <td className="px-4 py-3 text-right">
-                              {entry.bestScore !== null ? <span className="text-sm font-medium">{entry.bestScore}</span> : <span className="text-muted-foreground">—</span>}
-                            </td>
-                            <td className="px-4 py-3 text-right text-muted-foreground">{entry.totalCalls}</td>
-                            <td className="px-4 py-3 text-right text-muted-foreground text-xs">{formatDate(entry.lastCallAt)}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </>
-        )}
+  return <DashboardLayout title="Staff Leaderboard">
+    <div className="max-w-6xl mx-auto space-y-6 py-2">
+      <div>
+        <h2 className="text-xl font-semibold">Take on the challenge</h2>
+        <p className="text-sm text-muted-foreground mt-1">Ranked by average difficulty-adjusted points. Easy ×1.00 · Medium ×1.15 · Hard ×1.30.</p>
+        <p className="text-sm text-muted-foreground">Hard calls earn 30% more points. Scorecard percentages stay the same. Complete {minimum} scored calls within the selected filters to qualify.</p>
       </div>
-    </DashboardLayout>
-  );
+
+      <div className={`grid gap-3 sm:grid-cols-2 ${isGlobalAdmin ? 'lg:grid-cols-4' : 'lg:grid-cols-3'}`}>
+        <FilterSelect label="Period" value={range} onChange={change(setRange)} options={[
+          ['30d', 'Last 30 days'], ['7d', 'Last 7 days'], ['90d', 'Last 90 days'], ['all', 'All time'],
+        ]} />
+        <FilterSelect label="Scenario" value={scenario} onChange={change(setScenario)} options={[
+          ['all', 'All scenarios'], ...(scenarios ?? []).map(s => [s.id, s.title]),
+        ]} />
+        <FilterSelect label="Difficulty" value={difficulty} onChange={change(setDifficulty)} options={[
+          ['all', 'All difficulties'], ['easy', 'Easy'], ['medium', 'Medium'], ['hard', 'Hard'],
+        ]} />
+        {isGlobalAdmin && <FilterSelect label="School" value={schoolFilter} onChange={change(setSchoolFilter)} options={[
+          ['all', 'All schools'], ...(schools ?? []).map(s => [String(s.id), s.name]),
+        ]} />}
+      </div>
+
+      {isLoading ? <div className="flex justify-center py-20"><Loader2 className="h-8 w-8 animate-spin" aria-label="Loading leaderboard" /></div>
+        : isError ? <Card><CardContent className="pt-6 space-y-3" role="alert"><p>{error.message || 'Unable to load rankings.'}</p><Button onClick={() => refetch()}>Try again</Button></CardContent></Card>
+          : <>
+            <Card><CardContent className="pt-6 flex flex-wrap items-center justify-between gap-4">
+              <div><p className="font-semibold">Your progress</p>
+                <p className="text-sm text-muted-foreground">{me?.qualified ? `Rank #${me.rank} · ${me.scoredCalls} scored calls`
+                  : `Qualifying — ${me?.scoredCalls ?? 0}/${minimum} scored calls`}</p>
+                {!me?.qualified && <p className="text-xs text-muted-foreground">Complete {Math.max(0, minimum - (me?.scoredCalls ?? 0))} more scored calls to enter the rankings.</p>}
+              </div>
+              <div className="text-right"><p className="text-2xl font-bold">{me?.avgPoints != null ? `${me.avgPoints.toFixed(1)} pts` : 'No points yet'}</p>
+                {me && <p className="text-sm text-muted-foreground">{me.avgScore.toFixed(1)}% average score</p>}</div>
+            </CardContent></Card>
+
+            {page === 1 && entries.some(e => e.qualified) && <div className="grid sm:grid-cols-3 gap-4">
+              {entries.filter(e => e.qualified).slice(0, 3).map(entry => <Card key={entry.userId} className={entry.rank === 1 ? 'border-yellow-500/40 bg-yellow-500/5' : ''}>
+                <CardContent className="pt-6 space-y-2">
+                  <div className="flex items-center gap-2 text-primary"><Trophy className="h-5 w-5" />#{entry.rank}</div>
+                  <Identity entry={entry} />
+                  <p className="text-3xl font-bold">{entry.avgPoints.toFixed(1)} <span className="text-sm font-normal text-muted-foreground">pts</span></p>
+                  <p className="text-xs text-muted-foreground">{entry.avgScore.toFixed(1)}% avg score · {entry.scoredCalls} scored calls</p>
+                </CardContent>
+              </Card>)}
+            </div>}
+
+            <Card><CardContent className="p-0">
+              {entries.length === 0 ? <p className="p-12 text-center text-muted-foreground">No scored calls match these filters. Complete and score a call to start qualifying.</p>
+                : <div className="overflow-x-auto"><table className="w-full text-sm">
+                  <thead><tr className="border-b border-border text-muted-foreground">
+                    {['Rank', 'Staff member', ...(showSchool ? ['School'] : []), 'Avg points', 'Avg score', 'Easy / Medium / Hard', 'Scored calls'].map(label => <th key={label} className="text-left p-4 whitespace-nowrap font-medium">{label}</th>)}
+                  </tr></thead>
+                  <tbody>{entries.map(entry => <tr key={entry.userId} className="border-b border-border/50 hover:bg-secondary/30">
+                    <td className="p-4 whitespace-nowrap">{entry.qualified ? `#${entry.rank}` : <span className="text-muted-foreground">Qualifying {entry.scoredCalls}/{minimum}</span>}</td>
+                    <td className="p-4"><Identity entry={entry} /></td>
+                    {showSchool && <td className="p-4">{schoolNames.get(entry.schoolId) ?? '—'}</td>}
+                    <td className="p-4 font-bold whitespace-nowrap">{entry.avgPoints.toFixed(1)} pts</td>
+                    <td className="p-4">{entry.avgScore.toFixed(1)}%</td>
+                    <td className="p-4 whitespace-nowrap">
+                      {entry.difficultyCounts.easy} / {entry.difficultyCounts.medium} / {entry.difficultyCounts.hard}
+                      {entry.difficultyCounts.legacy > 0 && <span className="block text-xs text-muted-foreground">{entry.difficultyCounts.legacy} legacy (×1.00)</span>}
+                    </td>
+                    <td className="p-4">{entry.scoredCalls}</td>
+                  </tr>)}</tbody>
+                </table></div>}
+              {meta?.totalPages > 1 && <div className="flex items-center justify-between gap-2 p-4">
+                <Button variant="outline" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>Previous</Button>
+                <span className="text-sm text-muted-foreground">Page {page} of {meta.totalPages}</span>
+                <Button variant="outline" disabled={page >= meta.totalPages} onClick={() => setPage(p => p + 1)}>Next</Button>
+              </div>}
+            </CardContent></Card>
+            <p className="text-xs text-muted-foreground">Points are averaged across all eligible scored calls within these filters. Equal points share a rank. Legacy calls without a recognized difficulty receive ×1.00.</p>
+          </>}
+    </div>
+  </DashboardLayout>;
 }

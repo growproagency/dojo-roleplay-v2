@@ -56,3 +56,10 @@ export const validateQuery = (schema) => (req, res, next) => {
   req.query = value;
   next();
 };
+
+export const validateParams = (schema) => (req, res, next) => {
+  const { error, value } = schema.validate(req.params, { abortEarly: false, stripUnknown: true, convert: true });
+  if (error) return res.status(400).json({ error: { code: 'VALIDATION', message: 'Invalid route parameters', status: 400 } });
+  req.params = value;
+  next();
+};

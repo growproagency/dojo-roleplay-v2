@@ -49,6 +49,7 @@ const menuItems = [
   { icon: Bot, label: 'Practice Call', path: '/practice' },
   { icon: Phone, label: 'Call History', path: '/calls' },
   { icon: LineChart, label: 'Analytics', path: '/analytics', requires: 'schoolAdmin' },
+  { icon: BarChart3, label: 'Monthly Reports', path: '/analytics/monthly-reports', requires: 'schoolAdmin' },
   { icon: Users, label: 'Members', path: '/members', requires: 'schoolAdmin' },
   { icon: Settings, label: 'School Settings', path: '/settings', requires: 'schoolAdmin' },
   { icon: School, label: 'All Schools', path: '/admin/schools', requires: 'globalAdmin' },

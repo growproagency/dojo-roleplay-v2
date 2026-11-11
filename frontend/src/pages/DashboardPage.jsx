@@ -136,8 +136,8 @@ function FocusCard() {
   );
 }
 
-function TopPerformersCard({ leaderboard, isLoading }) {
-  const performers = leaderboard ?? [];
+function TopPerformersCard({ leaderboard, isLoading, isError }) {
+  const performers = (leaderboard?.data ?? []).filter(entry => entry.qualified);
 
   return (
     <Card className="h-full">
@@ -155,19 +155,21 @@ function TopPerformersCard({ leaderboard, isLoading }) {
           <div className="flex items-center justify-center py-12">
             <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
           </div>
+        ) : isError ? (
+          <p className="py-10 text-sm text-muted-foreground" role="alert">Unable to load leaderboard points. Please refresh to try again.</p>
         ) : performers.length === 0 ? (
           <div className="py-10 text-center">
             <Trophy className="mx-auto mb-3 h-9 w-9 text-muted-foreground/25" />
-            <p className="text-sm text-muted-foreground">No scored calls yet.</p>
+            <p className="text-sm text-muted-foreground">No qualified leaders yet. Complete 5 scored calls in 30 days to qualify.</p>
           </div>
         ) : (
           <div className="space-y-0.5">
             {performers.slice(0, DASHBOARD_LEADERBOARD_LIMIT).map((entry) => {
               const primary = entry.userName?.trim() || entry.userEmail || 'Unknown';
-              const secondary = entry.userName?.trim() && entry.userEmail ? entry.userEmail : `${entry.totalCalls} calls`;
+              const secondary = entry.userName?.trim() && entry.userEmail ? entry.userEmail : `${entry.scoredCalls} scored calls`;
               const displaySecondary = entry.userName?.trim() && entry.userEmail
                 ? truncateText(entry.userEmail, 24)
-                : secondary;
+                : `${entry.scoredCalls} scored calls`;
               return (
                 <div key={entry.userId} className="flex items-center gap-3 rounded-lg px-2.5 py-2 hover:bg-secondary/50">
                   <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-secondary text-muted-foreground">
@@ -178,11 +180,11 @@ function TopPerformersCard({ leaderboard, isLoading }) {
                     <p className="truncate text-xs text-muted-foreground" title={secondary}>{displaySecondary}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-lg font-semibold leading-none text-foreground">{scoreText(entry.avgScore)}</p>
+                    <p className="text-lg font-semibold leading-none text-foreground">{entry.avgPoints.toFixed(1)} pts</p>
                     {entry.bestScore !== null && (
                       <p className="mt-1 flex items-center justify-end gap-1 text-[10px] text-muted-foreground">
                         <Star className="h-3 w-3" />
-                        {scoreText(entry.bestScore)}
+                        {scoreText(entry.avgScore)} avg score
                       </p>
                     )}
                   </div>
@@ -274,7 +276,7 @@ export function DashboardPage() {
   const { user, profile, isSchoolAdmin } = useAuth();
   const { data: calls, isLoading } = useCalls({ scope: 'mine' });
   const { data: schoolCalls } = useCalls({ scope: 'school' });
-  const { data: leaderboard, isLoading: leaderboardLoading } = useLeaderboard({ range: '30d' });
+  const { data: leaderboard, isLoading: leaderboardLoading, isError: leaderboardError } = useLeaderboard({ range: '30d' });
   const { data: schoolDetail } = useSchool(!!user);
   const { data: vapiConfig } = useVapiConfig(!!user);
 
@@ -339,7 +341,7 @@ export function DashboardPage() {
               </Button>
             </CardContent>
           </Card>
-          <TopPerformersCard leaderboard={leaderboard} isLoading={leaderboardLoading} />
+          <TopPerformersCard leaderboard={leaderboard} isLoading={leaderboardLoading} isError={leaderboardError} />
         </div>
 
         <DashboardCharts calls={calls ?? []} />

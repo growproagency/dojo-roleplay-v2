@@ -1,4 +1,5 @@
 import DashboardLayout from '../components/DashboardLayout';
+import { Link } from 'react-router-dom';
 import { DashboardCharts } from '../components/DashboardCharts';
 import { useCalls } from '../hooks/useCalls';
 import { useSchoolMembers } from '../hooks/useSchool';
@@ -57,7 +58,10 @@ export function SchoolAnalyticsPage() {
   return (
     <DashboardLayout title="School Analytics">
       <div className="mx-auto max-w-6xl space-y-6 py-2">
-        <p className="text-muted-foreground">Analyze team training activity, scores, and practice time.</p>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <p className="text-muted-foreground">Analyze team training activity, scores, and practice time.</p>
+          <Link className="text-sm font-medium text-primary" to="/analytics/monthly-reports">View Monthly Report Cards →</Link>
+        </div>
 
         <div className="grid gap-4 md:grid-cols-4">
           <StatCard icon={Phone} label="School calls" value={calls.length} />
