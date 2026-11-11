@@ -1,6 +1,7 @@
 import { useNavigate, useParams } from 'react-router-dom';
 import { useCall, useCallRecording, useScoreCall } from '../hooks/useCalls';
 import DashboardLayout from '../components/DashboardLayout';
+import DownloadTranscriptButton from '../components/DownloadTranscriptButton';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
@@ -133,7 +134,8 @@ export function ScorecardDetailPage() {
               <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5" />{formatDuration(call.durationSeconds)}</span>
             </div>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
+            <DownloadTranscriptButton call={call} />
             {call.status === 'completed' && !scorecard && (
               <Button
                 onClick={() => scoreCall.mutate(call.id, { onSuccess: () => { toast.success('Scoring started!'); refetch(); }, onError: (e) => toast.error(e.message) })}

@@ -76,7 +76,7 @@ If the difficulty is unclear or does not match one of those meanings, ask them t
     server: { url: config.vapiWebhookUrl, timeoutSeconds: 20 },
     serverMessages: ['end-of-call-report', 'status-update', 'handoff-destination-request'],
     silenceTimeoutSeconds: 60,
-    maxDurationSeconds: 600,
+    maxDurationSeconds: 1200,
   };
 }
 

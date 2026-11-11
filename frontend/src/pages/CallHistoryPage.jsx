@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useCalls } from '../hooks/useCalls';
 import { useSchoolMembers } from '../hooks/useSchool';
 import DashboardLayout from '../components/DashboardLayout';
+import DownloadTranscriptButton from '../components/DownloadTranscriptButton';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
@@ -97,11 +98,14 @@ export function CallHistoryPage() {
             ) : (
               <div className="divide-y divide-border">
                 {calls.map((call) => (
-                  <button
+                  <div
                     key={call.id}
-                    onClick={() => navigate(`/calls/${call.id}`)}
-                    className="w-full flex items-center justify-between py-4 px-2 hover:bg-secondary/30 transition-colors text-left group rounded-lg"
+                    className="group flex items-center gap-1 sm:gap-3 px-2 hover:bg-secondary/30 transition-colors"
                   >
+                    <Link
+                      to={`/calls/${call.id}`}
+                      className="min-w-0 flex-1 flex items-center justify-between gap-3 py-4 text-left rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    >
                     <div className="flex items-center gap-4 min-w-0">
                       <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
                         <Phone className="w-4 h-4 text-primary" />
@@ -142,9 +146,19 @@ export function CallHistoryPage() {
                           {{ in_progress: 'In Progress', completed: 'Not scored', scoring: 'Scoring…', failed: 'Failed' }[call.status] ?? call.status}
                         </span>
                       )}
-                      <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors" />
                     </div>
-                  </button>
+                    </Link>
+                    <div className="shrink-0 border-l border-border pl-1 sm:pl-3">
+                      <DownloadTranscriptButton call={call} compact />
+                    </div>
+                    <Link
+                      to={`/calls/${call.id}`}
+                      aria-label={`View ${labelScenario(call.scenario)} call details`}
+                      className="flex h-8 w-6 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </Link>
+                  </div>
                 ))}
               </div>
             )}
