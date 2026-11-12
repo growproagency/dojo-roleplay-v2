@@ -1,0 +1,115 @@
+// Scripted demo calls for the V3 lab. Each step can also move the in-call
+// widgets, standing in for the signals the AI would send during a real call:
+//   stage: index into `stages`      reveal: discovery tile id
+//   warmth: delta (-100..100)       objection: label to raise
+//   resolve: true                   emote: { who, id }
+// A step with who: 'cue' shows a coaching cue instead of a spoken line.
+
+export const DEMO_SCRIPTS = [
+  {
+    id: 'renewal',
+    liveScenario: 'renewal_conference',
+    title: 'Renewal Conference',
+    context: 'in_person',
+    caller: {
+      name: 'Pat',
+      blurb: 'Parent of Tyler, 10 months in',
+      look: { skin: '#f2c79b', hair: '#8a5a2b', hairStyle: 'bob', top: '#4c8bd9', topDark: '#3a6fb3', bottom: '#3a4a6b' },
+    },
+    stages: ['Open', 'The 3 questions', 'Highlight progress', 'Renewal ask'],
+    tiles: [
+      { id: 'enjoy', label: 'How it is going', value: 'Tyler is really enjoying it' },
+      { id: 'home', label: 'Change at home', value: 'More focused, less arguing' },
+      { id: 'blocker', label: 'Hesitation', value: 'Unsure about another full year' },
+      { id: 'decider', label: 'Who else decides', value: "Wants to check with Tyler's dad" },
+    ],
+    steps: [
+      { who: 'staff', stage: 0, text: 'Pat, thanks for sitting down with me. This is just a quick progress check on Tyler.' },
+      { who: 'caller', reveal: 'enjoy', warmth: 5, text: "Yeah, Tyler's been really enjoying it. I'm glad we tried it." },
+      { who: 'staff', stage: 1, text: "That's great to hear. What have you noticed at home since he started?" },
+      { who: 'caller', reveal: 'home', warmth: 10, text: "Honestly, he's more focused. A lot less arguing at bedtime." },
+      { who: 'staff', stage: 2, text: "I've seen it too. Last week he helped a new student tie his belt without being asked." },
+      { who: 'caller', warmth: 10, text: "Oh, I didn't know that. That's really nice to hear." },
+      { who: 'staff', text: 'Can you see him earning his next belt if we stay consistent?' },
+      { who: 'caller', reveal: 'blocker', objection: 'Commitment length', emote: { who: 'caller', id: 'alert' }, text: "I can. I'm just not sure about committing to another full year." },
+      { who: 'staff', text: 'That makes sense. What part of the year feels uncertain for you?' },
+      { who: 'caller', reveal: 'decider', text: "Mostly I'd want to run it by his dad first." },
+      { who: 'staff', stage: 3, text: 'Of course. If you renew this month, his current rate stays locked in. Would you like to keep Tyler going?' },
+      { who: 'cue', text: 'Hold the silence', hold: 2600 },
+      { who: 'caller', resolve: true, warmth: 15, text: 'Yeah, I think we would. Let me confirm with his dad tonight.' },
+      { who: 'staff', text: "Perfect. I'll call you tomorrow at four to wrap it up." },
+      { who: 'caller', text: 'Sounds good. Thanks.' },
+    ],
+  },
+  {
+    id: 'inbound',
+    liveScenario: 'new_student',
+    title: 'Inbound Lead - Adult Inquiry',
+    context: 'inbound_call',
+    caller: {
+      name: 'Jordan',
+      blurb: 'Adult prospect who found you online',
+      look: { skin: '#e9b98a', hair: '#2b2b2b', hairStyle: 'short', top: '#e0703a', topDark: '#b9562a', bottom: '#4a4f5c' },
+    },
+    stages: ['Greeting', 'Discovery', 'Offer', 'Book the visit'],
+    tiles: [
+      { id: 'source', label: 'Lead source', value: 'Found you on Google' },
+      { id: 'why', label: 'Why they called', value: 'Get in shape, learn self-defense' },
+      { id: 'tried', label: 'Tried before', value: 'Gym membership, quit 6 months ago' },
+      { id: 'blocker', label: 'Real worry', value: 'Afraid of not sticking with it' },
+    ],
+    steps: [
+      { who: 'staff', stage: 0, text: 'Thanks for calling, this is Sam at the dojo. Who am I speaking with?' },
+      { who: 'caller', text: "Hey, it's Jordan. I was calling to get some info about your adult classes?" },
+      { who: 'staff', text: 'Happy to help, Jordan. How did you hear about us?' },
+      { who: 'caller', reveal: 'source', text: 'Just a Google search, honestly.' },
+      { who: 'staff', stage: 1, text: 'Great. What are you hoping to get out of training?' },
+      { who: 'caller', reveal: 'why', warmth: 8, text: 'I want to get in shape, and maybe learn some self-defense.' },
+      { who: 'staff', text: 'Have you tried anything for that before?' },
+      { who: 'caller', reveal: 'tried', text: 'I had a gym membership, but I stopped going about six months ago.' },
+      { who: 'staff', stage: 2, text: "That's really common. Our classes are coached, so you're never figuring it out alone. We have a free trial class this week." },
+      { who: 'caller', reveal: 'blocker', objection: 'Commitment worry', emote: { who: 'caller', id: 'alert' }, text: "I mean, I'm worried I'll sign up and stop showing up again." },
+      { who: 'staff', stage: 3, text: "That's fair. That's why we start with one class and a coach who checks in on you. Would Tuesday or Thursday at six work better?" },
+      { who: 'cue', text: 'Hold the silence', hold: 2400 },
+      { who: 'caller', resolve: true, warmth: 12, text: 'Thursday could work.' },
+      { who: 'staff', text: 'Great. Can I get your email and best phone number?' },
+      { who: 'caller', warmth: 5, text: "Sure, it's jordan dot smith at example dot com." },
+    ],
+  },
+  {
+    id: 'outbound',
+    liveScenario: 'web_lead_callback',
+    title: 'Outbound Lead Callback - Adult',
+    context: 'outbound_callback',
+    caller: {
+      name: 'Alex',
+      blurb: 'Submitted a web form two days ago',
+      look: { skin: '#f2c79b', hair: '#c9a14a', hairStyle: 'spiky', top: '#5aa56b', topDark: '#428352', bottom: '#3d4a5c' },
+    },
+    stages: ['Introduction', 'Discovery', 'Offer', 'Book the visit'],
+    tiles: [
+      { id: 'blocker', label: 'Real worry', value: 'Comparing a few schools' },
+      { id: 'why', label: 'Why they enquired', value: 'Friend loves jiu-jitsu, desk job' },
+      { id: 'current', label: 'Current efforts', value: 'Lunch walks, YouTube workouts' },
+      { id: 'schedule', label: 'Constraint', value: 'Work runs late some days' },
+    ],
+    steps: [
+      { who: 'caller', text: 'Hello?' },
+      { who: 'staff', stage: 0, text: 'Hi Alex, this is Sam from the dojo. You filled out a form on our website a couple of days ago.' },
+      { who: 'caller', text: 'Oh yeah, I did fill something out.' },
+      // Deliberately long and pushy, to show the monologue nudge and the warmth drop.
+      { who: 'staff', text: "So we have a huge range of programs, and our instructors are amazing, and we've won a lot of awards, and the membership includes unlimited classes, and honestly you should just come in and sign up today because spots are filling up fast." },
+      { who: 'caller', reveal: 'blocker', warmth: -18, objection: 'Comparison shopping', text: "Uh, I'm actually looking at a couple of schools right now." },
+      { who: 'staff', stage: 1, text: "That's smart, and sorry for jumping ahead. What made you want to try martial arts?" },
+      { who: 'caller', reveal: 'why', warmth: 12, text: 'My buddy does jiu-jitsu and loves it. I sit at a desk all day.' },
+      { who: 'staff', text: 'What are you doing right now to stay active?' },
+      { who: 'caller', reveal: 'current', text: 'Walks at lunch, some YouTube workouts. Nothing sticks.' },
+      { who: 'staff', stage: 2, text: 'A lot of our adults started exactly there. Want to try a free intro class so you can compare us properly?' },
+      { who: 'caller', reveal: 'schedule', text: 'Maybe. Work runs late some days though.' },
+      { who: 'staff', stage: 3, text: 'We have a 7:15 class for that reason. Would Wednesday or Thursday suit you?' },
+      { who: 'cue', text: 'Hold the silence', hold: 2400 },
+      { who: 'caller', resolve: true, warmth: 15, text: 'Wednesday at 7:15 works.' },
+      { who: 'staff', text: "Great, you're booked. I'll text you the address." },
+    ],
+  },
+];

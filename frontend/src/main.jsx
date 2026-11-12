@@ -15,6 +15,7 @@ import { TooltipProvider } from './components/ui/tooltip';
 import { TutorialProvider } from './features/tutorial/TutorialProvider';
 
 import { HomePage } from './pages/HomePage';
+import { TermsOfServicePage } from './pages/TermsOfServicePage';
 import { LoginPage } from './pages/LoginPage';
 import { ResetPasswordPage } from './pages/ResetPasswordPage';
 import { UpdatePasswordPage } from './pages/UpdatePasswordPage';
@@ -39,6 +40,7 @@ import { MonthlyReportsPage } from './pages/MonthlyReportsPage';
 import { ComponentShowcasePage } from './pages/ComponentShowcasePage';
 import { SystemEventsPage } from './pages/SystemEventsPage';
 import { SupportInboxPage } from './pages/SupportInboxPage';
+import { V3LabPage } from './pages/V3LabPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -58,6 +60,8 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <TooltipProvider>
             <BrowserRouter>
               <Routes>
+                <Route path="/terms-of-service" element={<TermsOfServicePage />} />
+                <Route path="/terms" element={<TermsOfServicePage />} />
                 <Route element={<PasswordRecoveryGuard />}>
                 <Route path="/" element={<HomePage />} />
                 <Route path="/login" element={<LoginPage />} />
@@ -86,6 +90,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
                   <Route path="/admin/scenarios" element={<CustomScenariosPage />} />
                   <Route path="/admin/platform-settings" element={<PlatformSettingsPage />} />
                   <Route path="/components" element={<ComponentShowcasePage />} />
+                  <Route path="/v3-lab" element={<V3LabPage />} />
                 </Route>
 
                 <Route path="*" element={<NotFoundPage />} />

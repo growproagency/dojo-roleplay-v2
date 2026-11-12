@@ -12,6 +12,11 @@ const emitCallState = (status) => {
   window.dispatchEvent(new CustomEvent('dojo:call-state', { detail: { status } }));
 };
 
+// Speaking, volume and transcript updates for call screens that animate with the call.
+const emitCallActivity = (detail) => {
+  window.dispatchEvent(new CustomEvent('dojo:call-activity', { detail }));
+};
+
 const DIFFICULTIES = ['easy', 'medium', 'hard'];
 
 const normalizeDifficulty = (value) => {
@@ -163,7 +168,20 @@ export function CallWidget() {
           console.error('[Vapi call start failed]', err);
         }
       });
+      vapi.on('speech-start', () => emitCallActivity({ type: 'assistant-speech', speaking: true }));
+      vapi.on('speech-end', () => emitCallActivity({ type: 'assistant-speech', speaking: false }));
+      vapi.on('volume-level', (level) => emitCallActivity({ type: 'volume', level }));
       vapi.on('message', (message) => {
+        if (message?.type === 'transcript') {
+          emitCallActivity({
+            type: 'transcript',
+            role: message.role,
+            text: message.transcript,
+            final: message.transcriptType === 'final',
+          });
+        } else if (message?.type === 'speech-update') {
+          emitCallActivity({ type: 'speech-update', role: message.role, speaking: message.status === 'started' });
+        }
         const scenario = findScenarioValue(message);
         if (scenario) emitCallScenario(scenario);
         if (import.meta.env.DEV) {
@@ -240,12 +258,17 @@ export function CallWidget() {
       if (!webCallActive && !webCallConnecting) startWebCall(event.detail ?? {});
     };
     const handleEndRequest = () => endWebCall();
+    const handleMuteRequest = (event) => {
+      try { vapiRef.current?.setMuted(!!event.detail?.muted); } catch {}
+    };
 
     window.addEventListener('dojo:start-call', handleStartRequest);
     window.addEventListener('dojo:end-call', handleEndRequest);
+    window.addEventListener('dojo:set-muted', handleMuteRequest);
     return () => {
       window.removeEventListener('dojo:start-call', handleStartRequest);
       window.removeEventListener('dojo:end-call', handleEndRequest);
+      window.removeEventListener('dojo:set-muted', handleMuteRequest);
     };
   }, [endWebCall, startWebCall, webCallActive, webCallConnecting]);
 

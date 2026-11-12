@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { callsInMonth, compareActivity, localDateKey, reportPeriod, summarizeActivity, summarizeCoaching } from '../src/utils/monthlyReports.js';
+import { callsInMonth, compareActivity, localDateKey, reportPeriod, summarizeActivity, summarizeCoaching, summarizeTeam } from '../src/utils/monthlyReports.js';
 import { createMonthlyReportsService as createService } from '../src/services/monthlyReports.service.js';
 import { reportParamsSchema, reportQuerySchema, reportTimezoneSchema } from '../src/schemas/monthlyReports.schema.js';
 
@@ -133,4 +133,23 @@ test('request schemas reject invalid periods, timezones, IDs, and unbounded pagi
   assert.equal(reportTimezoneSchema.validate({ timezone: 'Asia/Manila' }).error, undefined);
   assert.ok(reportParamsSchema.validate({ userId: 'abc' }).error);
   assert.ok(reportParamsSchema.validate({ userId: -1 }).error);
+});
+
+test('team summary totals every employee and weights the average score by scored calls', () => {
+  const metricsFor = calls => summarizeActivity(calls, 'UTC');
+  const employees = [
+    { id: 1, metrics: metricsFor([call(1, { difficulty: 'easy', scorecards: { overall_score: 90 } }),
+      call(2, { difficulty: 'easy', scorecards: { overall_score: 90 } }), call(3, { difficulty: 'easy', scorecards: { overall_score: 90 } })]) },
+    { id: 2, metrics: metricsFor([call(4, { difficulty: 'hard', scorecards: { overall_score: 50 } })]) },
+    { id: 3, metrics: metricsFor([]) },
+  ];
+  const summary = summarizeTeam(employees);
+  assert.equal(summary.employees, 3);
+  assert.equal(summary.activeEmployees, 2);
+  assert.equal(summary.callsMade, 4);
+  assert.equal(summary.scoredCalls, 4);
+  assert.equal(summary.minutesUsed, 6);
+  assert.equal(summary.avgScore, 80);
+  assert.deepEqual(summary.difficulty, { easy: 3, medium: 0, hard: 1, legacy: 0 });
+  assert.equal(summarizeTeam([]).avgScore, null);
 });

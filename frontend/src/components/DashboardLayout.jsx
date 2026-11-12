@@ -4,6 +4,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useUIStore } from '../store/ui.store';
 import { MaintenanceBanner } from './MaintenanceBanner';
 import { SupportDialog } from './SupportDialog';
+import { TermsLink } from './TermsLink';
 import { SupportAnnouncement } from './SupportAnnouncement';
 import { canUseCustomScenarios, getEffectivePlanDetails } from '../utils/plans';
 import { Button } from './ui/button';
@@ -41,6 +42,7 @@ import {
   Sun,
   GraduationCap,
   Headphones,
+  FlaskConical,
 } from 'lucide-react';
 import { replayTutorial } from '../features/tutorial/TutorialProvider';
 
@@ -59,6 +61,7 @@ const menuItems = [
   { icon: Blocks, label: 'Scenario Builder', path: '/admin/scenario-builder', requires: 'schoolAdmin' },
   { icon: Drama, label: 'Scenarios', path: '/admin/scenarios', requires: 'schoolAdmin' },
   { icon: Settings2, label: 'Platform Settings', path: '/admin/platform-settings', requires: 'globalAdmin' },
+  { icon: FlaskConical, label: 'V3 Call Lab', path: '/v3-lab', requires: 'globalAdmin' },
 ];
 
 function NavItems({ onNavigate, collapsed }) {
@@ -351,6 +354,7 @@ export default function DashboardLayout({ children, title }) {
         <main className="flex-1 overflow-y-auto p-4 md:p-6">
           <MaintenanceBanner />
           {children}
+          <footer className="mt-8 border-t border-border pt-4 text-xs text-muted-foreground"><TermsLink /></footer>
         </main>
       </div>
       <SupportAnnouncement userId={user.id} onOpenSupport={() => setSupportOpen(true)} />

@@ -1,5 +1,5 @@
 import * as queries from '../db/monthlyReports.queries.js';
-import { callsInMonth, compareActivity, reportPeriod, summarizeActivity, summarizeCoaching } from '../utils/monthlyReports.js';
+import { callsInMonth, compareActivity, reportPeriod, summarizeActivity, summarizeCoaching, summarizeTeam } from '../utils/monthlyReports.js';
 
 async function allPages(query, offset = 0) {
   const rows = await query(offset);
@@ -37,7 +37,7 @@ export function createMonthlyReportsService(db = queries, clock = () => new Date
       const previous = summarizeActivity(callsInMonth(own, period.previousMonth, period.timezone, new Date(period.generatedAt)), period.timezone);
       return { ...employee, metrics, comparison: compareActivity(metrics, previous) };
     }).sort((a, b) => (a.name || a.email || '').localeCompare(b.name || b.email || '') || a.id - b.id);
-    return { data: employees.slice((page - 1) * limit, page * limit), school, period,
+    return { data: employees.slice((page - 1) * limit, page * limit), school, period, summary: summarizeTeam(employees),
       meta: { total: employees.length, page, limit, totalPages: Math.ceil(employees.length / limit) } };
   }
 

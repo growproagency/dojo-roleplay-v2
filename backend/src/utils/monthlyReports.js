@@ -97,6 +97,19 @@ export function summarizeCoaching(calls) {
     nextSteps: feedbackItems(scored, 'suggestions', weakCalls.size ? weakCalls : null) };
 }
 
+// School-wide totals for the overview. The average score is weighted by each
+// employee's scored calls, so it matches a plain average over every scored call.
+export function summarizeTeam(employees) {
+  const sum = pick => employees.reduce((total, employee) => total + pick(employee.metrics), 0);
+  const scoredCalls = sum(m => m.scoredCalls);
+  const scoreTotal = sum(m => (m.avgScore == null ? 0 : m.avgScore * m.scoredCalls));
+  const difficulty = Object.fromEntries(['easy', 'medium', 'hard', 'legacy'].map(level =>
+    [level, sum(m => m.difficulty.find(d => d.difficulty === level)?.calls ?? 0)]));
+  return { employees: employees.length, activeEmployees: employees.filter(e => e.metrics.callsMade > 0).length,
+    callsMade: sum(m => m.callsMade), scoredCalls, minutesUsed: round(sum(m => m.minutesUsed)),
+    avgScore: scoredCalls ? round(scoreTotal / scoredCalls) : null, difficulty };
+}
+
 export function compareActivity(current, previous) {
   const delta = key => previous.callsMade && current[key] != null && previous[key] != null ? round(current[key] - previous[key]) : null;
   return { hasPreviousActivity: previous.callsMade > 0, callsMade: delta('callsMade'), minutesUsed: delta('minutesUsed'),
