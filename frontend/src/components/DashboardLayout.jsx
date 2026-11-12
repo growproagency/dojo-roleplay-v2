@@ -42,7 +42,6 @@ import {
   Sun,
   GraduationCap,
   Headphones,
-  FlaskConical,
 } from 'lucide-react';
 import { replayTutorial } from '../features/tutorial/TutorialProvider';
 
@@ -61,7 +60,6 @@ const menuItems = [
   { icon: Blocks, label: 'Scenario Builder', path: '/admin/scenario-builder', requires: 'schoolAdmin' },
   { icon: Drama, label: 'Scenarios', path: '/admin/scenarios', requires: 'schoolAdmin' },
   { icon: Settings2, label: 'Platform Settings', path: '/admin/platform-settings', requires: 'globalAdmin' },
-  { icon: FlaskConical, label: 'V3 Call Lab', path: '/v3-lab', requires: 'globalAdmin' },
 ];
 
 function NavItems({ onNavigate, collapsed }) {

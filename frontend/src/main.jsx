@@ -40,7 +40,6 @@ import { MonthlyReportsPage } from './pages/MonthlyReportsPage';
 import { ComponentShowcasePage } from './pages/ComponentShowcasePage';
 import { SystemEventsPage } from './pages/SystemEventsPage';
 import { SupportInboxPage } from './pages/SupportInboxPage';
-import { V3LabPage } from './pages/V3LabPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -90,7 +89,6 @@ ReactDOM.createRoot(document.getElementById('root')).render(
                   <Route path="/admin/scenarios" element={<CustomScenariosPage />} />
                   <Route path="/admin/platform-settings" element={<PlatformSettingsPage />} />
                   <Route path="/components" element={<ComponentShowcasePage />} />
-                  <Route path="/v3-lab" element={<V3LabPage />} />
                 </Route>
 
                 <Route path="*" element={<NotFoundPage />} />
