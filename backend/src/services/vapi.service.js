@@ -513,7 +513,7 @@ export async function buildScenarioWebAssistant({ user, scenario, difficulty }) 
     firstMessage: scenarioConfig.firstMessage,
     startSpeakingPlan: getLiveKitStartSpeakingPlan(),
     silenceTimeoutSeconds: 30,
-    maxDurationSeconds: 600,
+    maxDurationSeconds: 1200,
     serverMessages: ['end-of-call-report', 'status-update'],
   };
   if (config.vapiWebhookUrl) assistant.server = { url: config.vapiWebhookUrl, timeoutSeconds: 20 };
@@ -752,7 +752,7 @@ async function buildDestinationResponse(message) {
     firstMessage: scenarioConfig.firstMessage,
     startSpeakingPlan: getLiveKitStartSpeakingPlan(),
     silenceTimeoutSeconds: 30,
-    maxDurationSeconds: 600,
+    maxDurationSeconds: 1200,
     serverMessages: ['end-of-call-report', 'status-update'],
   };
   if (config.vapiWebhookUrl) assistant.server = { url: config.vapiWebhookUrl, timeoutSeconds: 20 };

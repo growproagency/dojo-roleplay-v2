@@ -722,6 +722,7 @@ export function PracticeCallPage() {
                   <div>
                     <p className="font-medium">{difficulty.label}</p>
                     <p className="text-xs leading-5 text-muted-foreground">{difficulty.description}</p>
+                    <p className="text-xs font-medium text-primary">Leaderboard points ×{({ easy: 1, medium: 1.15, hard: 1.3 }[difficulty.value]).toFixed(2)}</p>
                   </div>
                 </button>
               ))}

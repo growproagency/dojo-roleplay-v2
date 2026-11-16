@@ -8,6 +8,7 @@ import { Button } from '../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Loader2, Mail, School, CheckCircle2, XCircle, Clock, ShieldAlert } from 'lucide-react';
 import { toast } from 'sonner';
+import { TermsLink } from '../components/TermsLink';
 
 const PENDING_INVITE_KEY = 'dojo:pendingInviteToken';
 
@@ -31,6 +32,7 @@ function InvalidState({ message, onHome }) {
       <CardContent className="space-y-4">
         <p className="text-sm text-muted-foreground text-center">{message}</p>
         <Button onClick={onHome} variant="outline" className="w-full">Go home</Button>
+        <p className="border-t border-border pt-4 text-center text-xs text-muted-foreground"><TermsLink /></p>
       </CardContent>
     </>
   );
@@ -185,6 +187,7 @@ export function InviteAcceptPage() {
             Accept invite
           </Button>
         )}
+        <p className="border-t border-border pt-4 text-center text-xs text-muted-foreground"><TermsLink /></p>
       </CardContent>
     </CenteredCard>
   );

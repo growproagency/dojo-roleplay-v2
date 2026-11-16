@@ -4,6 +4,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useUIStore } from '../store/ui.store';
 import { MaintenanceBanner } from './MaintenanceBanner';
 import { SupportDialog } from './SupportDialog';
+import { TermsLink } from './TermsLink';
 import { SupportAnnouncement } from './SupportAnnouncement';
 import { canUseCustomScenarios, getEffectivePlanDetails } from '../utils/plans';
 import { Button } from './ui/button';
@@ -49,6 +50,7 @@ const menuItems = [
   { icon: Bot, label: 'Practice Call', path: '/practice' },
   { icon: Phone, label: 'Call History', path: '/calls' },
   { icon: LineChart, label: 'Analytics', path: '/analytics', requires: 'schoolAdmin' },
+  { icon: BarChart3, label: 'Monthly Reports', path: '/analytics/monthly-reports', requires: 'schoolAdmin' },
   { icon: Users, label: 'Members', path: '/members', requires: 'schoolAdmin' },
   { icon: Settings, label: 'School Settings', path: '/settings', requires: 'schoolAdmin' },
   { icon: School, label: 'All Schools', path: '/admin/schools', requires: 'globalAdmin' },
@@ -350,6 +352,7 @@ export default function DashboardLayout({ children, title }) {
         <main className="flex-1 overflow-y-auto p-4 md:p-6">
           <MaintenanceBanner />
           {children}
+          <footer className="mt-8 border-t border-border pt-4 text-xs text-muted-foreground"><TermsLink /></footer>
         </main>
       </div>
       <SupportAnnouncement userId={user.id} onOpenSupport={() => setSupportOpen(true)} />

@@ -53,6 +53,8 @@ export function useScoreCall() {
     onSuccess: (_data, id) => {
       qc.invalidateQueries({ queryKey: callKeys.detail(id) });
       qc.invalidateQueries({ queryKey: callKeys.all });
+      qc.invalidateQueries({ queryKey: ['leaderboard'] });
+      qc.invalidateQueries({ queryKey: ['monthly-reports'] });
     },
   });
 }

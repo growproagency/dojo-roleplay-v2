@@ -15,6 +15,7 @@ import { TooltipProvider } from './components/ui/tooltip';
 import { TutorialProvider } from './features/tutorial/TutorialProvider';
 
 import { HomePage } from './pages/HomePage';
+import { TermsOfServicePage } from './pages/TermsOfServicePage';
 import { LoginPage } from './pages/LoginPage';
 import { ResetPasswordPage } from './pages/ResetPasswordPage';
 import { UpdatePasswordPage } from './pages/UpdatePasswordPage';
@@ -35,6 +36,7 @@ import { CustomScenariosV2Page } from './pages/CustomScenariosV2Page';
 import { PlatformSettingsPage } from './pages/PlatformSettingsPage';
 import { UsagePage } from './pages/UsagePage';
 import { SchoolAnalyticsPage } from './pages/SchoolAnalyticsPage';
+import { MonthlyReportsPage } from './pages/MonthlyReportsPage';
 import { ComponentShowcasePage } from './pages/ComponentShowcasePage';
 import { SystemEventsPage } from './pages/SystemEventsPage';
 import { SupportInboxPage } from './pages/SupportInboxPage';
@@ -57,6 +59,8 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <TooltipProvider>
             <BrowserRouter>
               <Routes>
+                <Route path="/terms-of-service" element={<TermsOfServicePage />} />
+                <Route path="/terms" element={<TermsOfServicePage />} />
                 <Route element={<PasswordRecoveryGuard />}>
                 <Route path="/" element={<HomePage />} />
                 <Route path="/login" element={<LoginPage />} />
@@ -74,6 +78,8 @@ ReactDOM.createRoot(document.getElementById('root')).render(
                   <Route path="/members" element={<MembersPage />} />
                   <Route path="/settings" element={<SettingsPage />} />
                   <Route path="/analytics" element={<SchoolAnalyticsPage />} />
+                  <Route path="/analytics/monthly-reports" element={<MonthlyReportsPage />} />
+                  <Route path="/analytics/monthly-reports/:userId" element={<MonthlyReportsPage />} />
                   <Route path="/admin/schools" element={<AdminSchoolsPage />} />
                   <Route path="/admin/schools/:id" element={<AdminSchoolDetailPage />} />
                   <Route path="/admin/usage" element={<UsagePage />} />

@@ -7,6 +7,11 @@ const getToken = () => useAuthStore.getState().token;
 const getViewingSchoolId = () => useUIStore.getState().viewingSchoolId;
 
 export const apiClient = {
+  getAsset: async (url) => {
+    const response = await fetch(url);
+    if (!response.ok) throw new Error('Unable to load report assets. Please try again.');
+    return response.arrayBuffer();
+  },
   get:    (path, opts)       => request('GET',    path, null, opts),
   post:   (path, body, opts) => request('POST',   path, body, opts),
   put:    (path, body, opts) => request('PUT',    path, body, opts),

@@ -9,6 +9,7 @@ import { Loader2, School } from 'lucide-react';
 import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '../store/auth.store';
+import { TermsLink } from '../components/TermsLink';
 
 export function LoginPage() {
   const navigate = useNavigate();
@@ -163,6 +164,7 @@ export function LoginPage() {
               </button>
             </p>
           )}
+          <p className="border-t border-border pt-4 text-center text-xs text-muted-foreground"><TermsLink /></p>
         </CardContent>
       </Card>
     </div>
