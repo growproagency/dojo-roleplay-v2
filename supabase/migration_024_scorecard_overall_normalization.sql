@@ -84,20 +84,22 @@ WHERE c.id = sc.call_id
 
 UPDATE public.scorecards sc
 SET overall_score = custom_scores.overall_score
-FROM public.calls c
-JOIN LATERAL (
-  SELECT ROUND((AVG((category->>'score')::numeric) * 10)::numeric, 1) AS overall_score
-  FROM jsonb_array_elements(sc.categories) AS category
-) custom_scores ON true
-WHERE c.id = sc.call_id
-  AND c.scenario NOT IN (
-    'new_student',
-    'parent_enrollment',
-    'web_lead_callback',
-    'sales_enrollment',
-    'renewal_conference',
-    'cancellation_save'
-  )
-  AND jsonb_typeof(sc.categories) = 'array'
-  AND jsonb_array_length(sc.categories) > 0
+FROM (
+  SELECT s.id, ROUND((AVG((category->>'score')::numeric) * 10)::numeric, 1) AS overall_score
+  FROM public.scorecards s
+  JOIN public.calls c ON c.id = s.call_id
+  CROSS JOIN LATERAL jsonb_array_elements(s.categories) AS category
+  WHERE c.scenario NOT IN (
+      'new_student',
+      'parent_enrollment',
+      'web_lead_callback',
+      'sales_enrollment',
+      'renewal_conference',
+      'cancellation_save'
+    )
+    AND jsonb_typeof(s.categories) = 'array'
+    AND jsonb_array_length(s.categories) > 0
+  GROUP BY s.id
+) custom_scores
+WHERE sc.id = custom_scores.id
   AND custom_scores.overall_score IS NOT NULL;
