@@ -2,6 +2,15 @@ import { config } from '../src/config/env.js';
 
 const VAPI_API_BASE = 'https://api.vapi.ai';
 
+// Vapi sends these headers with every webhook, so the backend can reject anything else.
+function webhookServer() {
+  return {
+    url: config.vapiWebhookUrl,
+    timeoutSeconds: 20,
+    headers: { 'x-vapi-secret': config.vapiWebhookSecret },
+  };
+}
+
 function buildPermanentReceptionistAssistant() {
   return {
     name: 'Dojo Receptionist',
@@ -55,7 +64,7 @@ If the difficulty is unclear or does not match one of those meanings, ask them t
             required: ['destination', 'difficulty'],
           },
         },
-        destinations: [{ type: 'dynamic', server: { url: config.vapiWebhookUrl } }],
+        destinations: [{ type: 'dynamic', server: webhookServer() }],
       }],
     },
     transcriber: {
@@ -73,33 +82,45 @@ If the difficulty is unclear or does not match one of those meanings, ask them t
     voice: { provider: 'vapi', voiceId: 'Elliot' },
     firstMessage: '{% if selectedScenarioTitle and selectedDifficulty %}Starting {{selectedScenarioTitle}} on {{selectedDifficulty}} difficulty.{% elsif selectedScenarioTitle %}You selected {{selectedScenarioTitle}}. What difficulty would you like: easy, medium, or hard?{% else %}Which scenario and difficulty would you like to practice?{% endif %}',
     firstMessageInterruptionsEnabled: true,
-    server: { url: config.vapiWebhookUrl, timeoutSeconds: 20 },
+    server: webhookServer(),
     serverMessages: ['end-of-call-report', 'status-update', 'handoff-destination-request'],
     silenceTimeoutSeconds: 60,
     maxDurationSeconds: 1200,
   };
 }
 
-async function syncAssistant() {
-  if (!config.vapiApiKey) throw new Error('Missing VAPI_API_KEY');
-  if (!config.vapiAssistantId) throw new Error('Missing VAPI_ASSISTANT_ID');
-  if (!config.vapiWebhookUrl) throw new Error('Missing VAPI_WEBHOOK_URL');
-
-  const response = await fetch(`${VAPI_API_BASE}/assistant/${config.vapiAssistantId}`, {
+async function patchVapi(path, payload, label) {
+  const response = await fetch(`${VAPI_API_BASE}${path}`, {
     method: 'PATCH',
     headers: {
       Authorization: `Bearer ${config.vapiApiKey}`,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify(buildPermanentReceptionistAssistant()),
+    body: JSON.stringify(payload),
   });
 
   const body = await response.text();
   if (!response.ok) {
-    throw new Error(`Vapi assistant sync failed (${response.status}): ${body}`);
+    throw new Error(`Vapi ${label} sync failed (${response.status}): ${body}`);
   }
+}
 
+async function syncAssistant() {
+  if (!config.vapiApiKey) throw new Error('Missing VAPI_API_KEY');
+  if (!config.vapiAssistantId) throw new Error('Missing VAPI_ASSISTANT_ID');
+  if (!config.vapiWebhookUrl) throw new Error('Missing VAPI_WEBHOOK_URL');
+  if (!config.vapiWebhookSecret) throw new Error('Missing VAPI_WEBHOOK_SECRET');
+
+  await patchVapi(`/assistant/${config.vapiAssistantId}`, buildPermanentReceptionistAssistant(), 'assistant');
   console.log(`Synced Vapi assistant ${config.vapiAssistantId}`);
+
+  // Inbound phone calls ask the phone number's server for an assistant, so it needs the secret too.
+  if (config.vapiPhoneNumberId) {
+    await patchVapi(`/phone-number/${config.vapiPhoneNumberId}`, { server: webhookServer() }, 'phone number');
+    console.log(`Synced Vapi phone number ${config.vapiPhoneNumberId}`);
+  } else {
+    console.warn('VAPI_PHONE_NUMBER_ID not set: phone number webhook secret was not synced');
+  }
 }
 
 syncAssistant().catch((err) => {

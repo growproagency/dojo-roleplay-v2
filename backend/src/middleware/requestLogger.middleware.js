@@ -4,6 +4,9 @@
 // Add early in your middleware stack in server.js.
 import { logger } from '../utils/logger.js';
 
+// Never write auth tokens carried in query strings (e.g. Vapi webhook tokens) to logs.
+const redactUrl = (url) => url.replace(/([?&]token=)[^&]*/g, '$1[REDACTED]');
+
 export const requestLogger = (req, res, next) => {
   const start = Date.now();
 
@@ -15,7 +18,7 @@ export const requestLogger = (req, res, next) => {
 
     logger[level]({
       method:      req.method,
-      url:         req.url,
+      url:         redactUrl(req.url),
       status:      res.statusCode,
       duration_ms: duration,
       userId:      req.user?.id ?? 'anon',
