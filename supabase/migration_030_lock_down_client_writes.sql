@@ -19,7 +19,7 @@ REVOKE INSERT, UPDATE, DELETE ON TABLE
   public.built_in_scenarios,
   public.platform_settings,
   public.system_events,
-  public.automation_events,
+  public.automation_events
 FROM anon, authenticated;
 
 DO $$

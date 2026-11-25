@@ -32,6 +32,10 @@ export const config = {
   vapiAssistantId:   process.env.VAPI_ASSISTANT_ID || '',
   vapiPhoneNumberId: process.env.VAPI_PHONE_NUMBER_ID || '',
   vapiWebhookUrl:    process.env.VAPI_WEBHOOK_URL || '',
+  // Shared secret Vapi sends as the x-vapi-secret header on webhooks we configure server-side.
+  vapiWebhookSecret: process.env.VAPI_WEBHOOK_SECRET || '',
+  // 'enforce' rejects unauthenticated webhooks; 'monitor' only logs them (use while rolling out).
+  vapiWebhookAuthMode: process.env.VAPI_WEBHOOK_AUTH_MODE === 'monitor' ? 'monitor' : 'enforce',
   frontendUrl:        process.env.FRONTEND_URL || (process.env.ALLOWED_ORIGINS || 'http://localhost:5173').split(',')[0],
   automationWebhookSecret: process.env.AUTOMATION_WEBHOOK_SECRET || '',
   slackSupportWebhookUrl: process.env.SLACK_SUPPORT_WEBHOOK_URL || '',

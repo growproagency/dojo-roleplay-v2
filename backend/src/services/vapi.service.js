@@ -4,7 +4,7 @@ import { findBuiltInScenarioBySlug, findCustomScenarioBySlug, findCustomScenario
 import { findSchoolById } from '../db/schools.queries.js';
 import { countRecentPhoneAttempts, logPhoneCallAttempt } from '../db/phoneCallAttempts.queries.js';
 import { findUserByPhoneNumber } from '../db/users.queries.js';
-import { verifySessionToken } from '../utils/sessionToken.js';
+import { createVapiWebhookToken, verifySessionToken } from '../utils/sessionToken.js';
 import { scoreCallTranscript } from './scoring.service.js';
 import { assertSchoolMonthlyMinutesAvailable } from './usageLimits.service.js';
 import { getPublishedBuiltInScenarios } from './scenarios.service.js';
@@ -76,6 +76,24 @@ async function schoolCanUseCustomScenarios(schoolId) {
   return canUseCustomScenarios(school);
 }
 
+// Server config for assistants we return to Vapi. The shared secret header is only ever
+// included in responses to requests that already proved they came from Vapi (secret auth);
+// anything else could be read by the caller, so it gets a per-user webhook token instead.
+// Tokens are only minted for callers already bound to that user (token auth, or the logged-in
+// browser); unauthenticated requests (monitor mode) get the bare URL and no credential at all.
+function webhookServerFor(auth, tenant) {
+  if (!config.vapiWebhookUrl) return undefined;
+  if (auth?.method === 'secret' && config.vapiWebhookSecret) {
+    return { url: config.vapiWebhookUrl, timeoutSeconds: 20, headers: { 'x-vapi-secret': config.vapiWebhookSecret } };
+  }
+  if (tenant?.userId && (auth?.method === 'token' || auth?.method === 'browser')) {
+    const url = new URL(config.vapiWebhookUrl);
+    url.searchParams.set('token', createVapiWebhookToken({ userId: tenant.userId, schoolId: tenant.schoolId ?? null }));
+    return { url: url.toString(), timeoutSeconds: 20 };
+  }
+  return { url: config.vapiWebhookUrl, timeoutSeconds: 20 };
+}
+
 function isGlobalAdmin(user) {
   return user?.role === 'global_admin' || user?.role === 'admin';
 }
@@ -109,9 +127,13 @@ function extractMetadata(message) {
   };
 }
 
-async function resolveTenant(message) {
+async function resolveTenant(message, auth) {
   const call = message?.call;
   const vapiCallId = call?.id;
+  // A per-user webhook token is authoritative: the request can only act for that user.
+  // Never read or write the shared cache here, so a token holder cannot poison another call's tenant.
+  if (auth?.method === 'token') return { userId: auth.userId, schoolId: auth.schoolId ?? null };
+
   const cached = getCtx(vapiCallId);
   if (cached) return cached;
 
@@ -169,12 +191,13 @@ async function resolveTenant(message) {
   return null;
 }
 
-async function handleAssistantRequest(message) {
+async function handleAssistantRequest(message, auth) {
   const call = message?.call;
   const vapiCallId = call?.id;
   const callType = call?.type;
 
-  if (callType === 'inboundPhoneCall') {
+  // Phone calls are identified by caller number, which is only trustworthy when Vapi itself sent it.
+  if (callType === 'inboundPhoneCall' && auth?.method !== 'token') {
     const callerNumber = call?.customer?.number;
 
     if (!callerNumber) {
@@ -291,15 +314,18 @@ async function handleAssistantRequest(message) {
     }, 'Accepted inbound Vapi phone call');
 
     return {
-      assistant: await buildReceptionistAssistant(user.name, config.vapiWebhookUrl, user.schoolId ?? null),
+      assistant: await buildReceptionistAssistant(user.name, webhookServerFor(auth, { userId: user.id, schoolId: user.schoolId }), user.schoolId ?? null),
     };
   }
 
   const metadata = extractMetadata(message);
-  const tenant = await resolveTenant(message);
-  const user = tenant ? { name: null } : null;
+  const tenant = await resolveTenant(message, auth);
+  // Never hand our receptionist (prompt, scenario list, webhook config) to an unidentified caller.
+  if (!tenant?.userId) {
+    return { assistant: buildRejectionAssistant('Sorry, this session could not be verified. Please reload the page and try again. Goodbye.') };
+  }
   return {
-    assistant: await buildReceptionistAssistant(user?.name || null, config.vapiWebhookUrl, tenant?.schoolId ?? null, {
+    assistant: await buildReceptionistAssistant(null, webhookServerFor(auth, tenant), tenant.schoolId ?? null, {
       selectedScenario: metadata.selectedScenario || null,
       selectedScenarioTitle: metadata.selectedScenarioTitle || null,
       selectedDifficulty: metadata.selectedDifficulty || null,
@@ -307,7 +333,7 @@ async function handleAssistantRequest(message) {
   };
 }
 
-async function buildReceptionistAssistant(userName, webhookUrl, schoolId = null, options = {}) {
+async function buildReceptionistAssistant(userName, webhookServer, schoolId = null, options = {}) {
   const customScenariosAllowed = await schoolCanUseCustomScenarios(schoolId);
   const customScenarios = customScenariosAllowed
     ? await findCustomScenarios(schoolId).catch(() => [])
@@ -350,7 +376,7 @@ async function buildReceptionistAssistant(userName, webhookUrl, schoolId = null,
         role: 'system',
         content: `You are a receptionist for Dojo Roleplay. Find out which training scenario and difficulty the caller wants, then call handoff_tool.${selectedScenarioInstruction}\n\nAvailable scenarios:\n${scenarioList}\n\nDifficulties: Easy, Medium, Hard. Accept clear synonyms like beginner/easier for easy, normal/regular for medium, and difficult/advanced/challenging/tough for hard. If the difficulty is unclear or not one of those meanings, ask again and do not call handoff_tool yet.`,
       }],
-      tools: webhookUrl ? [{
+      tools: webhookServer ? [{
         type: 'handoff',
         function: {
           name: 'handoff_tool',
@@ -365,7 +391,7 @@ async function buildReceptionistAssistant(userName, webhookUrl, schoolId = null,
             required: ['destination', 'scenario', 'difficulty'],
           },
         },
-        destinations: [{ type: 'dynamic', server: { url: webhookUrl } }],
+        destinations: [{ type: 'dynamic', server: webhookServer }],
       }] : undefined,
     },
     transcriber: {
@@ -388,9 +414,7 @@ async function buildReceptionistAssistant(userName, webhookUrl, schoolId = null,
     silenceTimeoutSeconds: 60,
   };
 
-  if (webhookUrl) {
-    assistant.server = { url: webhookUrl, timeoutSeconds: 20 };
-  }
+  if (webhookServer) assistant.server = webhookServer;
 
   return assistant;
 }
@@ -516,11 +540,13 @@ export async function buildScenarioWebAssistant({ user, scenario, difficulty }) 
     maxDurationSeconds: 1200,
     serverMessages: ['end-of-call-report', 'status-update'],
   };
-  if (config.vapiWebhookUrl) assistant.server = { url: config.vapiWebhookUrl, timeoutSeconds: 20 };
+  // This assistant is sent to the browser, so it must never contain the shared secret.
+  const server = webhookServerFor({ method: 'browser' }, { userId: user?.id, schoolId: tenantSchoolId });
+  if (server) assistant.server = server;
   return assistant;
 }
 
-async function ensureCallStarted(message, fallback = {}) {
+async function ensureCallStarted(message, fallback = {}, auth) {
   const call = message?.call;
   const vapiCallId = call?.id;
   if (!vapiCallId) {
@@ -536,9 +562,15 @@ async function ensureCallStarted(message, fallback = {}) {
   }
 
   const existing = await findCallByVapiId(vapiCallId).catch(() => null);
-  if (existing) return existing;
+  if (existing) {
+    if (auth?.method === 'token' && existing.userId !== auth.userId) {
+      logger.warn({ type: message?.type, vapiCallId, tokenUserId: auth.userId }, 'Vapi webhook token does not own this call');
+      return null;
+    }
+    return existing;
+  }
 
-  const tenant = await resolveTenant(message);
+  const tenant = await resolveTenant(message, auth);
   if (!tenant?.userId) {
     logger.warn({ type: message?.type, vapiCallId }, 'Skipping call insert because tenant was not resolved');
     await recordSystemEvent({
@@ -630,7 +662,7 @@ function findDifficultyValue(value, depth = 0) {
   return null;
 }
 
-async function handleToolCalls(message) {
+async function handleToolCalls(message, auth) {
   const metadata = extractMetadata(message);
   const toolCalls = message.toolCallList || (message.toolCall ? [message.toolCall] : []);
   const results = [];
@@ -650,7 +682,7 @@ async function handleToolCalls(message) {
         });
         continue;
       }
-      const dbCall = await ensureCallStarted(message, { scenario, difficulty });
+      const dbCall = await ensureCallStarted(message, { scenario, difficulty }, auth);
       const scenarioConfig = await resolveScenarioForCall(scenario, dbCall?.schoolId ?? null);
 
       if (dbCall) {
@@ -688,7 +720,7 @@ async function handleToolCalls(message) {
   return { results };
 }
 
-async function buildDestinationResponse(message) {
+async function buildDestinationResponse(message, auth) {
   const call = message.call;
   const vapiCallId = call?.id;
   const metadata = extractMetadata(message);
@@ -707,7 +739,7 @@ async function buildDestinationResponse(message) {
     return { error: 'Difficulty was unclear. Please ask the caller to choose easy, medium, or hard.' };
   }
 
-  const tenant = await resolveTenant(message);
+  const tenant = await resolveTenant(message, auth);
   if (!tenant?.userId) return { error: 'Session not identified' };
 
   const scenarioConfig = await resolveScenarioForCall(scenarioSlug, tenant.schoolId ?? null);
@@ -726,7 +758,7 @@ async function buildDestinationResponse(message) {
     return { error: `Unknown scenario "${scenarioSlug}"` };
   }
 
-  const dbCall = await ensureCallStarted(message, { scenario: scenarioSlug, difficulty });
+  const dbCall = await ensureCallStarted(message, { scenario: scenarioSlug, difficulty }, auth);
   if (dbCall) {
     await updateCall(dbCall.id, { scenario: scenarioSlug, difficulty }).catch(() => {});
   }
@@ -755,7 +787,8 @@ async function buildDestinationResponse(message) {
     maxDurationSeconds: 1200,
     serverMessages: ['end-of-call-report', 'status-update'],
   };
-  if (config.vapiWebhookUrl) assistant.server = { url: config.vapiWebhookUrl, timeoutSeconds: 20 };
+  const server = webhookServerFor(auth, tenant);
+  if (server) assistant.server = server;
 
   return {
     destination: {
@@ -767,7 +800,7 @@ async function buildDestinationResponse(message) {
   };
 }
 
-async function handleEndOfCallReport(message) {
+async function handleEndOfCallReport(message, auth) {
   const call = message.call;
   const artifact = message.artifact;
   const vapiCallId = call?.id;
@@ -785,6 +818,18 @@ async function handleEndOfCallReport(message) {
       externalId: vapiCallId,
       details: { messageType: message?.type ?? null },
     });
+    return {};
+  }
+
+  if (auth?.method === 'token' && dbCall.userId !== auth.userId) {
+    logger.warn({ type: message?.type, vapiCallId, tokenUserId: auth.userId }, 'Ignored end-of-call report: webhook token does not own this call');
+    return {};
+  }
+
+  // A call is only finalised once. Ignoring replays stops anyone re-submitting a
+  // report to overwrite a transcript or trigger another (paid) scoring run.
+  if (dbCall.status !== 'in_progress') {
+    logger.warn({ type: message?.type, vapiCallId, callId: dbCall.id, status: dbCall.status }, 'Ignored duplicate end-of-call report');
     return {};
   }
 
@@ -882,31 +927,32 @@ async function backgroundScore(callId, transcript, scenario, schoolId = null, di
   }
 }
 
-export async function handleVapiWebhook(message) {
+export async function handleVapiWebhook(message, auth = { method: 'none' }) {
   if (!message) throw new Error('VALIDATION');
 
   logger.info({
     type: message.type,
     vapiCallId: message.call?.id ?? null,
+    authMethod: auth.method,
     hasParameters: !!message.parameters,
     toolCount: message.toolCallList?.length ?? (message.toolCall ? 1 : 0),
   }, 'Received Vapi webhook event');
 
   if (message.type === 'assistant-request') {
-    return handleAssistantRequest(message);
+    return handleAssistantRequest(message, auth);
   }
 
   if (message.type === 'handoff-destination-request' || message.type === 'transfer-destination-request') {
-    return buildDestinationResponse(message);
+    return buildDestinationResponse(message, auth);
   }
-  if (message.type === 'tool-calls') return handleToolCalls(message);
+  if (message.type === 'tool-calls') return handleToolCalls(message, auth);
   if (message.type === 'status-update') {
     const metadata = extractMetadata(message);
     const scenario = metadata.selectedScenario || 'new_student';
     const difficulty = normalizeDifficulty(metadata.selectedDifficulty) || 'medium';
-    await ensureCallStarted(message, { scenario, difficulty });
+    await ensureCallStarted(message, { scenario, difficulty }, auth);
     return {};
   }
-  if (message.type === 'end-of-call-report') return handleEndOfCallReport(message);
+  if (message.type === 'end-of-call-report') return handleEndOfCallReport(message, auth);
   return {};
 }

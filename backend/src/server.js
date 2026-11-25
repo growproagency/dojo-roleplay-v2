@@ -45,6 +45,15 @@ const publicApiLimiter = rateLimit({
   message: { error: { code: 'RATE_LIMITED', message: 'Too many requests' } },
 });
 
+// Only failed requests (4xx/5xx) count, so real Vapi traffic is never throttled
+// but anyone hammering the webhook with bad credentials is cut off quickly.
+const vapiWebhookLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  skipSuccessfulRequests: true,
+  message: { error: { code: 'RATE_LIMITED', message: 'Too many requests' } },
+});
+
 const authenticatedApiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 1000,
@@ -67,6 +76,7 @@ app.get('/health', async (_req, res) => {
 
 // Public routes (no auth)
 app.use(['/api/vapi', '/api/invites', '/api/system', '/api/automation'], publicApiLimiter);
+app.use('/api/vapi/webhook', vapiWebhookLimiter);
 app.use('/api/vapi', vapiRoutes);
 app.use('/api/invites', invitesRoutes);
 app.use('/api/system', systemRoutes);
